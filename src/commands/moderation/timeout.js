@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, PermissionFlagsBits, time } from 'discord.js';
+import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 const durationChoices = [
   { label: '5 dakika', value: 5 * 60 * 1000 },
@@ -72,6 +73,9 @@ export default {
     }
 
     const durationMs = Number(interaction.options.getString('sure'));
+    const durationLabel =
+      durationChoices.find((choice) => choice.value === durationMs)?.label ??
+      `${Math.round(durationMs / 1000)} saniye`;
     const reason = interaction.options.getString('sebep') ?? 'Sebep belirtilmedi';
 
     await target.timeout(durationMs, reason);
@@ -81,6 +85,18 @@ export default {
     await interaction.reply({
       content: `🔇 ${target.user.tag} kullanicisi ${reason} nedeniyle ${until} tarihine kadar susturuldu.`,
       ephemeral: true
+    });
+
+    await sendModerationLog(interaction.client, interaction.guildId, {
+      action: 'Zaman Asimi',
+      target: formatUserMention(target.user),
+      moderator: formatUserMention(interaction.user),
+      reason,
+      color: 0xf1c40f,
+      extraFields: [
+        { name: 'Sure', value: durationLabel, inline: true },
+        { name: 'Bitis', value: until, inline: true }
+      ]
     });
   }
 };

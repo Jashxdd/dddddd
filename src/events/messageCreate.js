@@ -1,5 +1,6 @@
 import { Events, PermissionsBitField, time } from 'discord.js';
 import { findBannedWordInContent, isAutomodEnabled } from '../utils/automodConfig.js';
+import { formatUserMention, sendModerationLog } from '../utils/modLog.js';
 
 export default {
   name: Events.MessageCreate,
@@ -73,6 +74,20 @@ export default {
 
     await message.channel.send({
       content: `⚠️ ${message.author}, yasakli bir ifade (**${matchedWord}**) kullandigin icin mesajin silindi. Lutfen sunucu kurallarina uy.`
+    });
+
+    const snippet = message.content.length > 1024 ? `${message.content.slice(0, 1021)}...` : message.content;
+
+    await sendModerationLog(message.client, message.guild.id, {
+      action: 'Automod (Kelime Filtresi)',
+      moderator: 'Otomatik Sistem',
+      target: formatUserMention(message.author),
+      reason: `Yasakli kelime: **${matchedWord}**`,
+      color: 0xe74c3c,
+      extraFields: [
+        { name: 'Kanal', value: message.channel.toString(), inline: true },
+        { name: 'Mesaj Icerigi', value: snippet || 'Mesaj bos' }
+      ]
     });
   }
 };

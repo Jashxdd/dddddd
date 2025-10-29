@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, PermissionFlagsBits, time } from 'discord.js';
 import { addWarning, clearWarnings, listWarnings, removeWarning } from '../../utils/warnStorage.js';
+import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 export default {
   category: 'Moderasyon',
@@ -80,6 +81,14 @@ export default {
         content: `⚠️ ${member} kullanicisina uyari eklendi. Sebep: ${reason}`,
         ephemeral: true
       });
+
+      await sendModerationLog(interaction.client, interaction.guildId, {
+        action: 'Uyari Ekle',
+        moderator: formatUserMention(interaction.user),
+        target: formatUserMention(member),
+        reason,
+        color: 0xf39c12
+      });
       return;
     }
 
@@ -115,6 +124,16 @@ export default {
           : '⚠️ Belirtilen numarada bir uyari bulunamadi.',
         ephemeral: true
       });
+
+      if (removed) {
+        await sendModerationLog(interaction.client, interaction.guildId, {
+          action: 'Uyari Sil',
+          moderator: formatUserMention(interaction.user),
+          target: formatUserMention(member),
+          reason: `${number}. uyari kaldirildi.`,
+          color: 0x3498db
+        });
+      }
       return;
     }
 
@@ -128,6 +147,16 @@ export default {
           : 'ℹ️ Bu kullanicinin zaten kayitli uyarisi bulunmuyor.',
         ephemeral: true
       });
+
+      if (cleared) {
+        await sendModerationLog(interaction.client, interaction.guildId, {
+          action: 'Uyari Temizleme',
+          moderator: formatUserMention(interaction.user),
+          target: formatUserMention(member),
+          reason: 'Kullanicinin tum uyarilari temizlendi.',
+          color: 0x1abc9c
+        });
+      }
     }
   }
 };

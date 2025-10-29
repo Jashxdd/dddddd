@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 export default {
   category: 'Moderasyon',
@@ -55,10 +56,31 @@ export default {
       return;
     }
 
+    const deletedCount = deleted?.size ?? 0;
+
     await interaction.editReply({
-      content: deleted?.size
-        ? `🧹 Toplam ${deleted.size} mesaj silindi.`
-        : '⚠️ Silinecek mesaj bulunamadi.'
+      content: deletedCount ? `🧹 Toplam ${deletedCount} mesaj silindi.` : '⚠️ Silinecek mesaj bulunamadi.'
     });
+
+    if (deletedCount) {
+      const extraFields = [
+        { name: 'Kanal', value: channel.toString(), inline: true },
+        { name: 'Silinen Mesaj Sayisi', value: String(deletedCount), inline: true }
+      ];
+
+      if (targetUser) {
+        extraFields.push({ name: 'Hedef Kullanici', value: formatUserMention(targetUser), inline: true });
+      }
+
+      await sendModerationLog(interaction.client, interaction.guildId, {
+        action: 'Mesaj Temizleme',
+        moderator: formatUserMention(interaction.user),
+        reason: targetUser
+          ? 'Belirtilen kullanicinin mesajlari filtrelenerek silindi.'
+          : 'Kanaldaki mesajlar toplu olarak temizlendi.',
+        color: 0x2980b9,
+        extraFields
+      });
+    }
   }
 };

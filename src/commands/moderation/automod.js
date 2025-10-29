@@ -6,6 +6,7 @@ import {
   removeBannedWord,
   setAutomodEnabled
 } from '../../utils/automodConfig.js';
+import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 export default {
   category: 'Moderasyon',
@@ -68,11 +69,20 @@ export default {
       const enabled = choice === 'ac';
       await setAutomodEnabled(guildId, enabled);
 
-      await interaction.reply({
-        content: enabled
-          ? '✅ Otomatik moderasyon etkinlestirildi. Yasakli kelimeler tespit edildiginde mesajlar otomatik silinecek.'
-          : '⏹️ Otomatik moderasyon devre disi birakildi.',
-        ephemeral: true
+      const message = enabled
+        ? '✅ Otomatik moderasyon etkinlestirildi. Yasakli kelimeler tespit edildiginde mesajlar otomatik silinecek.'
+        : '⏹️ Otomatik moderasyon devre disi birakildi.';
+
+      await interaction.reply({ content: message, ephemeral: true });
+
+      await sendModerationLog(interaction.client, interaction.guildId, {
+        action: 'Yerel Automod',
+        moderator: formatUserMention(interaction.user),
+        reason: enabled
+          ? 'Yerel otomatik moderasyon sistemi etkinlestirildi.'
+          : 'Yerel otomatik moderasyon sistemi devre disi birakildi.',
+        color: enabled ? 0x27ae60 : 0xe67e22,
+        extraFields: [{ name: 'Durum', value: enabled ? 'Acik' : 'Kapali', inline: true }]
       });
       return;
     }
@@ -82,18 +92,20 @@ export default {
       const result = await addBannedWord(guildId, word);
 
       if (result.added) {
-        if (!(await isAutomodEnabled(guildId))) {
-          await interaction.reply({
-            content:
-              '✅ Kelime listeye eklendi. Not: Automod su anda kapali, `/otomod durum secim:ac` komutu ile etkinlestirebilirsin.',
-            ephemeral: true
-          });
-        } else {
-          await interaction.reply({
-            content: '✅ Kelime listeye eklendi ve otomatik olarak izleniyor.',
-            ephemeral: true
-          });
-        }
+        const automodActive = await isAutomodEnabled(guildId);
+        const replyMessage = automodActive
+          ? '✅ Kelime listeye eklendi ve otomatik olarak izleniyor.'
+          : '✅ Kelime listeye eklendi. Not: Automod su anda kapali, `/otomod durum secim:ac` komutu ile etkinlestirebilirsin.';
+
+        await interaction.reply({ content: replyMessage, ephemeral: true });
+
+        await sendModerationLog(interaction.client, interaction.guildId, {
+          action: 'Yerel Automod',
+          moderator: formatUserMention(interaction.user),
+          reason: `Yasakli kelime eklendi: **${word.toLowerCase()}**`,
+          color: 0xe74c3c,
+          extraFields: [{ name: 'Durum', value: automodActive ? 'Acik' : 'Kapali', inline: true }]
+        });
         return;
       }
 
@@ -118,6 +130,15 @@ export default {
           : '⚠️ Belirtilen kelime yasakli listesinde bulunmuyor.',
         ephemeral: true
       });
+
+      if (removed) {
+        await sendModerationLog(interaction.client, interaction.guildId, {
+          action: 'Yerel Automod',
+          moderator: formatUserMention(interaction.user),
+          reason: `Yasakli kelime kaldirildi: **${word.toLowerCase()}**`,
+          color: 0x3498db
+        });
+      }
       return;
     }
 

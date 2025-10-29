@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 const durations = [
   { name: 'Kapat', value: 0 },
@@ -55,12 +56,26 @@ export default {
 
     await channel.setRateLimitPerUser(seconds, `Yavas mod ${interaction.user.tag} tarafindan guncellendi`);
 
+    const messageContent =
+      seconds === 0
+        ? `⏹️ ${channel} kanalindaki yavas mod kapatildi.`
+        : `🐢 ${channel} kanalindaki yavas mod ${seconds} saniye olarak ayarlandi.`;
+
     await interaction.reply({
-      content:
-        seconds === 0
-          ? `⏹️ ${channel} kanalindaki yavas mod kapatildi.`
-          : `🐢 ${channel} kanalindaki yavas mod ${seconds} saniye olarak ayarlandi.`,
+      content: messageContent,
       ephemeral: true
+    });
+
+    await sendModerationLog(interaction.client, interaction.guildId, {
+      action: 'Yavas Mod',
+      moderator: formatUserMention(interaction.user),
+      reason:
+        seconds === 0 ? 'Kanal icin yavas mod devre disi birakildi.' : 'Kanalin yavas mod suresi guncellendi.',
+      color: 0x9b59b6,
+      extraFields: [
+        { name: 'Kanal', value: channel.toString(), inline: true },
+        { name: 'Sure', value: seconds === 0 ? 'Pasif' : `${seconds} saniye`, inline: true }
+      ]
     });
   }
 };

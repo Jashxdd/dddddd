@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 export default {
   category: 'Moderasyon',
@@ -59,6 +60,14 @@ export default {
 
     await interaction.reply({
       content: `${member.user.tag} kullanicisi yasaklandi. Sebep: ${reason}`
+    });
+
+    await sendModerationLog(interaction.client, interaction.guildId, {
+      action: 'Ban',
+      target: formatUserMention(member.user),
+      moderator: formatUserMention(interaction.user),
+      reason,
+      color: 0xcb4335
     });
   }
 };

@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 export default {
   category: 'Moderasyon',
@@ -51,5 +52,13 @@ export default {
     await target.timeout(null, reason);
 
     await interaction.reply({ content: `🔊 ${target.user.tag} kullanicisinin susturmasi kaldirildi.`, ephemeral: true });
+
+    await sendModerationLog(interaction.client, interaction.guildId, {
+      action: 'Zaman Asimi Kaldirildi',
+      target: formatUserMention(target.user),
+      moderator: formatUserMention(interaction.user),
+      reason,
+      color: 0x27ae60
+    });
   }
 };

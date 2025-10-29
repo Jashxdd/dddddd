@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { disableKeywordRule, getKeywordRuleInfo, parseKeywords, upsertKeywordRule } from '../../utils/discordAutomod.js';
+import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 export default {
   category: 'Moderasyon',
@@ -61,6 +62,21 @@ export default {
       await interaction.editReply({
         content: `✅ Discord otomatik moderasyon kelime filtresi guncellendi. Aktif kelime sayisi: **${keywords.length}**.`
       });
+
+      const keywordPreview = keywords.slice(0, 10).map((item) => `• ${item}`).join('\n') || 'Kelime belirtilmedi';
+      const previewValue =
+        keywords.length > 10 ? `${keywordPreview}\n... ve ${keywords.length - 10} kelime daha` : keywordPreview;
+
+      await sendModerationLog(interaction.client, interaction.guildId, {
+        action: 'Discord Automod',
+        moderator: formatUserMention(interaction.user),
+        reason: 'Discord otomatik moderasyon kelime filtresi guncellendi.',
+        color: 0x8e44ad,
+        extraFields: [
+          { name: 'Kelime Sayisi', value: String(keywords.length), inline: true },
+          { name: 'Kelime Listesi', value: previewValue }
+        ]
+      });
       return;
     }
 
@@ -73,6 +89,15 @@ export default {
           ? '⏹️ Kelime filtresi devre disi birakildi. Dilersen `/discord-otomod kelime-filtresi` ile yeniden etkinlestirebilirsin.'
           : 'ℹ️ Bu sunucuda devre disi birakilacak bir kelime filtresi bulunamadi.'
       });
+
+      if (disabled) {
+        await sendModerationLog(interaction.client, interaction.guildId, {
+          action: 'Discord Automod',
+          moderator: formatUserMention(interaction.user),
+          reason: 'Discord otomatik moderasyon kelime filtresi devre disi birakildi.',
+          color: 0xe67e22
+        });
+      }
       return;
     }
 

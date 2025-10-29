@@ -9,6 +9,7 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
 - ✅ Discord'un kendi otomatik moderasyon sistemini (`/discord-otomod`) ve yerel kelime filtresini (`/otomod`) birlikte kullanma
 - ✅ Kullanicilar icin kural onayi zorunlulugu ve kural kayitlarini yonetmek icin yonetim komutlari
 - ✅ Uyari saklama sistemi, toplu mesaj silme, yavas mod ayarlama gibi ekstra moderasyon araclari
+- ✅ Ban, kick, uyari ve otomod islemlerini otomatik kaydeden ayarlanabilir mod-log sistemi
 - ✅ Eglence komutlari (`/espri`, `/zar`, `/yazi-tura`) ve kullanici odakli yardim/istatistik komutlari
 
 ## Kurulum
@@ -74,7 +75,7 @@ Komutlar yardim menusu uzerinden dinamik olarak listelenir. Baslica kategoriler 
 
 ### Sistem
 - `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`
-- `/bot-bilgi`
+- `/modlog`, `/bot-bilgi`
 
 ### Eğlence
 - `/espri`, `/zar`, `/yazi-tura`
@@ -122,7 +123,8 @@ src/
 │   │   ├── bot-bilgi.js
 │   │   ├── kurallar-yonet.js
 │   │   ├── kurallar.js
-│   │   └── kurallari-kabul.js
+│   │   ├── kurallari-kabul.js
+│   │   └── modlog.js
 ├── config.js
 ├── deploy-commands.js
 ├── events/
@@ -134,6 +136,8 @@ src/
     ├── automodConfig.js
     ├── discordAutomod.js
     ├── loadCommands.js
+    ├── modLog.js
+    ├── modLogStorage.js
     ├── rulesStorage.js
     └── warnStorage.js
 ```
@@ -142,7 +146,7 @@ src/
 
 - Yeni bir komut eklemek icin ilgili kategori klasorune `.js` dosyasi olusturup `SlashCommandBuilder` kullanan bir `data` ve `execute` fonksiyonu tanimlamaniz yeterlidir.
 - Yardim menusu kategorileri `command.category` alanina gore otomatik olarak olusturur.
-- Bot verileri (`data/` klasoru) git tarafindan takip edilmez; uyarilar, kural onaylari ve otomod ayarlari burada saklanir.
+- Bot verileri (`data/` klasoru) git tarafindan takip edilmez; uyarilar, kural onaylari, otomod ve mod-log ayarlari burada saklanir.
 - Slash komutlarinda degisiklik yaptiktan sonra `npm run deploy:commands` komutunu calistirmayi unutmayin.
 
 ## Lisans
