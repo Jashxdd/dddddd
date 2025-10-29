@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 
 export default {
-  category: 'Eglence',
+  category: 'Eğlence',
   data: new SlashCommandBuilder()
     .setName('zar')
     .setDescription('Sanal bir zar atar (varsayilan: 6 yuz).')

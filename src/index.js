@@ -16,13 +16,15 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildModeration
+    GatewayIntentBits.GuildModeration,
+    GatewayIntentBits.GuildPresences
   ]
 });
 
 client.commands = new Collection();
 client.commandCategories = new Collection();
 client.ownerId = config.ownerId;
+client.afkStatuses = new Map();
 
 async function registerCommands() {
   const commands = await loadCommands();
@@ -35,7 +37,10 @@ async function registerCommands() {
       client.commandCategories.set(category, []);
     }
 
-    client.commandCategories.get(category).push(command.data.name);
+    client.commandCategories.get(category).push({
+      name: command.data.name,
+      description: command.data.description ?? 'Aciklama eklenmemis.'
+    });
   }
 }
 

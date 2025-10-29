@@ -62,21 +62,21 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
 
 Komutlar yardim menusu uzerinden dinamik olarak listelenir. Baslica kategoriler ve ornekler asagidadir:
 
+### Genel
+- `/yardim`, `/ping`, `/afk`, `/avatar`, `/banner`
+- `/kullanici-bilgi`, `/sunucu-bilgi`, `/roller`, `/rol-bilgi`, `/yetkiler`
+- `/emoji-bilgi`, `/emojiler`, `/doviz`, `/spotify`, `/sifre`, `/uyarilarim`
+
 ### Moderasyon
-- `/ban`, `/kick`
-- `/sustur`, `/sustur-kaldir`
-- `/temizle`, `/yavas-mod`, `/kanal-kilit`
-- `/uyari ekle|liste|sil|temizle`
+- `/ban`, `/kick`, `/sustur`, `/sustur-kaldir`
+- `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/uyari`
 - `/otomod` (yerel kelime filtresi), `/discord-otomod` (Discord otomatik moderasyon)
 
 ### Sistem
 - `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`
 - `/bot-bilgi`
 
-### Kullanici
-- `/ping`, `/avatar`, `/yardim`, `/uyarilarim`
-
-### Eglence
+### Eğlence
 - `/espri`, `/zar`, `/yazi-tura`
 
 Herhangi bir komutu kullanmadan once `/kurallar` komutu ile kurallari inceleyip `/kurallari-kabul` komutu ile onay vermeniz gerekir. Bot sahibi (`config.json` veya `.env` uzerinden tanimlanir) bu kisitlamadan muaf tutulur.
@@ -90,6 +90,23 @@ src/
 │   │   ├── espri.js
 │   │   ├── yazi-tura.js
 │   │   └── zar.js
+│   ├── general/
+│   │   ├── afk.js
+│   │   ├── avatar.js
+│   │   ├── banner.js
+│   │   ├── doviz.js
+│   │   ├── emoji-bilgi.js
+│   │   ├── emojiler.js
+│   │   ├── kullanici-bilgi.js
+│   │   ├── ping.js
+│   │   ├── rol-bilgi.js
+│   │   ├── roller.js
+│   │   ├── sifre.js
+│   │   ├── spotify.js
+│   │   ├── sunucu-bilgi.js
+│   │   ├── uyarilarim.js
+│   │   ├── yardim.js
+│   │   └── yetkiler.js
 │   ├── moderation/
 │   │   ├── automod.js
 │   │   ├── ban.js
@@ -106,11 +123,6 @@ src/
 │   │   ├── kurallar-yonet.js
 │   │   ├── kurallar.js
 │   │   └── kurallari-kabul.js
-│   └── user/
-│       ├── avatar.js
-│       ├── help.js
-│       ├── ping.js
-│       └── uyarilarim.js
 ├── config.js
 ├── deploy-commands.js
 ├── events/

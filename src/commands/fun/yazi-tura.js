@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 
 export default {
-  category: 'Eglence',
+  category: 'Eğlence',
   data: new SlashCommandBuilder().setName('yazi-tura').setDescription('Yazi tura atar.'),
   async execute(interaction) {
     const result = Math.random() < 0.5 ? 'Yazi' : 'Tura';

@@ -9,7 +9,7 @@ const jokes = [
 ];
 
 export default {
-  category: 'Eglence',
+  category: 'Eğlence',
   data: new SlashCommandBuilder().setName('espri').setDescription('Rastgele bir teknoloji espirisi yapar.'),
   async execute(interaction) {
     const joke = jokes[Math.floor(Math.random() * jokes.length)];
