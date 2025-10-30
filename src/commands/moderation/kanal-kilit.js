@@ -7,17 +7,17 @@ export default {
     .setName('kanal-kilit')
     .setDescription('Kanalin kilit durumunu degistirir.')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
-    .addChannelOption((option) =>
-      option
-        .setName('kanal')
-        .setDescription('Kilitlenecek kanal (varsayilan: mevcut kanal)')
-        .setRequired(false)
-    )
     .addBooleanOption((option) =>
       option
         .setName('kilitle')
         .setDescription('True secilirse kanal kilitlenir, false secilirse acilir.')
         .setRequired(true)
+    )
+    .addChannelOption((option) =>
+      option
+        .setName('kanal')
+        .setDescription('Kilitlenecek kanal (varsayilan: mevcut kanal)')
+        .setRequired(false)
     ),
   async execute(interaction) {
     if (!interaction.inGuild()) {

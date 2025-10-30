@@ -18,12 +18,6 @@ export default {
     .setName('yavas-mod')
     .setDescription('Metin kanalindaki yavas mod ayarini degistirir.')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
-    .addChannelOption((option) =>
-      option
-        .setName('kanal')
-        .setDescription('Yavas mod uygulanacak kanal (varsayilan: mevcut kanal)')
-        .setRequired(false)
-    )
     .addStringOption((option) => {
       let builder = option
         .setName('sure')
@@ -35,7 +29,13 @@ export default {
       }
 
       return builder;
-    }),
+    })
+    .addChannelOption((option) =>
+      option
+        .setName('kanal')
+        .setDescription('Yavas mod uygulanacak kanal (varsayilan: mevcut kanal)')
+        .setRequired(false)
+    ),
   async execute(interaction) {
     if (!interaction.inGuild()) {
       await interaction.reply({
