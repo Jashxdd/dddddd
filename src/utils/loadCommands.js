@@ -29,6 +29,7 @@ async function walkDirectory(directory) {
 export async function loadCommands() {
   const commandFiles = await walkDirectory(commandsDirectory);
   const commands = [];
+  const seenNames = new Set();
 
   for (const filePath of commandFiles) {
     const fileUrl = pathToFileURL(filePath).href;
@@ -40,6 +41,40 @@ export async function loadCommands() {
       continue;
     }
 
+    if (typeof command.data?.toJSON !== 'function') {
+      console.warn(`\u26a0\ufe0f  ${filePath} dosyasindaki komut toJSON metodunu saglamiyor ve atlandi.`);
+      continue;
+    }
+
+    let commandName = '';
+    try {
+      commandName = String(command.data.name ?? '').trim();
+    } catch (error) {
+      console.warn(`\u26a0\ufe0f  ${filePath} dosyasindaki komut adi okunamadi:`, error);
+    }
+
+    if (!commandName) {
+      console.warn(`\u26a0\ufe0f  ${filePath} dosyasindaki komutun ismi bulunamadi. Komut atlandi.`);
+      continue;
+    }
+
+    const normalisedName = commandName.toLowerCase();
+    if (commandName !== normalisedName && typeof command.data.setName === 'function') {
+      console.warn(
+        `\u26a0\ufe0f  ${commandName} komut adi kucuk harfe cevrildi. Slash komutlari yalnizca kucuk harf icerebilir.`
+      );
+      command.data.setName(normalisedName);
+      commandName = normalisedName;
+    }
+
+    if (seenNames.has(commandName)) {
+      console.warn(
+        `\u26a0\ufe0f  ${commandName} ismine sahip birden fazla komut bulundu. ${filePath} dosyasindaki tanim atlandi.`
+      );
+      continue;
+    }
+
+    seenNames.add(commandName);
     commands.push(command);
   }
 

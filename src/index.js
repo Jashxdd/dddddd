@@ -43,6 +43,8 @@ async function registerCommands() {
       description: command.data.description ?? 'Aciklama eklenmemis.'
     });
   }
+
+  console.log(`🧩 ${client.commands.size} slash komutu yuklendi.`);
 }
 
 async function registerEvents() {

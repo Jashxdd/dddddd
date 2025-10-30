@@ -40,28 +40,59 @@ function sanitiseActivity(activity) {
 }
 
 async function syncApplicationCommands(client) {
-  const payload = [...client.commands.values()].map((command) => command.data.toJSON());
-  if (!payload.length) {
+  const commandEntries = [...client.commands.values()];
+  if (!commandEntries.length) {
     console.warn('⚠️ Senkronize edilecek slash komutu bulunamadı.');
     return;
   }
 
+  const payload = commandEntries.map((command) => command.data.toJSON());
+
+  const guildTargets = new Map();
+
   try {
-    if (config.guildId) {
-      const guild = await client.guilds.fetch(config.guildId).catch(() => null);
-      if (guild) {
-        await guild.commands.set(payload);
-        console.log(`✅ Slash komutlari ${guild.name} icin guncellendi.`);
-        return;
-      }
-
-      console.warn('⚠️ Guild ID ile eşleşen bir sunucu bulunamadı. Komutlar global olarak yayınlanacak.');
+    const fetchedGuilds = await client.guilds.fetch();
+    for (const [guildId, guild] of fetchedGuilds) {
+      guildTargets.set(guildId, guild);
     }
-
-    await client.application.commands.set(payload);
-    console.log('✅ Slash komutlari global olarak guncellendi.');
   } catch (error) {
-    console.error('Slash komutlari senkronize edilirken hata olustu:', error);
+    console.warn('⚠️ Sunucu listesi cekilirken hata olustu. Komutlar sadece mevcut bilgilerle guncellenecek.', error);
+  }
+
+  if (config.guildId && !guildTargets.has(config.guildId)) {
+    const guild = await client.guilds.fetch(config.guildId).catch(() => null);
+    if (guild) {
+      guildTargets.set(guild.id, guild);
+    } else {
+      console.warn('⚠️ Guild ID ile eşleşen bir sunucu bulunamadı veya botun erisimi yok.');
+    }
+  }
+
+  const guildsToUpdate = [...guildTargets.values()];
+  if (guildsToUpdate.length) {
+    const results = await Promise.allSettled(
+      guildsToUpdate.map(async (guild) => {
+        await guild.commands.set(payload);
+        return guild;
+      })
+    );
+
+    results.forEach((result, index) => {
+      const guild = guildsToUpdate[index];
+      if (result.status === 'fulfilled') {
+        console.log(`✅ Slash komutlari ${guild.name} (${guild.id}) icin guncellendi.`);
+      } else {
+        console.error(`❌ ${guild.name ?? guild.id} icin slash komutlari guncellenemedi:`, result.reason);
+      }
+    });
+  }
+
+  try {
+    await client.application.fetch();
+    await client.application.commands.set(payload);
+    console.log('🌐 Slash komutlari global olarak guncellendi. (Global degisikliklerin Discord tarafinda aktif olmasi ~1 saati bulabilir)');
+  } catch (error) {
+    console.error('Global slash komutlari guncellenirken hata olustu:', error);
   }
 }
 

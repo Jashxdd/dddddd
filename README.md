@@ -71,6 +71,8 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
 
    Varsayilan olarak komutlar global olarak yayimlanir. Sadece belirli bir sunucuda denemek icin `config.json` veya `.env` dosyasina `guildId` / `GUILD_ID` degerini ekleyin. Botu baslattiginizda komutlar ayni tercihe gore otomatik guncellenir.
 
+   Bot acildiginda once erisebildigi tum sunuculara slash komutlarini aninda yazar, ardindan global kaydi gunceller. Global guncellemelerin Discord tarafinda gorunmesi yaklasik 1 saate kadar surebilir; bu nedenle hizli test icin `guildId` belirtmek avantaj saglar.
+
 6. Botu baslatin.
 
    ```bash

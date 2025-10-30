@@ -8,6 +8,12 @@ async function deployCommands() {
 
   const rest = new REST({ version: '10' }).setToken(config.token);
   const commands = await loadCommands();
+  if (!commands.length) {
+    console.warn('⚠️ Gonderilecek komut bulunamadi. Slash komut dosyalarini kontrol edin.');
+    return;
+  }
+
+  console.log(`🧩 ${commands.length} slash komutu dagitim icin hazirlandi.`);
   const body = commands.map((command) => command.data.toJSON());
 
   try {
