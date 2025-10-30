@@ -2,5 +2,11 @@
   "token": "BOT_TOKENINIZI_BURAYA_YAZIN",
   "clientId": "DISCORD_UYGULAMA_ID",
   "guildId": "TEST_SUNUCUSU_ID (opsiyonel)",
-  "ownerId": "BOT_SAHIBI_DISCORD_ID"
+  "ownerId": "BOT_SAHIBI_DISCORD_ID",
+  "presenceStatus": "online",
+  "presenceInterval": 75,
+  "activities": [
+    { "name": "sunucunuzu izliyor", "type": "Watching" },
+    { "name": "/yardim ile komutlari anlatiyor", "type": "Playing" }
+  ]
 }

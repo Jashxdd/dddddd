@@ -66,11 +66,64 @@ function pick(...values) {
   return '';
 }
 
+function pickNumber(defaultValue, ...values) {
+  const candidate = pick(...values);
+  if (!candidate) {
+    return defaultValue;
+  }
+
+  const parsed = Number.parseInt(candidate, 10);
+  if (Number.isFinite(parsed)) {
+    return parsed;
+  }
+
+  return defaultValue;
+}
+
+function parseActivities(value) {
+  const source = Array.isArray(value) ? value : (() => {
+    if (typeof value !== 'string') return [];
+
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.warn('⚠️ PRESENCE_ACTIVITIES ayrıştırılırken hata oluştu. Varsayılan etkinlikler kullanılacak.', error);
+      return [];
+    }
+  })();
+
+  return source
+    .map((activity) => {
+      if (!activity || typeof activity !== 'object') {
+        return null;
+      }
+
+      const name = normalise(activity.name);
+      if (!name) {
+        return null;
+      }
+
+      const type = normalise(activity.type) || 'Playing';
+      const url = normalise(activity.url);
+
+      return { name, type, url };
+    })
+    .filter(Boolean);
+}
+
 export const config = {
   token: pick(fileConfig.token, process.env.DISCORD_TOKEN),
   clientId: pick(fileConfig.clientId, process.env.CLIENT_ID),
   guildId: pick(fileConfig.guildId, process.env.GUILD_ID),
-  ownerId: pick(fileConfig.ownerId, process.env.OWNER_ID)
+  ownerId: pick(fileConfig.ownerId, process.env.OWNER_ID),
+  presenceStatus: pick(fileConfig.presenceStatus, process.env.PRESENCE_STATUS) || 'online',
+  presenceInterval: pickNumber(
+    60,
+    fileConfig.presenceInterval?.toString?.(),
+    process.env.PRESENCE_INTERVAL
+  ),
+  activities: parseActivities(fileConfig.activities ?? process.env.PRESENCE_ACTIVITIES)
 };
 
 export function describeConfigSource() {

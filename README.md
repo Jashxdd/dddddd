@@ -11,6 +11,9 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
 - ✅ Uyari saklama sistemi, toplu mesaj silme, yavas mod ayarlama gibi ekstra moderasyon araclari
 - ✅ Ban, kick, uyari ve otomod islemlerini otomatik kaydeden ayarlanabilir mod-log sistemi
 - ✅ Eglence komutlari (`/espri`, `/zar`, `/yazi-tura`) ve kullanici odakli yardim/istatistik komutlari
+- ✅ Bot acildiginda slash komutlarini otomatik senkronize eden dagitim akisi (istege bagli `npm run deploy:commands` komutu mevcut)
+- ✅ Yardim menusu icin emojili sayfalar, kategori secim menusu ve butonlarla kontrol
+- ✅ Ayarlanabilir "oynuyor/izliyor/dinliyor" durumlari ile otomatik aktivite rotasyonu
 
 ## Kurulum
 
@@ -42,18 +45,31 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
      | `clientId`| Discord uygulama (bot) ID'niz |
      | `guildId` | (Opsiyonel) Slash komutlarini sadece test sunucusuna yuklemek istiyorsaniz bu sunucunun ID'si |
      | `ownerId` | Bot sahibinin Discord kullanici ID'si |
+     | `presenceStatus` | (Opsiyonel) Botun durum etiketi (`online`, `idle`, `dnd` vb.) |
+     | `presenceInterval` | (Opsiyonel) Aktivite rotasyonu icin saniye cinsinden aralik (varsayilan `60`) |
+     | `activities` | (Opsiyonel) Durum rotasyonunda kullanilacak etkinlik listesi |
+
+     > Ornek `activities` dizisi:
+     > ```json
+     > {
+     >   "activities": [
+     >     { "name": "sunucunuzu izliyor", "type": "Watching" },
+     >     { "name": "moderasyon yardimi sunuyor", "type": "Playing" }
+     >   ]
+     > }
+     > ```
 
    - Alternatif olarak `.env.example` dosyasini `.env` olarak kopyalayip ayni bilgileri ortama degisken olarak girebilirsiniz. `config.json` dosyasi varsa `.env` uzerindeki degerlerin yerine gecerek calisir.
 
    > 💡 `config.json` dosyasini projenin kok dizininde veya `config/config.json` yolunda tutabilirsiniz. Dosyayi yeniden adlandirmayi unutsaniz bile (ornegin `config.example.json` u dogrudan duzenlerseniz) bot gerekli bilgileri bulup yukleyecektir.
 
-5. Slash komutlarini yayinlayin.
+5. Slash komutlari bot her acildiginda otomatik olarak senkronize edilir. Ilk kurulumda islemi hizlandirmak veya manuel tetiklemek isterseniz:
 
    ```bash
    npm run deploy:commands
    ```
 
-   Varsayilan olarak komutlar global olarak yayimlanir. Sadece belirli bir sunucuda denemek icin `config.json` veya `.env` dosyasina `guildId` / `GUILD_ID` degerini ekleyin.
+   Varsayilan olarak komutlar global olarak yayimlanir. Sadece belirli bir sunucuda denemek icin `config.json` veya `.env` dosyasina `guildId` / `GUILD_ID` degerini ekleyin. Botu baslattiginizda komutlar ayni tercihe gore otomatik guncellenir.
 
 6. Botu baslatin.
 
@@ -61,7 +77,7 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
    npm start
    ```
 
-   Baslangicta konsolda `⚙️  Yapilandirma yuklendi (...)` mesaji gorurseniz bot tokeni basariyla okunmus demektir.
+   Baslangicta konsolda `⚙️  Yapilandirma yuklendi (...)` mesaji gorurseniz bot tokeni basariyla okunmus demektir. Devaminda slash komutlarin otomatik guncellendigini ve durum mesajlarinin ayarlandigini belirten loglari gorursunuz.
 
 ## Komutlar
 
@@ -151,7 +167,7 @@ src/
 - Yeni bir komut eklemek icin ilgili kategori klasorune `.js` dosyasi olusturup `SlashCommandBuilder` kullanan bir `data` ve `execute` fonksiyonu tanimlamaniz yeterlidir.
 - Yardim menusu kategorileri `command.category` alanina gore otomatik olarak olusturur.
 - Bot verileri (`data/` klasoru) git tarafindan takip edilmez; uyarilar, kural onaylari, otomod ve mod-log ayarlari burada saklanir.
-- Slash komutlarinda degisiklik yaptiktan sonra `npm run deploy:commands` komutunu calistirmayi unutmayin.
+- Slash komutlarinda degisiklik yaptiktan sonra botu yeniden baslatarak otomatik senkronizasyonu kullanabilir veya `npm run deploy:commands` komutunu calistirabilirsiniz.
 
 ## Lisans
 

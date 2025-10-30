@@ -4,7 +4,9 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ComponentType
+  ComponentType,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder
 } from 'discord.js';
 
 const categoryMetadata = {
@@ -110,6 +112,27 @@ function createRow(currentIndex, totalPages, disabled = false) {
   return new ActionRowBuilder().addComponents(previous, close, next);
 }
 
+function createMenu(categories, currentIndex, disabled = false) {
+  const menu = new StringSelectMenuBuilder()
+    .setCustomId('yardim_kategori')
+    .setPlaceholder('Bir kategori sec')
+    .setDisabled(disabled)
+    .setMinValues(1)
+    .setMaxValues(1)
+    .addOptions(
+      categories.map(([categoryName], index) => {
+        const meta = categoryMetadata[categoryName] ?? { emoji: '📁' };
+        return new StringSelectMenuOptionBuilder()
+          .setLabel(categoryName)
+          .setValue(categoryName)
+          .setEmoji(meta.emoji)
+          .setDescription(index === currentIndex ? 'Aktif sayfa' : 'Bu kategoriye git');
+      })
+    );
+
+  return new ActionRowBuilder().addComponents(menu);
+}
+
 export default {
   category: 'Genel',
   data: new SlashCommandBuilder().setName('yardim').setDescription('Kategori bazinda tum komutlari gezer.'),
@@ -131,9 +154,17 @@ export default {
 
     let currentIndex = 0;
 
+    const components = [];
+
+    if (pages.length > 1) {
+      components.push(createRow(currentIndex, pages.length));
+    }
+
+    components.push(createMenu(categories, currentIndex, pages.length === 1));
+
     const message = await interaction.reply({
       embeds: [pages[currentIndex]],
-      components: pages.length > 1 ? [createRow(currentIndex, pages.length)] : [],
+      components,
       ephemeral: true,
       fetchReply: true
     });
@@ -143,40 +174,57 @@ export default {
     }
 
     const collector = message.createMessageComponentCollector({
-      componentType: ComponentType.Button,
       time: 60_000,
       filter: (componentInteraction) => componentInteraction.user.id === interaction.user.id
     });
 
     collector.on('collect', async (componentInteraction) => {
-      if (componentInteraction.customId === 'yardim_kapat') {
-        collector.stop('manual');
+      if (componentInteraction.componentType === ComponentType.Button) {
+        if (componentInteraction.customId === 'yardim_kapat') {
+          collector.stop('manual');
+          await componentInteraction.update({
+            embeds: [pages[currentIndex]],
+            components: [createRow(currentIndex, pages.length, true), createMenu(categories, currentIndex, true)]
+          });
+          return;
+        }
+
+        if (componentInteraction.customId === 'yardim_onceki') {
+          currentIndex = Math.max(0, currentIndex - 1);
+        } else if (componentInteraction.customId === 'yardim_sonraki') {
+          currentIndex = Math.min(pages.length - 1, currentIndex + 1);
+        }
+
         await componentInteraction.update({
           embeds: [pages[currentIndex]],
-          components: [createRow(currentIndex, pages.length, true)]
+          components: [createRow(currentIndex, pages.length), createMenu(categories, currentIndex)]
         });
         return;
       }
 
-      if (componentInteraction.customId === 'yardim_onceki') {
-        currentIndex = Math.max(0, currentIndex - 1);
-      } else if (componentInteraction.customId === 'yardim_sonraki') {
-        currentIndex = Math.min(pages.length - 1, currentIndex + 1);
-      }
+      if (componentInteraction.componentType === ComponentType.StringSelect) {
+        const [selection] = componentInteraction.values;
+        const nextIndex = categories.findIndex(([name]) => name === selection);
+        if (nextIndex >= 0) {
+          currentIndex = nextIndex;
+        }
 
-      await componentInteraction.update({
-        embeds: [pages[currentIndex]],
-        components: [createRow(currentIndex, pages.length)]
-      });
+        await componentInteraction.update({
+          embeds: [pages[currentIndex]],
+          components: [createRow(currentIndex, pages.length), createMenu(categories, currentIndex)]
+        });
+      }
     });
 
     collector.on('end', async (_, reason) => {
       if (reason === 'manual') return;
 
-      await message.edit({
-        embeds: [pages[currentIndex]],
-        components: [createRow(currentIndex, pages.length, true)]
-      }).catch(() => {});
+      await message
+        .edit({
+          embeds: [pages[currentIndex]],
+          components: [createRow(currentIndex, pages.length, true), createMenu(categories, currentIndex, true)]
+        })
+        .catch(() => {});
     });
   }
 };
