@@ -87,7 +87,44 @@ function buildPage(categoryName, commands, pageIndex, totalPages, totalCommands)
   return embed;
 }
 
+function buildOverviewPage(categories, totalCommands) {
+  const embed = new EmbedBuilder()
+    .setColor(0x5865f2)
+    .setTitle('🗂️ Komut Merkezi')
+    .setDescription(
+      'Butonlar ve menüyü kullanarak kategoriler arasında geçiş yapabilir, tüm komutlara hızlıca göz atabilirsiniz.'
+    )
+    .setFooter({ text: `Toplam ${totalCommands} komut • ${categories.length} kategori` })
+    .setTimestamp();
+
+  const lines = categories.map(([categoryName, commands]) => {
+    const meta = categoryMetadata[categoryName] ?? { emoji: '📁', description: '' };
+    return `${meta.emoji} **${categoryName}** — ${commands.length} komut\n> ${meta.description}`;
+  });
+
+  embed.addFields(
+    {
+      name: 'Kategoriler',
+      value: lines.join('\n\n') || 'Komut bulunamadı.'
+    },
+    {
+      name: 'İpuçları',
+      value:
+        '⏮️ / ⏭️ butonlarıyla sayfalar arasında geçiş yapabilir, menüden istediğiniz kategoriyi doğrudan seçebilirsiniz. `/yardim` komutu sadece sana görünür.'
+    }
+  );
+
+  return embed;
+}
+
 function createRow(currentIndex, totalPages, disabled = false) {
+  const first = new ButtonBuilder()
+    .setCustomId('yardim_ilk')
+    .setEmoji('⏮️')
+    .setLabel('Ilk')
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(disabled || currentIndex === 0);
+
   const previous = new ButtonBuilder()
     .setCustomId('yardim_onceki')
     .setEmoji('⬅️')
@@ -109,7 +146,14 @@ function createRow(currentIndex, totalPages, disabled = false) {
     .setStyle(ButtonStyle.Secondary)
     .setDisabled(disabled || currentIndex === totalPages - 1);
 
-  return new ActionRowBuilder().addComponents(previous, close, next);
+  const last = new ButtonBuilder()
+    .setCustomId('yardim_son')
+    .setEmoji('⏭️')
+    .setLabel('Son')
+    .setStyle(ButtonStyle.Secondary)
+    .setDisabled(disabled || currentIndex === totalPages - 1);
+
+  return new ActionRowBuilder().addComponents(first, previous, close, next, last);
 }
 
 function createMenu(categories, currentIndex, disabled = false) {
@@ -120,14 +164,21 @@ function createMenu(categories, currentIndex, disabled = false) {
     .setMinValues(1)
     .setMaxValues(1)
     .addOptions(
-      categories.map(([categoryName], index) => {
-        const meta = categoryMetadata[categoryName] ?? { emoji: '📁' };
-        return new StringSelectMenuOptionBuilder()
-          .setLabel(categoryName)
-          .setValue(categoryName)
-          .setEmoji(meta.emoji)
-          .setDescription(index === currentIndex ? 'Aktif sayfa' : 'Bu kategoriye git');
-      })
+      [
+        new StringSelectMenuOptionBuilder()
+          .setLabel('Genel Bakış')
+          .setValue('__overview__')
+          .setEmoji('🗂️')
+          .setDescription(currentIndex === 0 ? 'Aktif sayfa' : 'Tüm kategorilere genel bakış'),
+        ...categories.map(([categoryName, commands], index) => {
+          const meta = categoryMetadata[categoryName] ?? { emoji: '📁' };
+          return new StringSelectMenuOptionBuilder()
+            .setLabel(categoryName)
+            .setValue(categoryName)
+            .setEmoji(meta.emoji)
+            .setDescription(index + 1 === currentIndex ? 'Aktif sayfa' : `${commands.length} komut`);
+        })
+      ]
     );
 
   return new ActionRowBuilder().addComponents(menu);
@@ -148,19 +199,20 @@ export default {
 
     const totalCommands = categories.reduce((sum, [, cmds]) => sum + cmds.length, 0);
 
-    const pages = categories.map(([categoryName, commands], index) =>
-      buildPage(categoryName, commands, index, categories.length, totalCommands)
-    );
+    const totalPages = categories.length + 1;
+    const pages = [
+      buildOverviewPage(categories, totalCommands),
+      ...categories.map(([categoryName, commands], index) =>
+        buildPage(categoryName, commands, index + 1, totalPages, totalCommands)
+      )
+    ];
 
     let currentIndex = 0;
 
     const components = [];
 
-    if (pages.length > 1) {
-      components.push(createRow(currentIndex, pages.length));
-    }
-
-    components.push(createMenu(categories, currentIndex, pages.length === 1));
+    components.push(createRow(currentIndex, pages.length, pages.length <= 1));
+    components.push(createMenu(categories, currentIndex, pages.length <= 1));
 
     const message = await interaction.reply({
       embeds: [pages[currentIndex]],
@@ -189,10 +241,14 @@ export default {
           return;
         }
 
-        if (componentInteraction.customId === 'yardim_onceki') {
+        if (componentInteraction.customId === 'yardim_ilk') {
+          currentIndex = 0;
+        } else if (componentInteraction.customId === 'yardim_onceki') {
           currentIndex = Math.max(0, currentIndex - 1);
         } else if (componentInteraction.customId === 'yardim_sonraki') {
           currentIndex = Math.min(pages.length - 1, currentIndex + 1);
+        } else if (componentInteraction.customId === 'yardim_son') {
+          currentIndex = pages.length - 1;
         }
 
         await componentInteraction.update({
@@ -204,9 +260,13 @@ export default {
 
       if (componentInteraction.componentType === ComponentType.StringSelect) {
         const [selection] = componentInteraction.values;
-        const nextIndex = categories.findIndex(([name]) => name === selection);
-        if (nextIndex >= 0) {
-          currentIndex = nextIndex;
+        if (selection === '__overview__') {
+          currentIndex = 0;
+        } else {
+          const nextIndex = categories.findIndex(([name]) => name === selection);
+          if (nextIndex >= 0) {
+            currentIndex = nextIndex + 1;
+          }
         }
 
         await componentInteraction.update({

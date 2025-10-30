@@ -1,4 +1,4 @@
-import { ActivityType, Events } from 'discord.js';
+import { ActivityType, Events, Routes } from 'discord.js';
 import { config } from '../config.js';
 
 const activityTypeMap = {
@@ -48,49 +48,70 @@ async function syncApplicationCommands(client) {
 
   const payload = commandEntries.map((command) => command.data.toJSON());
 
-  const guildTargets = new Map();
+  try {
+    await client.application.fetch();
+  } catch (error) {
+    console.error('❌ Uygulama bilgileri alinamadi. Slash komutlari senkronize edilemedi.', error);
+    return;
+  }
+
+  const applicationId = client.application?.id;
+  if (!applicationId) {
+    console.error('❌ Uygulama ID tespit edilemedi. Slash komutlari guncellenemiyor.');
+    return;
+  }
+
+  const guildIds = new Set(client.guilds.cache.keys());
 
   try {
     const fetchedGuilds = await client.guilds.fetch();
-    for (const [guildId, guild] of fetchedGuilds) {
-      guildTargets.set(guildId, guild);
+    for (const guild of fetchedGuilds.values()) {
+      guildIds.add(guild.id);
     }
   } catch (error) {
-    console.warn('⚠️ Sunucu listesi cekilirken hata olustu. Komutlar sadece mevcut bilgilerle guncellenecek.', error);
+    console.warn('⚠️ Sunucu listesi cekilirken hata olustu. Komutlar sadece cache verileriyle guncellenecek.', error);
   }
 
-  if (config.guildId && !guildTargets.has(config.guildId)) {
-    const guild = await client.guilds.fetch(config.guildId).catch(() => null);
-    if (guild) {
-      guildTargets.set(guild.id, guild);
-    } else {
-      console.warn('⚠️ Guild ID ile eşleşen bir sunucu bulunamadı veya botun erisimi yok.');
-    }
+  if (config.guildId) {
+    guildIds.add(config.guildId);
   }
 
-  const guildsToUpdate = [...guildTargets.values()];
-  if (guildsToUpdate.length) {
+  const guildIdList = [...guildIds];
+  if (guildIdList.length) {
     const results = await Promise.allSettled(
-      guildsToUpdate.map(async (guild) => {
-        await guild.commands.set(payload);
-        return guild;
+      guildIdList.map(async (guildId) => {
+        const guild = await client.guilds.fetch(guildId).catch(() => client.guilds.cache.get(guildId) ?? null);
+
+        await client.rest.put(Routes.applicationGuildCommands(applicationId, guildId), {
+          body: payload
+        });
+
+        return {
+          guildId,
+          guildName: guild?.name ?? null
+        };
       })
     );
 
     results.forEach((result, index) => {
-      const guild = guildsToUpdate[index];
+      const fallbackGuild = client.guilds.cache.get(guildIdList[index]);
+
       if (result.status === 'fulfilled') {
-        console.log(`✅ Slash komutlari ${guild.name} (${guild.id}) icin guncellendi.`);
+        const { guildId, guildName } = result.value;
+        console.log(`✅ Slash komutlari ${guildName ?? fallbackGuild?.name ?? guildId} (${guildId}) icin guncellendi.`);
       } else {
-        console.error(`❌ ${guild.name ?? guild.id} icin slash komutlari guncellenemedi:`, result.reason);
+        const guildId = guildIdList[index];
+        const guildName = fallbackGuild?.name ?? 'Bilinmeyen Sunucu';
+        console.error(`❌ ${guildName} (${guildId}) icin slash komutlari guncellenemedi:`, result.reason);
       }
     });
   }
 
   try {
-    await client.application.fetch();
-    await client.application.commands.set(payload);
-    console.log('🌐 Slash komutlari global olarak guncellendi. (Global degisikliklerin Discord tarafinda aktif olmasi ~1 saati bulabilir)');
+    await client.rest.put(Routes.applicationCommands(applicationId), { body: payload });
+    console.log(
+      '🌐 Slash komutlari global olarak guncellendi. (Global degisikliklerin Discord tarafinda aktif olmasi ~1 saati bulabilir)'
+    );
   } catch (error) {
     console.error('Global slash komutlari guncellenirken hata olustu:', error);
   }

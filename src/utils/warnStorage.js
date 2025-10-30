@@ -116,3 +116,29 @@ export async function clearWarnings(guildId, userId) {
   await persist();
   return true;
 }
+
+export async function getWarningStats(guildId) {
+  if (!guildId) {
+    return { totalUsers: 0, totalWarnings: 0 };
+  }
+
+  await ensureLoaded();
+  ensureGuild(guildId);
+
+  const guildEntries = cache[guildId];
+  const userIds = Object.keys(guildEntries);
+  let totalWarnings = 0;
+  let affectedUsers = 0;
+
+  for (const userId of userIds) {
+    const warnings = guildEntries[userId];
+    if (!Array.isArray(warnings) || !warnings.length) {
+      continue;
+    }
+
+    totalWarnings += warnings.length;
+    affectedUsers += 1;
+  }
+
+  return { totalUsers: affectedUsers, totalWarnings };
+}

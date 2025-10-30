@@ -10,9 +10,10 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
 - ✅ Kullanicilar icin kural onayi zorunlulugu ve kural kayitlarini yonetmek icin yonetim komutlari
 - ✅ Uyari saklama sistemi, toplu mesaj silme, yavas mod ayarlama gibi ekstra moderasyon araclari
 - ✅ Ban, kick, uyari ve otomod islemlerini otomatik kaydeden ayarlanabilir mod-log sistemi
-- ✅ Eglence komutlari (`/espri`, `/zar`, `/yazi-tura`) ve kullanici odakli yardim/istatistik komutlari
+- ✅ Mod-log, yeni uye katilimlari, ayrilanlar, yasaklamalar ve mesaj duzenleme/silme gibi olaylari da raporlar
+- ✅ Eglence komutlari (`/espri`, `/zar`, `/yazi-tura`, `/kedi`, `/bilmece`, `/motivasyon`) ve kullanici odakli yardim/istatistik komutlari
 - ✅ Bot acildiginda slash komutlarini otomatik senkronize eden dagitim akisi (istege bagli `npm run deploy:commands` komutu mevcut)
-- ✅ Yardim menusu icin emojili sayfalar, kategori secim menusu ve butonlarla kontrol
+- ✅ Yardim menusu icin emojili sayfalar, kategori secim menusu, ileri/geri/ilk/son butonlari ile kontrol
 - ✅ Ayarlanabilir "oynuyor/izliyor/dinliyor" durumlari ile otomatik aktivite rotasyonu
 
 ## Kurulum
@@ -89,18 +90,21 @@ Komutlar yardim menusu uzerinden dinamik olarak listelenir. Baslica kategoriler 
 - `/yardim`, `/ping`, `/afk`, `/avatar`, `/banner`
 - `/kullanici-bilgi`, `/sunucu-bilgi`, `/roller`, `/rol-bilgi`, `/yetkiler`
 - `/emoji-bilgi`, `/emojiler`, `/doviz`, `/spotify`, `/sifre`, `/uyarilarim`
+- `/sunucu-istatistik`, `/kanal-bilgi`, `/sunucu-saat`
 
 ### Moderasyon
 - `/ban`, `/kick`, `/sustur`, `/sustur-kaldir`
 - `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/uyari`
+- `/rol-ver`, `/rol-al`, `/takma-ad`
 - `/otomod` (yerel kelime filtresi), `/discord-otomod` (Discord otomatik moderasyon)
 
 ### Sistem
 - `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`
-- `/modlog`, `/bot-bilgi`
+- `/modlog`, `/bot-bilgi`, `/ayarlar`
 
 ### Eğlence
 - `/espri`, `/zar`, `/yazi-tura`
+- `/kedi`, `/bilmece`, `/motivasyon`
 
 Herhangi bir komutu kullanmadan once `/kurallar` komutu ile kurallari inceleyip `/kurallari-kabul` komutu ile onay vermeniz gerekir. Bot sahibi (`config.json` veya `.env` uzerinden tanimlanir) bu kisitlamadan muaf tutulur.
 
@@ -110,7 +114,10 @@ Herhangi bir komutu kullanmadan once `/kurallar` komutu ile kurallari inceleyip 
 src/
 ├── commands/
 │   ├── fun/
+│   │   ├── bilmece.js
 │   │   ├── espri.js
+│   │   ├── kedi.js
+│   │   ├── motivasyon.js
 │   │   ├── yazi-tura.js
 │   │   └── zar.js
 │   ├── general/
@@ -127,6 +134,8 @@ src/
 │   │   ├── sifre.js
 │   │   ├── spotify.js
 │   │   ├── sunucu-bilgi.js
+│   │   ├── sunucu-istatistik.js
+│   │   ├── sunucu-saat.js
 │   │   ├── uyarilarim.js
 │   │   ├── yardim.js
 │   │   └── yetkiler.js
@@ -136,12 +145,16 @@ src/
 │   │   ├── discord-automod.js
 │   │   ├── kanal-kilit.js
 │   │   ├── kick.js
+│   │   ├── rol-al.js
+│   │   ├── rol-ver.js
 │   │   ├── timeout.js
 │   │   ├── untimeout.js
 │   │   ├── temizle.js
 │   │   ├── uyari.js
+│   │   ├── takma-ad.js
 │   │   └── yavasmod.js
 │   ├── system/
+│   │   ├── ayarlar.js
 │   │   ├── bot-bilgi.js
 │   │   ├── kurallar-yonet.js
 │   │   ├── kurallar.js
@@ -150,8 +163,15 @@ src/
 ├── config.js
 ├── deploy-commands.js
 ├── events/
+│   ├── guildBanAdd.js
+│   ├── guildBanRemove.js
+│   ├── guildMemberAdd.js
+│   ├── guildMemberRemove.js
 │   ├── interactionCreate.js
+│   ├── messageBulkDelete.js
 │   ├── messageCreate.js
+│   ├── messageDelete.js
+│   ├── messageUpdate.js
 │   └── ready.js
 ├── index.js
 └── utils/

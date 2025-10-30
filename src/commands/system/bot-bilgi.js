@@ -1,19 +1,57 @@
-import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
+import { EmbedBuilder, SlashCommandBuilder, version as discordJsVersion } from 'discord.js';
+import os from 'node:os';
 import { config } from '../../config.js';
+
+function formatDuration(ms) {
+  const seconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  const parts = [];
+  if (days) parts.push(`${days} gün`);
+  if (hours % 24) parts.push(`${hours % 24} saat`);
+  if (minutes % 60) parts.push(`${minutes % 60} dakika`);
+  if (seconds % 60 || !parts.length) parts.push(`${seconds % 60} saniye`);
+  return parts.join(', ');
+}
+
+function formatNumber(value) {
+  return new Intl.NumberFormat('tr-TR').format(value);
+}
 
 export default {
   category: 'Sistem',
-  data: new SlashCommandBuilder().setName('bot-bilgi').setDescription('Bot hakkinda temel bilgileri gosterir.'),
+  data: new SlashCommandBuilder().setName('bot-bilgi').setDescription('Bot hakkında ayrıntılı istatistikleri gösterir.'),
   async execute(interaction, client) {
+    const uptime = client.uptime ?? 0;
+    const memory = process.memoryUsage();
+    const heapUsed = memory.heapUsed / 1024 / 1024;
+    const totalGuilds = client.guilds.cache.size;
+    const totalUsers = client.guilds.cache.reduce((sum, guild) => sum + (guild.memberCount ?? 0), 0);
+    const cpuModel = os.cpus()?.[0]?.model ?? 'Bilinmiyor';
+
     const embed = new EmbedBuilder()
       .setColor(0x5865f2)
-      .setTitle('Bot Bilgisi')
+      .setAuthor({ name: client.user.tag, iconURL: client.user.displayAvatarURL({ size: 128 }) ?? undefined })
+      .setTitle('🤖 Bot Durumu')
       .addFields(
-        { name: 'Etiket', value: client.user.tag, inline: true },
-        { name: 'Sunucu Sayisi', value: `${client.guilds.cache.size}`, inline: true },
-        { name: 'Komut Sayisi', value: `${client.commands.size}`, inline: true }
+        { name: 'Çevrimiçi Süre', value: formatDuration(uptime), inline: true },
+        { name: 'WS Pingi', value: `${Math.round(client.ws.ping)} ms`, inline: true },
+        { name: 'Komut Sayısı', value: `${client.commands.size}`, inline: true }
       )
-      .setFooter({ text: 'Hazir Discord.js v14 bot projesi' })
+      .addFields(
+        { name: 'Sunucu Sayısı', value: formatNumber(totalGuilds), inline: true },
+        { name: 'Tahmini Üye Sayısı', value: formatNumber(totalUsers), inline: true },
+        { name: 'Bellek Kullanımı', value: `${heapUsed.toFixed(2)} MB`, inline: true }
+      )
+      .addFields(
+        { name: 'Node.js', value: process.version, inline: true },
+        { name: 'discord.js', value: discordJsVersion, inline: true },
+        { name: 'Çalıştığı Makine', value: cpuModel, inline: true }
+      )
+      .setThumbnail(client.user.displayAvatarURL({ size: 256 }) ?? null)
+      .setFooter({ text: `${interaction.client.user.username} • Sistem paneli` })
       .setTimestamp();
 
     if (config.ownerId) {

@@ -48,6 +48,14 @@ export async function sendModerationLog(client, guildId, details) {
     embed.setDescription(details.description);
   }
 
+  if (details.thumbnail) {
+    embed.setThumbnail(details.thumbnail);
+  }
+
+  if (details.footer) {
+    embed.setFooter(details.footer);
+  }
+
   const fields = [];
 
   if (details.moderator) {
@@ -84,6 +92,10 @@ export async function sendModerationLog(client, guildId, details) {
 
   if (details.content) {
     payload.content = details.content;
+  }
+
+  if (details.components) {
+    payload.components = details.components;
   }
 
   return channel
