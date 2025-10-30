@@ -45,6 +45,8 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
 
    - Alternatif olarak `.env.example` dosyasini `.env` olarak kopyalayip ayni bilgileri ortama degisken olarak girebilirsiniz. `config.json` dosyasi varsa `.env` uzerindeki degerlerin yerine gecerek calisir.
 
+   > 💡 `config.json` dosyasini projenin kok dizininde veya `config/config.json` yolunda tutabilirsiniz. Dosyayi yeniden adlandirmayi unutsaniz bile (ornegin `config.example.json` u dogrudan duzenlerseniz) bot gerekli bilgileri bulup yukleyecektir.
+
 5. Slash komutlarini yayinlayin.
 
    ```bash
@@ -58,6 +60,8 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
    ```bash
    npm start
    ```
+
+   Baslangicta konsolda `⚙️  Yapilandirma yuklendi (...)` mesaji gorurseniz bot tokeni basariyla okunmus demektir.
 
 ## Komutlar
 

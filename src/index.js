@@ -3,12 +3,13 @@ import { readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadCommands } from './utils/loadCommands.js';
-import { assertConfig, config } from './config.js';
+import { assertConfig, config, describeConfigSource } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 assertConfig({ requireClientId: false });
+console.log(`⚙️  Yapilandirma yuklendi (${describeConfigSource()}).`);
 
 const client = new Client({
   intents: [

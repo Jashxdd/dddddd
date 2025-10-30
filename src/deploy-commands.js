@@ -1,9 +1,10 @@
 import { REST, Routes } from 'discord.js';
 import { loadCommands } from './utils/loadCommands.js';
-import { assertConfig, config } from './config.js';
+import { assertConfig, config, describeConfigSource } from './config.js';
 
 async function deployCommands() {
   assertConfig();
+  console.log(`⚙️  Yapilandirma yuklendi (${describeConfigSource()}).`);
 
   const rest = new REST({ version: '10' }).setToken(config.token);
   const commands = await loadCommands();

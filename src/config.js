@@ -1,24 +1,66 @@
 import 'dotenv/config';
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const configPath = join(process.cwd(), 'config.json');
+const moduleDir = dirname(fileURLToPath(import.meta.url));
+const projectRoot = join(moduleDir, '..');
+
+const candidateConfigPaths = [
+  join(process.cwd(), 'config.json'),
+  join(process.cwd(), 'config', 'config.json'),
+  join(projectRoot, 'config.json'),
+  join(projectRoot, 'config', 'config.json'),
+  join(process.cwd(), 'config.example.json'),
+  join(projectRoot, 'config.example.json')
+];
+
 let fileConfig = {};
+let configSource = '';
 
-if (existsSync(configPath)) {
-  try {
-    const raw = readFileSync(configPath, 'utf8');
-    fileConfig = JSON.parse(raw.toString());
-  } catch (error) {
-    console.warn('⚠️ config.json dosyasi okunurken hata olustu. .env degiskenleri kullanilacak.', error);
-    fileConfig = {};
+for (const candidate of candidateConfigPaths) {
+  if (!existsSync(candidate)) {
+    continue;
   }
+
+  try {
+    const raw = readFileSync(candidate, 'utf8');
+    fileConfig = JSON.parse(raw.toString());
+    configSource = candidate;
+    break;
+  } catch (error) {
+    console.warn(`⚠️ ${candidate} dosyasi okunurken hata olustu. Sonraki kaynak denenecek.`, error);
+    fileConfig = {};
+    configSource = '';
+  }
+}
+
+const placeholderValues = new Set([
+  'BOT_TOKENINIZI_BURAYA_YAZIN',
+  'DISCORD_UYGULAMA_ID',
+  'TEST_SUNUCUSU_ID (opsiyonel)',
+  'BOT_SAHIBI_DISCORD_ID'
+]);
+
+function normalise(value) {
+  if (typeof value !== 'string') {
+    return value;
+  }
+
+  const trimmed = value.trim();
+
+  if (!trimmed || placeholderValues.has(trimmed)) {
+    return '';
+  }
+
+  return trimmed;
 }
 
 function pick(...values) {
   for (const value of values) {
-    if (value !== undefined && value !== null && value !== '') {
-      return value;
+    const candidate = normalise(value);
+    if (candidate !== undefined && candidate !== null && candidate !== '') {
+      return candidate;
     }
   }
   return '';
@@ -31,11 +73,19 @@ export const config = {
   ownerId: pick(fileConfig.ownerId, process.env.OWNER_ID)
 };
 
+export function describeConfigSource() {
+  if (configSource) {
+    return `Dosya: ${configSource}`;
+  }
+
+  return '.env degiskenleri';
+}
+
 export function assertConfig(options = {}) {
   const { requireClientId = true } = options;
 
   if (!config.token) {
-    throw new Error('Bot tokeni bulunamadi. config.json veya .env uzerinden DISCORD_TOKEN ayarlayin.');
+    throw new Error('Bot tokeni bulunamadi. config.json dosyasini (veya .env) guncelleyip DISCORD_TOKEN ayarladiginizdan emin olun.');
   }
 
   if (requireClientId && !config.clientId) {
