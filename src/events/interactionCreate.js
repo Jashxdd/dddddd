@@ -1,6 +1,7 @@
 import { Events } from 'discord.js';
 import { hasAcceptedRules } from '../utils/rulesStorage.js';
 import { isProMember } from '../utils/proMembership.js';
+import { getMaintenanceState } from '../utils/maintenanceStorage.js';
 
 const bypassCommands = new Set(['kurallar', 'kurallari-kabul']);
 
@@ -13,6 +14,20 @@ export default {
     if (!command) {
       await interaction.reply({
         content: 'Komut bulunamadı veya geçici olarak devre dışı.',
+        ephemeral: true
+      });
+      return;
+    }
+
+    const maintenance = await getMaintenanceState();
+    if (
+      maintenance.enabled &&
+      interaction.user.id !== interaction.client.ownerId &&
+      !command.ignoreMaintenance
+    ) {
+      const reason = maintenance.message ? ` Not: ${maintenance.message}` : '';
+      await interaction.reply({
+        content: `🔧 Furmin şu anda bakım modunda.${reason || ' Lütfen daha sonra tekrar dene.'}`,
         ephemeral: true
       });
       return;

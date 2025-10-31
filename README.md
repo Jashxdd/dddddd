@@ -14,6 +14,8 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
 - ✅ Furmin Pro üyelik denetimi ile premium komutlara erişim yönetimi
 - ✅ Pro komut kataloğu, uyarı raporu ve sistem özeti ile yöneticilere özel analiz paneli
+- ✅ Yalnızca bot sahibinin açıp kapatabildiği bakım modu ve nazik bakım bildirimleri
+- ✅ Pro üyeler için gelişmiş moderasyon raporları (ör. `pro-denetim` / `f!prodenetim`)
 - ✅ Hazır yapılandırma yükleyicisi (config.json ya da .env) ve otomatik durum mesajı rotasyonu
 
 ## Kurulum
@@ -45,15 +47,20 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem`, `/doviz`,
   `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
-  `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu` ve otomatik moderasyon komutları.
+  `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/pro-denetim` ve otomatik moderasyon komutları.
 - **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/ayarlar`, `/bot-bilgi`, `/prefix`, `/pro-uyelik`,
-  `/sistem-ozeti`, `/premium-komutlar`, `/pro-panel`, `/pro-rapor`, `/sahip-duyuru`, `/sahip-kontrol`.
-- **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir`.
+  `/sistem-ozeti`, `/premium-komutlar`, `/pro-panel`, `/pro-rapor`, `/sahip-duyuru`, `/sahip-kontrol`, `/bakim`.
+- **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
 - **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!ses`, `f!premium`, `f!prokomutlar`, `f!pro-rapor`,
-  `f!slot`, `f!tahmin`, `f!karistir`, `f!sahip-kontrol`, `f!prefix` vb.
+  `f!prodenetim`, `f!slot`, `f!tahmin`, `f!karistir`, `f!sahip-kontrol`, `f!prefix`, `f!bakim` vb.
 
 Her komut, slash menüsü veya önek sistemi çalıştırılmadan önce kullanıcının `/kurallari-kabul` ile kuralları onaylamasını zorunlu kılar.
-Furmin Pro üyeliği gereken komutlar yardım menüsünde 💎 simgesiyle gösterilir.
+Furmin Pro üyeliği gereken komutlar yardım menüsünde 💎 simgesiyle gösterilir ve yardım menüsünde ayrı **Pro Komutları** / **Sahip Komutları** sayfaları bulunur.
+
+## Bakım Modu
+- `/bakim ac [mesaj]` veya `f!bakim ac [mesaj]` ile tüm komutları geçici olarak kilitleyebilir, üyelere gösterilecek kısa bir not paylaşabilirsiniz.
+- `/bakim kapat` / `f!bakim kapat` ile bakım modunu sonlandırıp erişimi anında açabilirsiniz.
+- Kullanıcılar bakımdayken herhangi bir komutu denediklerinde “Bakımdayız” uyarısı alır; bot sahibi kontrol komutlarını (bakım dahil) çalıştırmaya devam edebilir.
 
 ## Moderasyon Logu
 `/modlog` ile ayarlanan kanal, aşağıdaki olayları zengin embed mesajlarıyla raporlar:

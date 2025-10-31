@@ -9,7 +9,21 @@ const categoryMetadata = {
   Sistem: { emoji: '⚙️', description: 'Kurallar, mod-log ve otomasyon', color: 0x95a5a6, order: 3 },
   'Eğlence': { emoji: '🎉', description: 'Eğlence ve mini oyunlar', color: 0xf1c40f, order: 4 },
   Eglence: { emoji: '🎉', description: 'Eğlence ve mini oyunlar', color: 0xf1c40f, order: 4 },
-  Extra: { emoji: '👑', description: 'Pro üyelik avantajları', color: 0x9b59b6, order: 5 }
+  Extra: { emoji: '👑', description: 'Pro üyelik avantajları', color: 0x9b59b6, order: 5 },
+  'Pro Komutları': {
+    emoji: '💎',
+    description: 'Tüm pro komutlarını tek listede gösterir',
+    color: 0x8e44ad,
+    order: 90,
+    synthetic: true
+  },
+  'Sahip Komutları': {
+    emoji: '⭐',
+    description: 'Yalnızca Furmin sahibinin erişebileceği araçlar',
+    color: 0xf39c12,
+    order: 91,
+    synthetic: true
+  }
 };
 
 const defaultMetadata = { emoji: '📁', description: 'Kategori açıklaması eklenmemiş', color: 0x5865f2, order: 99 };
@@ -40,6 +54,30 @@ function formatLine(command, prefix) {
   return `${parts.join(' • ') || 'Komut'}${badges} — ${command.description ?? 'Açıklama eklenmemiş.'}`;
 }
 
+function sortCategoryEntries(entries) {
+  return entries
+    .filter(([, commands]) => commands.length)
+    .sort(([a], [b]) => {
+      const metaA = getMeta(a);
+      const metaB = getMeta(b);
+      if (metaA.order !== metaB.order) return metaA.order - metaB.order;
+      return a.localeCompare(b, 'tr');
+    });
+}
+
+function collectSpecialCategory(entries, predicate) {
+  const unique = new Map();
+  for (const [, commands] of entries) {
+    for (const command of commands) {
+      if (!predicate(command)) continue;
+      const key = command.key ?? `${command.slash?.name ?? ''}:${command.prefix?.name ?? ''}`;
+      if (!key || unique.has(key)) continue;
+      unique.set(key, command);
+    }
+  }
+  return Array.from(unique.values());
+}
+
 export default {
   name: 'yardim',
   aliases: ['help'],
@@ -56,14 +94,19 @@ export default {
       return;
     }
 
-    const sorted = catalog
-      .filter(([, commands]) => commands.length)
-      .sort(([a], [b]) => {
-        const metaA = getMeta(a);
-        const metaB = getMeta(b);
-        if (metaA.order !== metaB.order) return metaA.order - metaB.order;
-        return a.localeCompare(b, 'tr');
-      });
+    const proCommands = collectSpecialCategory(catalog, (command) => command.proOnly);
+    const ownerCommands = collectSpecialCategory(catalog, (command) => command.ownerOnly);
+
+    const extraCategories = [];
+    if (proCommands.length) {
+      extraCategories.push(['Pro Komutları', proCommands]);
+    }
+    if (ownerCommands.length) {
+      extraCategories.push(['Sahip Komutları', ownerCommands]);
+    }
+
+    const sortedBase = sortCategoryEntries(catalog.slice());
+    const sorted = sortCategoryEntries([...catalog, ...extraCategories]);
 
     const { prefix } = await describePrefix(message.guildId ?? '');
 
@@ -71,7 +114,7 @@ export default {
     let prefixCount = 0;
     let proCount = 0;
     let ownerCount = 0;
-    for (const [, commands] of sorted) {
+    for (const [, commands] of sortedBase) {
       slashCount += commands.filter((command) => Boolean(command.slash)).length;
       prefixCount += commands.filter((command) => Boolean(command.prefix)).length;
       proCount += commands.filter((command) => command.proOnly).length;
@@ -111,10 +154,10 @@ export default {
         `• Prefix komutları: **${prefixCount}**\n` +
         `• Pro komutları: **${proCount}**\n` +
         `• Sahip komutları: **${ownerCount}**\n` +
-        `• En çok kullanılan kategori: ${sorted[0]?.[0] ?? 'Bilinmiyor'}`
+        `• En çok kullanılan kategori: ${sortedBase[0]?.[0] ?? 'Bilinmiyor'}`
     });
 
-    const highlightCategory = sorted[0];
+    const highlightCategory = sortedBase[0];
     if (highlightCategory) {
       const [categoryName, commands] = highlightCategory;
       const lines = commands

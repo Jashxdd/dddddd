@@ -11,6 +11,7 @@ import { findBannedWordInContent, isAutomodEnabled } from '../utils/automodConfi
 import { formatUserMention, sendModerationLog } from '../utils/modLog.js';
 import { getPrefix } from '../utils/prefixStorage.js';
 import { isProMember } from '../utils/proMembership.js';
+import { getMaintenanceState } from '../utils/maintenanceStorage.js';
 import { config } from '../config.js';
 
 export default {
@@ -67,6 +68,7 @@ export default {
 
     if (!message.content) return;
 
+    const maintenance = await getMaintenanceState();
     const prefix = await getPrefix(message.guild.id);
     const mentionFormats = message.client.user
       ? [`<@${message.client.user.id}>`, `<@!${message.client.user.id}>`]
@@ -74,6 +76,15 @@ export default {
     const trimmed = message.content.trim();
 
     if (mentionFormats.includes(trimmed)) {
+      if (maintenance.enabled && message.author.id !== message.client.ownerId) {
+        const info = maintenance.message ? ` Not: ${maintenance.message}` : '';
+        await message.reply({
+          content: `🔧 Furmin şu anda bakım modunda.${info || ' Lütfen daha sonra tekrar dene.'}`,
+          allowedMentions: { repliedUser: false }
+        });
+        return;
+      }
+
       const embed = new EmbedBuilder()
         .setColor(0x5865f2)
         .setAuthor({ name: message.client.user.username, iconURL: message.client.user.displayAvatarURL() ?? undefined })
@@ -140,6 +151,17 @@ export default {
 
       const command = message.client.prefixCommands.get(canonicalName);
       if (!command) {
+        return;
+      }
+
+      if (maintenance.enabled && message.author.id !== message.client.ownerId && !command.ignoreMaintenance) {
+        if (mePermissions) {
+          const note = maintenance.message ? ` Not: ${maintenance.message}` : '';
+          await message.reply({
+            content: `🔧 Furmin şu anda bakım modunda.${note || ' Lütfen daha sonra tekrar dene.'}`,
+            allowedMentions: { repliedUser: false }
+          });
+        }
         return;
       }
 

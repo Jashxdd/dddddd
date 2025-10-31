@@ -54,6 +54,22 @@ const categoryMetadata = {
     description: 'Pro üyelik ayrıcalıkları ve gelişmiş rapor komutları.',
     order: 5,
     group: 'Pro Üyelik'
+  },
+  'Pro Komutları': {
+    emoji: '💎',
+    color: 0x8e44ad,
+    description: 'Pro üyelik sahipleri için tüm özel komutların listesi.',
+    order: 90,
+    group: 'Pro Üyelik',
+    synthetic: true
+  },
+  'Sahip Komutları': {
+    emoji: '⭐',
+    color: 0xf39c12,
+    description: 'Yalnızca Furmin sahibinin erişebileceği komutlar.',
+    order: 91,
+    group: 'Sahip Kontrolleri',
+    synthetic: true
   }
 };
 
@@ -117,6 +133,19 @@ function formatCommand(command, prefix) {
   return `${labelText}${proBadge}${ownerBadge} — ${command.description ?? 'Açıklama eklenmemiş.'}`;
 }
 
+function collectSpecialCategory(entries, predicate) {
+  const unique = new Map();
+  for (const [, commands] of entries) {
+    for (const command of commands) {
+      if (!predicate(command)) continue;
+      const key = command.key ?? `${command.slash?.name ?? ''}:${command.prefix?.name ?? ''}`;
+      if (!key || unique.has(key)) continue;
+      unique.set(key, command);
+    }
+  }
+  return Array.from(unique.values());
+}
+
 function buildCategoryPage(categoryName, commands, prefix, pageIndex, totalPages) {
   const meta = getCategoryMeta(categoryName);
   const embed = new EmbedBuilder()
@@ -149,13 +178,13 @@ function buildCategoryPage(categoryName, commands, prefix, pageIndex, totalPages
   return embed;
 }
 
-function buildOverviewPage(categories, prefix) {
-  const totalCommands = categories.reduce((sum, [, cmds]) => sum + cmds.length, 0);
+function buildOverviewPage(displayCategories, prefix, statsCategories = displayCategories) {
+  const totalCommands = statsCategories.reduce((sum, [, cmds]) => sum + cmds.length, 0);
   let slashCount = 0;
   let prefixCount = 0;
   let proCount = 0;
   let ownerCount = 0;
-  for (const [, cmds] of categories) {
+  for (const [, cmds] of statsCategories) {
     slashCount += cmds.filter((cmd) => Boolean(cmd.slash)).length;
     prefixCount += cmds.filter((cmd) => Boolean(cmd.prefix)).length;
     proCount += cmds.filter((cmd) => cmd.proOnly).length;
@@ -172,7 +201,7 @@ function buildOverviewPage(categories, prefix) {
     .setFooter({ text: `Toplam ${totalCommands} komut • Prefix: ${prefix}` })
     .setTimestamp();
 
-  const lines = categories.map(([categoryName, commands]) => {
+  const lines = displayCategories.map(([categoryName, commands]) => {
     const meta = getCategoryMeta(categoryName);
     const proOnly = commands.every((command) => command.proOnly);
     const ownerOnly = commands.every((command) => command.ownerOnly);
@@ -281,7 +310,19 @@ export default {
       categoryName,
       Array.from(entries.values())
     ]);
-    const categories = sortCategories(catalogEntries);
+    const proCommands = collectSpecialCategory(catalogEntries, (command) => command.proOnly);
+    const ownerCommands = collectSpecialCategory(catalogEntries, (command) => command.ownerOnly);
+
+    const extraCategories = [];
+    if (proCommands.length) {
+      extraCategories.push(['Pro Komutları', proCommands]);
+    }
+    if (ownerCommands.length) {
+      extraCategories.push(['Sahip Komutları', ownerCommands]);
+    }
+
+    const baseCategories = sortCategories(catalogEntries.slice());
+    const categories = sortCategories([...catalogEntries, ...extraCategories]);
 
     if (!categories.length) {
       await interaction.reply({ content: 'Kayıtlı komut bulunamadı.', ephemeral: true });
@@ -290,7 +331,7 @@ export default {
 
     const { prefix } = await describePrefix(interaction.guildId ?? '');
 
-    const pages = [buildOverviewPage(categories, prefix)];
+    const pages = [buildOverviewPage(categories, prefix, baseCategories)];
     categories.forEach(([categoryName, commands], index) => {
       pages.push(buildCategoryPage(categoryName, commands, prefix, index + 1, categories.length + 1));
     });
