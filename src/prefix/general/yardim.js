@@ -8,7 +8,6 @@ const categoryMetadata = {
   Moderasyon: { emoji: '🛡️', description: 'Ceza ve yönetim komutları', color: 0xe74c3c, order: 2 },
   Sistem: { emoji: '⚙️', description: 'Kurallar, mod-log ve otomasyon', color: 0x95a5a6, order: 3 },
   'Eğlence': { emoji: '🎉', description: 'Eğlence ve mini oyunlar', color: 0xf1c40f, order: 4 },
-  Eglence: { emoji: '🎉', description: 'Eğlence ve mini oyunlar', color: 0xf1c40f, order: 4 },
   Extra: { emoji: '👑', description: 'Pro üyelik avantajları', color: 0x9b59b6, order: 5 },
   'Pro Komutları': {
     emoji: '💎',
@@ -172,25 +171,52 @@ export default {
       embed.addFields({ name: `Öne çıkan: ${categoryName}`, value: lines.join('\n') });
     }
 
-    const row = new ActionRowBuilder();
-    row.addComponents(
+    const quickRow = new ActionRowBuilder();
+    quickRow.addComponents(
       new ButtonBuilder().setStyle(ButtonStyle.Primary).setCustomId('prefix_help_slash').setLabel('/yardim Aç').setEmoji('🗂️')
     );
+
+    if (proCommands.length) {
+      quickRow.addComponents(
+        new ButtonBuilder()
+          .setStyle(ButtonStyle.Success)
+          .setCustomId('prefix_help_pro')
+          .setLabel('Pro Komutları')
+          .setEmoji('💎')
+      );
+    }
+
+    if (ownerCommands.length) {
+      quickRow.addComponents(
+        new ButtonBuilder()
+          .setStyle(ButtonStyle.Secondary)
+          .setCustomId('prefix_help_owner')
+          .setLabel('Sahip Araçları')
+          .setEmoji('⭐')
+      );
+    }
+
+    const linkRow = new ActionRowBuilder();
     if (config.supportServerUrl) {
-      row.addComponents(
+      linkRow.addComponents(
         new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setEmoji('🤝').setURL(config.supportServerUrl)
       );
     }
     if (config.inviteUrl) {
-      row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Davet Et').setEmoji('📨').setURL(config.inviteUrl));
+      linkRow.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Davet Et').setEmoji('📨').setURL(config.inviteUrl));
     }
     if (config.proInfoUrl) {
-      row.addComponents(
+      linkRow.addComponents(
         new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Üyelik').setEmoji('💎').setURL(config.proInfoUrl)
       );
     }
 
-    const reply = await message.reply({ embeds: [embed], components: [row], allowedMentions: { repliedUser: false } });
+    const rows = [quickRow];
+    if (linkRow.components.length) {
+      rows.push(linkRow);
+    }
+
+    const reply = await message.reply({ embeds: [embed], components: rows, allowedMentions: { repliedUser: false } });
 
     const collector = reply.createMessageComponentCollector({
       filter: (interaction) => interaction.user.id === message.author.id,
@@ -203,20 +229,70 @@ export default {
           content: '📬 Slash menüsünü açmak için `/yardim` komutunu kullanabilirsin. Slash menüsü etkileşimlidir ve yalnızca sana görünür.',
           ephemeral: true
         });
+        return;
+      }
+
+      if (interaction.customId === 'prefix_help_pro') {
+        if (!proCommands.length) {
+          await interaction.reply({ content: '💎 Pro komut listesi henüz boş.', ephemeral: true });
+          return;
+        }
+
+        const lines = proCommands.map((command) => formatLine(command, prefix));
+        const chunks = splitLinesIntoFieldChunks(lines);
+        const proEmbed = new EmbedBuilder()
+          .setColor(0x8e44ad)
+          .setTitle('💎 Pro Komutları')
+          .setDescription('Pro üyelik sahipleri için ayrılmış komutların tamamı aşağıdadır.');
+
+        chunks.forEach((value, index) => {
+          proEmbed.addFields({ name: index === 0 ? 'Komutlar' : '\u200B', value });
+        });
+
+        await interaction.reply({ embeds: [proEmbed], ephemeral: true });
+        return;
+      }
+
+      if (interaction.customId === 'prefix_help_owner') {
+        if (!ownerCommands.length) {
+          await interaction.reply({ content: '⭐ Sahip komutları listesi bulunamadı.', ephemeral: true });
+          return;
+        }
+
+        const lines = ownerCommands.map((command) => formatLine(command, prefix));
+        const chunks = splitLinesIntoFieldChunks(lines);
+        const ownerEmbed = new EmbedBuilder()
+          .setColor(0xf39c12)
+          .setTitle('⭐ Sahip Komutları')
+          .setDescription('Bu komutlar yalnızca Furmin sahibine açıktır.');
+
+        chunks.forEach((value, index) => {
+          ownerEmbed.addFields({ name: index === 0 ? 'Komutlar' : '\u200B', value });
+        });
+
+        await interaction.reply({ embeds: [ownerEmbed], ephemeral: true });
+        return;
       }
     });
 
     collector.on('end', async () => {
       try {
-        const disabled = new ActionRowBuilder();
-        for (const component of row.components) {
-          if (component.data.style === ButtonStyle.Link) {
-            disabled.addComponents(component);
-          } else {
-            disabled.addComponents(ButtonBuilder.from(component).setDisabled(true));
-          }
+        const disabledQuick = new ActionRowBuilder();
+        for (const component of quickRow.components) {
+          disabledQuick.addComponents(ButtonBuilder.from(component).setDisabled(true));
         }
-        await reply.edit({ components: [disabled] });
+
+        const rowsToEdit = [disabledQuick];
+
+        if (rows.length > 1) {
+          const disabledLinks = new ActionRowBuilder();
+          for (const component of linkRow.components) {
+            disabledLinks.addComponents(component);
+          }
+          rowsToEdit.push(disabledLinks);
+        }
+
+        await reply.edit({ components: rowsToEdit });
       } catch {
         // ignore
       }

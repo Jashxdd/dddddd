@@ -41,13 +41,6 @@ const categoryMetadata = {
     order: 4,
     group: 'Eğlence'
   },
-  Eglence: {
-    emoji: '🎉',
-    color: 0xf1c40f,
-    description: 'Sohbete renk katan eğlence, mini oyunlar ve espriler.',
-    order: 4,
-    group: 'Eğlence'
-  },
   Extra: {
     emoji: '👑',
     color: 0x9b59b6,
@@ -282,6 +275,77 @@ function createCategoryMenu(categories, currentIndex) {
   return new ActionRowBuilder().addComponents(menu);
 }
 
+const quickJumpConfig = [
+  { id: 'overview', label: 'Genel Bakış', emoji: '🗂️', categories: [] },
+  { id: 'genel', label: 'Genel', emoji: '🧭', categories: ['Genel'] },
+  { id: 'moderasyon', label: 'Moderasyon', emoji: '🛡️', categories: ['Moderasyon'] },
+  { id: 'sistem', label: 'Sistem', emoji: '⚙️', categories: ['Sistem'] },
+  { id: 'eglence', label: 'Eğlence', emoji: '🎉', categories: ['Eğlence'] },
+  { id: 'pro', label: 'Pro', emoji: '💎', categories: ['Pro Komutları', 'Extra'] },
+  { id: 'sahip', label: 'Sahip', emoji: '⭐', categories: ['Sahip Komutları'] }
+];
+
+function createQuickJumpRow(categories, currentIndex) {
+  const buttons = [];
+  const added = new Set();
+
+  function tryAdd(id) {
+    if (buttons.length >= 5 || added.has(id)) {
+      return;
+    }
+
+    const config = quickJumpConfig.find((item) => item.id === id);
+    if (!config) return;
+
+    let pageIndex = null;
+    if (config.id === 'overview') {
+      pageIndex = 0;
+    } else {
+      const matchIndex = categories.findIndex(([name]) => config.categories.includes(name));
+      if (matchIndex === -1) {
+        return;
+      }
+      pageIndex = matchIndex + 1;
+    }
+
+    const button = new ButtonBuilder()
+      .setCustomId(`yardim_jump_${config.id}`)
+      .setEmoji(config.emoji)
+      .setLabel(config.label);
+
+    const isActive = currentIndex === pageIndex;
+    if (config.id === 'pro') {
+      button.setStyle(isActive ? ButtonStyle.Success : ButtonStyle.Secondary);
+    } else if (config.id === 'sahip') {
+      button.setStyle(isActive ? ButtonStyle.Danger : ButtonStyle.Secondary);
+    } else {
+      button.setStyle(isActive ? ButtonStyle.Primary : ButtonStyle.Secondary);
+    }
+
+    if (isActive) {
+      button.setDisabled(true);
+    }
+
+    buttons.push(button);
+    added.add(id);
+  }
+
+  tryAdd('overview');
+  tryAdd('pro');
+  tryAdd('sahip');
+
+  for (const config of quickJumpConfig) {
+    if (buttons.length >= 5) break;
+    tryAdd(config.id);
+  }
+
+  if (!buttons.length) {
+    return null;
+  }
+
+  return new ActionRowBuilder().addComponents(buttons);
+}
+
 function createLinkRow() {
   const row = new ActionRowBuilder();
   if (config.supportServerUrl) {
@@ -340,9 +404,12 @@ export default {
 
     const navigationRow = createNavigationRow(currentIndex, pages.length);
     const menuRow = createCategoryMenu(categories, currentIndex);
+    const quickRow = createQuickJumpRow(categories, currentIndex);
     const linkRow = createLinkRow();
 
-    const components = linkRow ? [navigationRow, menuRow, linkRow] : [navigationRow, menuRow];
+    const components = [navigationRow, menuRow];
+    if (quickRow) components.push(quickRow);
+    if (linkRow) components.push(linkRow);
 
     const message = await interaction.reply({
       embeds: [pages[currentIndex]],
@@ -370,8 +437,11 @@ export default {
     async function refresh(replyInteraction) {
       const nav = createNavigationRow(currentIndex, pages.length);
       const menu = createCategoryMenu(categories, currentIndex);
+      const quick = createQuickJumpRow(categories, currentIndex);
       const links = createLinkRow();
-      const rows = links ? [nav, menu, links] : [nav, menu];
+      const rows = [nav, menu];
+      if (quick) rows.push(quick);
+      if (links) rows.push(links);
       await replyInteraction.update({ embeds: [pages[currentIndex]], components: rows });
     }
 
@@ -383,6 +453,24 @@ export default {
           embeds: [pages[currentIndex]],
           components: []
         });
+        return;
+      }
+
+      if (componentInteraction.customId.startsWith('yardim_jump_')) {
+        const key = componentInteraction.customId.replace('yardim_jump_', '');
+        if (key === 'overview') {
+          currentIndex = 0;
+        } else {
+          const config = quickJumpConfig.find((item) => item.id === key);
+          if (config) {
+            const targetIndex = categories.findIndex(([name]) => config.categories.includes(name));
+            if (targetIndex >= 0) {
+              currentIndex = targetIndex + 1;
+            }
+          }
+        }
+
+        await refresh(componentInteraction);
         return;
       }
 
@@ -418,8 +506,14 @@ export default {
       nav.components.forEach((button) => button.setDisabled(true));
       const menu = createCategoryMenu(categories, currentIndex);
       menu.components[0].setDisabled(true);
+      const quick = createQuickJumpRow(categories, currentIndex);
+      if (quick) {
+        quick.components.forEach((button) => button.setDisabled(true));
+      }
       const links = createLinkRow();
-      const rows = links ? [nav, menu, links] : [nav, menu];
+      const rows = [nav, menu];
+      if (quick) rows.push(quick);
+      if (links) rows.push(links);
       await message.edit({ embeds: [pages[currentIndex]], components: rows }).catch(() => {});
     };
 
