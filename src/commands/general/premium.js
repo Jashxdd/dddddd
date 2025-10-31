@@ -1,6 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 import { config } from '../../config.js';
 import { listProMembers } from '../../utils/proMembership.js';
+import { collectProCommands } from '../../utils/commandCatalog.js';
 
 export default {
   category: 'Extra',
@@ -10,6 +11,7 @@ export default {
   async execute(interaction) {
     const proMembers = await listProMembers();
     const isPro = proMembers.includes(interaction.user.id);
+    const proCommands = collectProCommands(interaction.client.commandCatalog);
 
     const embed = new EmbedBuilder()
       .setColor(0x9b59b6)
@@ -42,6 +44,22 @@ export default {
         .map((id) => `• <@${id}>`)
         .join('\n');
       embed.addFields({ name: 'Pro Üyeler', value: display + (proMembers.length > 10 ? `\n... ve ${proMembers.length - 10} kişi daha` : '') });
+    }
+
+    if (proCommands.length) {
+      const preview = proCommands
+        .slice(0, 8)
+        .map((command) => `${command.type === 'slash' ? '⚡' : '⌨️'} ${command.displayName} — ${command.description}`)
+        .join('\n');
+
+      embed.addFields({
+        name: 'Pro Komutları',
+        value:
+          preview +
+          (proCommands.length > 8
+            ? `\n... ve ${proCommands.length - 8} komut daha. Ayrıntılar için \`/premium-komutlar\` yaz.`
+            : '')
+      });
     }
 
     const row = new ActionRowBuilder();

@@ -13,6 +13,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
   ses kanalı hareketleri ve otomatik filtre ihlalleri
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme
 - ✅ Furmin Pro üyelik denetimi ile premium komutlara erişim yönetimi
+- ✅ Pro komut kataloğu, uyarı raporu ve sistem özeti ile yöneticilere özel analiz paneli
 - ✅ Hazır yapılandırma yükleyicisi (config.json ya da .env) ve otomatik durum mesajı rotasyonu
 
 ## Kurulum
@@ -42,12 +43,13 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 
 ## Komut Kategorileri
 - **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem`, `/doviz`,
-  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim` ve daha fazlası.
+  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
-  `/rol-ver`, `/rol-al`, `/sicil`, `/uyari` ve otomatik moderasyon komutları.
-- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/ayarlar`, `/bot-bilgi`, `/prefix`, `/pro-uyelik`.
-- **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`.
-- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!ses`, `f!premium`, `f!prefix` vb.
+  `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu` ve otomatik moderasyon komutları.
+- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/ayarlar`, `/bot-bilgi`, `/prefix`, `/pro-uyelik`,
+  `/sistem-ozeti`, `/premium-komutlar`.
+- **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`.
+- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!ses`, `f!premium`, `f!prokomutlar`, `f!prefix` vb.
 
 Her komut, slash menüsü veya önek sistemi çalıştırılmadan önce kullanıcının `/kurallari-kabul` ile kuralları onaylamasını zorunlu kılar.
 Furmin Pro üyeliği gereken komutlar yardım menüsünde 💎 simgesiyle gösterilir.
@@ -64,6 +66,8 @@ Furmin Pro üyeliği gereken komutlar yardım menüsünde 💎 simgesiyle göste
 - Varsayılan önek `f!` olup `/prefix` veya `f!prefix` ile sunucuya özel olarak değiştirilebilir.
 - Botu etiketlediğinizde Furmin, önek bilgisini, destek sunucusu ve davet bağlantısı düğmelerini içeren rehber bir embed gönderir.
 - Pro üyelik listesi bot sahibi tarafından `/pro-uyelik` ile yönetilir; premium komutlar yalnızca yetkilendirilen kullanıcılar için açılır.
+- `/premium` ve `/premium-komutlar` komutları pro avantajlarını ve özel komut listesini gösterir; önek tarafında `f!premium` ve `f!prokomutlar` karşılıkları bulunur.
+- Furmin Pro üyeleri, `/uyari-raporu` gibi yönetim raporlarını ve gelişmiş sistem özetlerini kullanarak sunucuyu detaylıca denetleyebilir.
 
 ## Komut Dağıtımı ve Çalıştırma
 Slash komutları bot açılışında otomatik olarak senkronize edilir. İlk kurulumda süreci hızlandırmak için:

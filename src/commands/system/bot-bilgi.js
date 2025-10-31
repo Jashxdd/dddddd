@@ -1,6 +1,8 @@
 import { EmbedBuilder, SlashCommandBuilder, version as discordJsVersion } from 'discord.js';
 import os from 'node:os';
 import { config } from '../../config.js';
+import { listProMembers } from '../../utils/proMembership.js';
+import { collectProCommands } from '../../utils/commandCatalog.js';
 
 function formatDuration(ms) {
   const seconds = Math.floor(ms / 1000);
@@ -30,6 +32,10 @@ export default {
     const totalGuilds = client.guilds.cache.size;
     const totalUsers = client.guilds.cache.reduce((sum, guild) => sum + (guild.memberCount ?? 0), 0);
     const cpuModel = os.cpus()?.[0]?.model ?? 'Bilinmiyor';
+    const [proMembers, proCommands] = await Promise.all([
+      listProMembers(),
+      Promise.resolve(collectProCommands(client.commandCatalog))
+    ]);
 
     const embed = new EmbedBuilder()
       .setColor(0x5865f2)
@@ -49,6 +55,27 @@ export default {
         { name: 'Node.js', value: process.version, inline: true },
         { name: 'discord.js', value: discordJsVersion, inline: true },
         { name: 'Çalıştığı Makine', value: cpuModel, inline: true }
+      )
+      .addFields(
+        {
+          name: 'Önek & Durum',
+          value: `Varsayılan önek: \`${config.defaultPrefix}\`\nDurum: ${config.presenceStatus ?? 'online'}`,
+          inline: true
+        },
+        {
+          name: 'Pro Özeti',
+          value: proMembers.length
+            ? `${proMembers.length} pro üye • ${proCommands.length} özel komut`
+            : 'Henüz pro üye veya komut tanımlanmadı.',
+          inline: true
+        },
+        {
+          name: 'Aktivite Döngüsü',
+          value: client.presence?.activities?.length
+            ? client.presence.activities.map((activity) => `• ${activity.type} ${activity.name}`).join('\n')
+            : 'Aktif etkinlik bulunmuyor.',
+          inline: true
+        }
       )
       .setThumbnail(client.user.displayAvatarURL({ size: 256 }) ?? null)
       .setFooter({ text: `${interaction.client.user.username} • Sistem paneli` })
