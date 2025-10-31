@@ -1,12 +1,19 @@
 import { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 
-function ensureVoice(interaction) {
-  const member = interaction.member;
+async function ensureVoice(interaction) {
+  if (!interaction.guild) {
+    throw new Error('Bu komut yalnızca sunucularda kullanılabilir.');
+  }
+
+  const guild = interaction.guild;
+  const member =
+    guild.members.cache.get(interaction.user.id) ?? (await guild.members.fetch(interaction.user.id).catch(() => null));
+
   if (!member?.voice?.channel) {
     throw new Error('Bir ses kanalına bağlı değilsin. Lütfen önce bir kanala katıl.');
   }
 
-  const me = interaction.guild.members.me;
+  const me = guild.members.me ?? (await guild.members.fetchMe().catch(() => null));
   if (!me) {
     throw new Error('Bot bilgileri alınamadı.');
   }
@@ -61,7 +68,7 @@ export default {
 
     let voiceChannel;
     try {
-      voiceChannel = ensureVoice(interaction);
+      voiceChannel = await ensureVoice(interaction);
     } catch (error) {
       await interaction.reply({ content: `⛔ ${error.message}`, ephemeral: true });
       return;
