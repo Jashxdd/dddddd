@@ -8,7 +8,8 @@ const categoryMetadata = {
   Moderasyon: { emoji: '🛡️', description: 'Ceza ve yönetim komutları', color: 0xe74c3c, order: 2 },
   Sistem: { emoji: '⚙️', description: 'Kurallar, mod-log ve otomasyon', color: 0x95a5a6, order: 3 },
   'Eğlence': { emoji: '🎉', description: 'Eğlence ve mini oyunlar', color: 0xf1c40f, order: 4 },
-  Extra: { emoji: '👑', description: 'Pro üyelik avantajları', color: 0x9b59b6, order: 5 },
+  'Müzik': { emoji: '🎵', description: 'Müzik sistemi ve oynatma kontrolü', color: 0x3498db, order: 5 },
+  Extra: { emoji: '👑', description: 'Pro üyelik avantajları', color: 0x9b59b6, order: 6 },
   'Pro Komutları': {
     emoji: '💎',
     description: 'Tüm pro komutlarını tek listede gösterir',
@@ -29,6 +30,15 @@ const defaultMetadata = { emoji: '📁', description: 'Kategori açıklaması ek
 
 function getMeta(name) {
   return categoryMetadata[name] ?? defaultMetadata;
+}
+
+function commandKey(command) {
+  if (command.key) return command.key;
+  if (command.catalogKey) return command.catalogKey;
+  if (command.slash?.name || command.prefix?.name) {
+    return `${command.slash?.name ?? ''}::${command.prefix?.name ?? ''}`;
+  }
+  return `${command.menuGroup ?? 'Komutlar'}::${command.description ?? 'bilinmeyen'}`;
 }
 
 function formatLine(command, prefix) {
@@ -62,6 +72,50 @@ function sortCategoryEntries(entries) {
       if (metaA.order !== metaB.order) return metaA.order - metaB.order;
       return a.localeCompare(b, 'tr');
     });
+}
+
+function splitByGroup(commands) {
+  const map = new Map();
+  for (const command of commands) {
+    const group = command.menuGroup ?? 'Komutlar';
+    if (!map.has(group)) {
+      map.set(group, new Map());
+    }
+
+    const groupMap = map.get(group);
+    const key = commandKey(command);
+
+    if (!groupMap.has(key)) {
+      groupMap.set(key, command);
+    } else {
+      const existing = groupMap.get(key);
+      if (!existing.slash && command.slash) {
+        existing.slash = command.slash;
+      }
+      if (!existing.prefix && command.prefix) {
+        existing.prefix = command.prefix;
+      }
+      existing.proOnly = existing.proOnly || Boolean(command.proOnly);
+      existing.ownerOnly = existing.ownerOnly || Boolean(command.ownerOnly);
+      if (!existing.description && command.description) {
+        existing.description = command.description;
+      }
+    }
+  }
+
+  return Array.from(map.entries())
+    .map(([groupName, groupMap]) => [groupName, Array.from(groupMap.values())])
+    .sort(([a], [b]) => a.localeCompare(b, 'tr'));
+}
+
+function prepareCategoryEntries(entries) {
+  return entries
+    .map(([categoryName, commands]) => {
+      const grouped = splitByGroup(commands);
+      const flattened = grouped.flatMap(([, groupCommands]) => groupCommands);
+      return [categoryName, flattened];
+    })
+    .filter(([, commands]) => commands.length);
 }
 
 function collectSpecialCategory(entries, predicate) {
@@ -104,8 +158,8 @@ export default {
       extraCategories.push(['Sahip Komutları', ownerCommands]);
     }
 
-    const sortedBase = sortCategoryEntries(catalog.slice());
-    const sorted = sortCategoryEntries([...catalog, ...extraCategories]);
+    const sortedBase = sortCategoryEntries(prepareCategoryEntries(catalog.slice()));
+    const sorted = sortCategoryEntries(prepareCategoryEntries([...catalog, ...extraCategories]));
 
     const { prefix } = await describePrefix(message.guildId ?? '');
 

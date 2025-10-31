@@ -13,6 +13,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
   ses kanalı hareketleri ve otomatik filtre ihlalleri
 - ✅ Sunucuya katılan üyelere otomatik rol atayabilen otorol sistemi (listeleme, ekleme/kaldırma, sıfırlama)
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
+- ✅ Müzik komutları yardım menüsünde ayrı kategori olarak listelenir; çift kayıtlar otomatik olarak filtrelenir
 - ✅ Furmin Pro yönetim merkezi: tüm premium analizler `/pro` komutunun alt komutlarında toplanır, önek tarafı aynı raporları ayrı komutlarla sunar
 - ✅ Herkese açık butonlu rol paneli (`/rol-panel` ve `f!rolpanel`) ve Pro üyelik yönetimini tek komutta toplayan `/pro uyelik`
 - ✅ Furmin Müzik sistemi: YouTube tabanlı oynatma, sıra yönetimi, duraklat/devam/atla/dur komutları (slash + önek)
@@ -20,6 +21,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Yalnızca bot sahibinin açıp kapatabildiği bakım modu ve nazik bakım bildirimleri
 - ✅ Pro komut kataloğu, uyarı raporu ve sistem özeti ile yöneticilere özel analiz paneli
 - ✅ Hazır yapılandırma yükleyicisi (config.json ya da .env) ve otomatik durum mesajı rotasyonu
+- ✅ `/gunluk-plan` ve `f!gunluk-plan` ile kullanıcıların günlük hedeflerine özel motivasyon kartları
 
 ## Kurulum
 1. [Node.js 18.17+](https://nodejs.org/) sürümünü kurun.
@@ -48,15 +50,15 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 
 ## Komut Kategorileri
 - **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem`, `/doviz`,
-  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/odak-ipuclari`, `/saglik-molasi`,
-  `/paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham` ve daha fazlası.
+  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/gunluk-plan`, `/odak-ipuclari`,
+  `/saglik-molasi`, `/paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu` ve otomatik moderasyon komutları.
 - **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/otorol`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`, `/prefix`,
   `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/premium-komutlar`, `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/bakim`, `/sistem-ozeti` ve diğer yönetim araçları.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
 - **Müzik:** `/muzik-oynat`, `/muzik-atla`, `/muzik-duraklat`, `/muzik-devam`, `/muzik-dur`, `/muzik-kuyruk`, `/muzik-simdi`.
-- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
+- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
   `f!pro-rapor`, `f!prodenetim`, `f!slot`, `f!tahmin`, `f!karistir`, `f!muzik-oynat`, `f!muzik-atla`, `f!muzik-duraklat`, `f!muzik-devam`, `f!muzik-dur`, `f!muzik-kuyruk`, `f!muzik-simdi`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!bakim` vb.
 
 ### Yeni Sistemler ve Güncellemeler

@@ -41,11 +41,18 @@ const categoryMetadata = {
     order: 4,
     group: 'Eğlence'
   },
+  'Müzik': {
+    emoji: '🎵',
+    color: 0x3498db,
+    description: 'Furmin müzik kuyruğu ve oynatma kontrolleri.',
+    order: 5,
+    group: 'Müzik Sistemleri'
+  },
   Extra: {
     emoji: '👑',
     color: 0x9b59b6,
     description: 'Pro üyelik ayrıcalıkları ve gelişmiş rapor komutları.',
-    order: 5,
+    order: 6,
     group: 'Pro Üyelik'
   },
   'Pro Komutları': {
@@ -89,16 +96,57 @@ function sortCategories(entries) {
     });
 }
 
+function commandKey(command) {
+  if (command.key) return command.key;
+  if (command.catalogKey) return command.catalogKey;
+  if (command.slash?.name || command.prefix?.name) {
+    return `${command.slash?.name ?? ''}::${command.prefix?.name ?? ''}`;
+  }
+  return `${command.menuGroup ?? 'Komutlar'}::${command.description ?? 'bilinmeyen'}`;
+}
+
 function splitByGroup(commands) {
   const map = new Map();
   for (const command of commands) {
     const group = command.menuGroup ?? 'Komutlar';
     if (!map.has(group)) {
-      map.set(group, []);
+      map.set(group, new Map());
     }
-    map.get(group).push(command);
+
+    const groupMap = map.get(group);
+    const key = commandKey(command);
+
+    if (!groupMap.has(key)) {
+      groupMap.set(key, command);
+    } else {
+      const existing = groupMap.get(key);
+      if (!existing.slash && command.slash) {
+        existing.slash = command.slash;
+      }
+      if (!existing.prefix && command.prefix) {
+        existing.prefix = command.prefix;
+      }
+      existing.proOnly = existing.proOnly || Boolean(command.proOnly);
+      existing.ownerOnly = existing.ownerOnly || Boolean(command.ownerOnly);
+      if (!existing.description && command.description) {
+        existing.description = command.description;
+      }
+    }
   }
-  return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b, 'tr'));
+
+  return Array.from(map.entries())
+    .map(([groupName, groupMap]) => [groupName, Array.from(groupMap.values())])
+    .sort(([a], [b]) => a.localeCompare(b, 'tr'));
+}
+
+function prepareCategoryEntries(entries) {
+  return entries
+    .map(([categoryName, commands]) => {
+      const grouped = splitByGroup(commands);
+      const flattened = grouped.flatMap(([, groupCommands]) => groupCommands);
+      return [categoryName, flattened];
+    })
+    .filter(([, commands]) => commands.length);
 }
 
 function formatCommand(command, prefix) {
@@ -281,6 +329,7 @@ const quickJumpConfig = [
   { id: 'moderasyon', label: 'Moderasyon', emoji: '🛡️', categories: ['Moderasyon'] },
   { id: 'sistem', label: 'Sistem', emoji: '⚙️', categories: ['Sistem'] },
   { id: 'eglence', label: 'Eğlence', emoji: '🎉', categories: ['Eğlence'] },
+  { id: 'muzik', label: 'Müzik', emoji: '🎵', categories: ['Müzik'] },
   { id: 'pro', label: 'Pro', emoji: '💎', categories: ['Pro Komutları', 'Extra'] },
   { id: 'sahip', label: 'Sahip', emoji: '⭐', categories: ['Sahip Komutları'] }
 ];
@@ -385,8 +434,8 @@ export default {
       extraCategories.push(['Sahip Komutları', ownerCommands]);
     }
 
-    const baseCategories = sortCategories(catalogEntries.slice());
-    const categories = sortCategories([...catalogEntries, ...extraCategories]);
+    const baseCategories = sortCategories(prepareCategoryEntries(catalogEntries.slice()));
+    const categories = sortCategories(prepareCategoryEntries([...catalogEntries, ...extraCategories]));
 
     if (!categories.length) {
       await interaction.reply({ content: 'Kayıtlı komut bulunamadı.', ephemeral: true });

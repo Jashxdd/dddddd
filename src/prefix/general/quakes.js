@@ -11,8 +11,8 @@ export default {
     const reply = await message.reply({ content: '🌍 Deprem verileri getiriliyor...', allowedMentions: { repliedUser: false } });
 
     try {
-      const results = await fetchEarthquakes(5);
-      const embed = buildEarthquakeEmbed(results);
+      const { records, source } = await fetchEarthquakes(5);
+      const embed = buildEarthquakeEmbed(records, source);
       await reply.edit({ content: '', embeds: [embed] });
     } catch (error) {
       console.error('Deprem verisi alınamadı:', error);
