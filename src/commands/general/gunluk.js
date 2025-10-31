@@ -2,7 +2,7 @@ import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 
 const tavsiyeler = [
   'Kanallarınızı düzenli olarak gözden geçirin ve ihtiyaç duymadığınız rolleri kaldırın.',
-  'Otomatik moderasyonu etkin tutarak Furmin'in sizi desteklemesine izin verin.',
+  "Otomatik moderasyonu etkin tutarak Furmin'in sizi desteklemesine izin verin.",
   'Sunucu kurallarını sık sık hatırlatın; `/kurallar` komutunu öne çıkarın.',
   'Yeni üyeler için karşılayıcı mesajlar hazırlayın ve mod-log kanalını takip edin.',
   'Pro komutlarını denemek için yetkililerle iletişime geçmeyi unutmayın.',

@@ -35,7 +35,7 @@ export default {
     const embed = new EmbedBuilder()
       .setColor(0x3498db)
       .setTitle('⚙️ Furmin Sistem Özeti')
-      .setDescription('Bu rapor, Furmin'in kritik sistemlerinin anlık durumunu gösterir.')
+      .setDescription("Bu rapor, Furmin'in kritik sistemlerinin anlık durumunu gösterir.")
       .addFields(
         { name: 'Önek', value: prefixFieldValue },
         {
