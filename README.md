@@ -13,10 +13,12 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
   ses kanalı hareketleri ve otomatik filtre ihlalleri
 - ✅ Sunucuya katılan üyelere otomatik rol atayabilen otorol sistemi (listeleme, ekleme/kaldırma, sıfırlama)
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
-- ✅ Furmin Pro üyelik denetimi ile premium komutlara erişim yönetimi
-- ✅ Pro komut kataloğu, uyarı raporu ve sistem özeti ile yöneticilere özel analiz paneli
+- ✅ Furmin Pro yönetim merkezi: tüm premium analizler `/pro` komutunun alt komutlarında toplanır, önek tarafı aynı raporları ayrı komutlarla sunar
+- ✅ Herkese açık butonlu rol paneli (`/rol-panel` ve `f!rolpanel`) ve Pro üyelik yönetimini tek komutta toplayan `/pro uyelik`
+- ✅ Furmin Müzik sistemi: YouTube tabanlı oynatma, sıra yönetimi, duraklat/devam/atla/dur komutları (slash + önek)
+- ✅ Komut senkronizasyon modları (`global`, `test`, `hybrid`) ile çift kayıtları engelleyen REST dağıtımı
 - ✅ Yalnızca bot sahibinin açıp kapatabildiği bakım modu ve nazik bakım bildirimleri
-- ✅ Pro üyeler için gelişmiş moderasyon raporları (ör. `pro-denetim` / `f!prodenetim`)
+- ✅ Pro komut kataloğu, uyarı raporu ve sistem özeti ile yöneticilere özel analiz paneli
 - ✅ Hazır yapılandırma yükleyicisi (config.json ya da .env) ve otomatik durum mesajı rotasyonu
 
 ## Kurulum
@@ -46,24 +48,22 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 
 ## Komut Kategorileri
 - **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem`, `/doviz`,
-  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/odak-ipuclari`, `/saglik-molasi`, `/paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham` ve daha fazlası.
+  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/odak-ipuclari`, `/saglik-molasi`,
+  `/paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu` ve otomatik moderasyon komutları.
-- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/otorol`, `/ayarlar`, `/bot-bilgi`, `/prefix`,
-  `/pro-uyelik`, `/sistem-ozeti`, `/premium-komutlar`, `/pro-panel`, `/pro-rapor`, `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/bakim`, `/pro-uyari-analiz`, `/pro-rol-analiz`, `/pro-kanal-ozet`, `/pro-bakim-durumu`, `/pro-otomasyon`, `/pro-icerik-plan`, `/pro-ekip-plani`, `/pro-gelisim`, `/pro-arsiv`, `/pro-hizli-eylem`.
+- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/otorol`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`, `/prefix`,
+  `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/premium-komutlar`, `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/bakim`, `/sistem-ozeti` ve diğer yönetim araçları.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
-- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!otorol`, `f!ses`, `f!premium`, `f!prokomutlar`,
-  `f!pro-rapor`, `f!prodenetim`, `f!slot`, `f!tahmin`, `f!karistir`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!bakim` vb.
+- **Müzik:** `/muzik-oynat`, `/muzik-atla`, `/muzik-duraklat`, `/muzik-devam`, `/muzik-dur`, `/muzik-kuyruk`, `/muzik-simdi`.
+- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
+  `f!pro-rapor`, `f!prodenetim`, `f!slot`, `f!tahmin`, `f!karistir`, `f!muzik-oynat`, `f!muzik-atla`, `f!muzik-duraklat`, `f!muzik-devam`, `f!muzik-dur`, `f!muzik-kuyruk`, `f!muzik-simdi`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!bakim` vb.
 
-
-### 30 Yeni Komutun Özeti
-- **Genel (10 adet):** `/gunun-sozu`, `/odak-ipuclari`, `/saglik-molasi`, `/paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham`.
-- **Moderasyon (10 adet):** `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu`.
-- **Pro Yönetimi (10 adet):** `/pro-uyari-analiz`, `/pro-rol-analiz`, `/pro-kanal-ozet`, `/pro-bakim-durumu`, `/pro-otomasyon`, `/pro-icerik-plan`, `/pro-ekip-plani`, `/pro-gelisim`, `/pro-arsiv`, `/pro-hizli-eylem`.
-
-Tüm yeni komutların önek karşılıkları aynı isimlerle `f!` ön ekiyle sunulur ve yardım menüsündeki ilgili kategori sayfalarına otomatik olarak eklenir.
-Her komut, slash menüsü veya önek sistemi çalıştırılmadan önce kullanıcının `/kurallari-kabul` ile kuralları onaylamasını zorunlu kılar.
-Furmin Pro üyeliği gereken komutlar yardım menüsünde 💎 simgesiyle gösterilir ve yardım menüsünde ayrı **Pro Komutları** / **Sahip Komutları** sayfaları bulunur. Slash yardım menüsü hızlı geçiş düğmeleri ve kategori seçiciyle gezinmeyi kolaylaştırır; önek menüsü ise Pro ve sahip listelerini tek tıkla açan modern butonlar içerir.
+### Yeni Sistemler ve Güncellemeler
+- Slash tarafındaki tüm Pro araçları artık tek `/pro` komutunda toplanır; önek tarafında aynı raporlar bireysel komutlar olarak çalışmaya devam eder.
+- `/rol-panel` ve `f!rolpanel`, seçilen rolleri butonlarla dağıtan modern bir rol seçimi paneli oluşturur.
+- Furmin Müzik modülü YouTube’dan akış alır, sırayı yönetir ve hem slash hem önek komutlarıyla oynatma/atlama/duraklatma işlemlerini destekler.
+- Her komut, slash veya önek üzerinden çalıştırılmadan önce `/kurallari-kabul` ile kuralları onaylamayı zorunlu kılar; yardım menüsü 💎 simgesiyle Pro/sahip komutlarını ayırt eder.
 
 ## Bakım Modu
 - `/bakim ac [mesaj]` veya `f!bakim ac [mesaj]` ile tüm komutları geçici olarak kilitleyebilir, üyelere gösterilecek kısa bir not paylaşabilirsiniz.
@@ -81,7 +81,7 @@ Furmin Pro üyeliği gereken komutlar yardım menüsünde 💎 simgesiyle göste
 ## Premium ve Önek Sistemi
 - Varsayılan önek `f!` olup `/prefix` veya `f!prefix` ile sunucuya özel olarak değiştirilebilir.
 - Botu etiketlediğinizde Furmin, önek bilgisini, destek sunucusu ve davet bağlantısı düğmelerini içeren rehber bir embed gönderir.
-- Pro üyelik listesi bot sahibi tarafından `/pro-uyelik` ile yönetilir; premium komutlar yalnızca yetkilendirilen kullanıcılar için açılır.
+- Pro üyelik listesi bot sahibi tarafından `/pro uyelik ekle|kaldir|liste` alt komutları ile yönetilir; premium komutlar yalnızca yetkilendirilen kullanıcılar için açılır.
 - `/premium`, `/premium-komutlar` ve `/pro-panel` komutları pro avantajlarını, özel komut listesini ve sistem özetini gösterir; önek tarafında `f!premium` ve `f!prokomutlar` karşılıkları bulunur.
 - Furmin Pro üyeleri, `/uyari-raporu` gibi yönetim raporlarını ve gelişmiş sistem özetlerini kullanarak sunucuyu detaylıca denetleyebilir.
 
@@ -94,5 +94,4 @@ Ardından botu başlatmak için:
 ```bash
 npm start
 ```
-Konsolda yapılandırma kaynağı, yüklenen komut sayısı ve slash komutlarının tüm sunucularla global olarak senkronize edildiğine dair
-loglar görüntülenir. Durum rotasyonu, `config.json` / `.env` ayarlarınıza göre Furmin adını ve etkinliklerini Türkçe olarak gösterir.
+Konsolda yapılandırma kaynağı, yüklenen komut sayısı ve seçilen senkronizasyon moduna göre ( `commandSyncMode` / `COMMAND_SYNC_MODE` → `global`, `test`, `hybrid`) yapılan REST dağıtımının özeti görüntülenir. `test` modu yalnızca `commandTestGuilds` listesine, `hybrid` modu ise hem belirlenen sunuculara hem globale kayıt yaparak çift komut görünümünü engeller. Durum rotasyonu, `config.json` / `.env` ayarlarınıza göre Furmin adını ve etkinliklerini Türkçe olarak gösterir.

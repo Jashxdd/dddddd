@@ -9,6 +9,8 @@
   "proInfoUrl": "https://ornek.site/pro",
   "presenceStatus": "online",
   "presenceInterval": 75,
+  "commandSyncMode": "global",
+  "commandTestGuilds": ["TEST_SUNUCUSU_ID"],
   "activities": [
     { "name": "sunucunuzu izliyor", "type": "Watching" },
     { "name": "/yardim ile komutları anlatıyor", "type": "Playing" }

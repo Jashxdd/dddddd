@@ -112,6 +112,32 @@ function parseActivities(value) {
     .filter(Boolean);
 }
 
+function parseStringArray(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.map((item) => normalise(item)).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((part) => normalise(part))
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+const allowedSyncModes = new Set(['global', 'hybrid', 'test']);
+
+function parseSyncMode(value) {
+  const candidate = normalise(value)?.toLowerCase();
+  if (allowedSyncModes.has(candidate)) {
+    return candidate;
+  }
+  return 'global';
+}
+
 export const config = {
   token: pick(fileConfig.token, process.env.DISCORD_TOKEN),
   clientId: pick(fileConfig.clientId, process.env.CLIENT_ID),
@@ -127,7 +153,9 @@ export const config = {
     fileConfig.presenceInterval?.toString?.(),
     process.env.PRESENCE_INTERVAL
   ),
-  activities: parseActivities(fileConfig.activities ?? process.env.PRESENCE_ACTIVITIES)
+  activities: parseActivities(fileConfig.activities ?? process.env.PRESENCE_ACTIVITIES),
+  commandSyncMode: parseSyncMode(pick(fileConfig.commandSyncMode, process.env.COMMAND_SYNC_MODE)),
+  commandTestGuilds: parseStringArray(fileConfig.commandTestGuilds ?? process.env.COMMAND_TEST_GUILDS)
 };
 
 export function describeConfigSource() {

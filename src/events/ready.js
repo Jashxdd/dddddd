@@ -47,6 +47,13 @@ async function syncApplicationCommands(client) {
   }
 
   const payload = commandEntries.map((command) => command.data.toJSON());
+  if (payload.length > 100) {
+    console.error(
+      `❌ Toplam ${payload.length} komut bulundu. Discord uygulama başına en fazla 100 slash komutu destekler. ` +
+        'Lütfen bazı komutları alt komut olarak gruplayın veya gereksiz olanları kaldırın.'
+    );
+    return;
+  }
 
   try {
     await client.application.fetch();
@@ -61,59 +68,51 @@ async function syncApplicationCommands(client) {
     return;
   }
 
-  const guildIds = new Set(client.guilds.cache.keys());
-
-  try {
-    const fetchedGuilds = await client.guilds.fetch();
-    for (const guild of fetchedGuilds.values()) {
-      guildIds.add(guild.id);
-    }
-  } catch (error) {
-    console.warn('⚠️ Sunucu listesi çekilirken hata oluştu. Komutlar yalnızca önbellekteki verilerle güncellenecek.', error);
-  }
-
+  const syncMode = config.commandSyncMode ?? 'global';
+  const guildTargets = new Set(config.commandTestGuilds ?? []);
   if (config.guildId) {
-    guildIds.add(config.guildId);
+    guildTargets.add(config.guildId);
   }
 
-  const guildIdList = [...guildIds];
-  if (guildIdList.length) {
+  const registerGuilds = async (guildIds) => {
+    if (!guildIds.length) return;
+
     const results = await Promise.allSettled(
-      guildIdList.map(async (guildId) => {
+      guildIds.map(async (guildId) => {
         const guild = await client.guilds.fetch(guildId).catch(() => client.guilds.cache.get(guildId) ?? null);
-
-        await client.rest.put(Routes.applicationGuildCommands(applicationId, guildId), {
-          body: payload
-        });
-
-        return {
-          guildId,
-          guildName: guild?.name ?? null
-        };
+        await client.rest.put(Routes.applicationGuildCommands(applicationId, guildId), { body: payload });
+        return { guildId, guildName: guild?.name ?? null };
       })
     );
 
     results.forEach((result, index) => {
-      const fallbackGuild = client.guilds.cache.get(guildIdList[index]);
-
+      const targetId = guildIds[index];
+      const fallbackGuild = client.guilds.cache.get(targetId);
       if (result.status === 'fulfilled') {
         const { guildId, guildName } = result.value;
         console.log(`✅ Slash komutları ${guildName ?? fallbackGuild?.name ?? guildId} (${guildId}) için güncellendi.`);
       } else {
-        const guildId = guildIdList[index];
         const guildName = fallbackGuild?.name ?? 'Bilinmeyen Sunucu';
-        console.error(`❌ ${guildName} (${guildId}) için slash komutları güncellenemedi:`, result.reason);
+        console.error(`❌ ${guildName} (${targetId}) için slash komutları güncellenemedi:`, result.reason);
       }
     });
+  };
+
+  if ((syncMode === 'test' || syncMode === 'hybrid') && guildTargets.size) {
+    await registerGuilds([...guildTargets]);
+  } else if (syncMode === 'test' && !guildTargets.size) {
+    console.warn('⚠️ Komut senkronizasyon modu "test" olarak ayarlandı ancak hedef sunucu belirtilmedi.');
   }
 
-  try {
-    await client.rest.put(Routes.applicationCommands(applicationId), { body: payload });
-    console.log(
-      '🌐 Slash komutları global olarak güncellendi. (Global değişikliklerin Discord tarafında aktif olması yaklaşık 1 saati bulabilir)'
-    );
-  } catch (error) {
-    console.error('Global slash komutları güncellenirken hata oluştu:', error);
+  if (syncMode === 'global' || syncMode === 'hybrid') {
+    try {
+      await client.rest.put(Routes.applicationCommands(applicationId), { body: payload });
+      console.log(
+        '🌐 Slash komutları global olarak güncellendi. (Global değişikliklerin Discord tarafında aktif olması yaklaşık 1 saati bulabilir)'
+      );
+    } catch (error) {
+      console.error('Global slash komutları güncellenirken hata oluştu:', error);
+    }
   }
 }
 
