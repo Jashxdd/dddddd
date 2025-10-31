@@ -11,6 +11,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Ban, kick, timeout, rol verme/çekme, kanal kilitleme, yavaş mod ve uyarı kayıt sistemi
 - ✅ Ayrıntılı mod-log: ban/kick, mesaj silme/düzenleme, toplu silme, üye giriş/çıkış, rol değişimi, kanal/rol oluşturma-silme,
   ses kanalı hareketleri ve otomatik filtre ihlalleri
+- ✅ Sunucuya katılan üyelere otomatik rol atayabilen otorol sistemi (listeleme, ekleme/kaldırma, sıfırlama)
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
 - ✅ Furmin Pro üyelik denetimi ile premium komutlara erişim yönetimi
 - ✅ Pro komut kataloğu, uyarı raporu ve sistem özeti ile yöneticilere özel analiz paneli
@@ -48,11 +49,11 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
   `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/pro-denetim` ve otomatik moderasyon komutları.
-- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/ayarlar`, `/bot-bilgi`, `/prefix`, `/pro-uyelik`,
-  `/sistem-ozeti`, `/premium-komutlar`, `/pro-panel`, `/pro-rapor`, `/sahip-duyuru`, `/sahip-kontrol`, `/bakim`.
+- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/otorol`, `/ayarlar`, `/bot-bilgi`, `/prefix`,
+  `/pro-uyelik`, `/sistem-ozeti`, `/premium-komutlar`, `/pro-panel`, `/pro-rapor`, `/sahip-duyuru`, `/sahip-kontrol`, `/bakim`.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
-- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!ses`, `f!premium`, `f!prokomutlar`, `f!pro-rapor`,
-  `f!prodenetim`, `f!slot`, `f!tahmin`, `f!karistir`, `f!sahip-kontrol`, `f!prefix`, `f!bakim` vb.
+- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!otorol`, `f!ses`, `f!premium`, `f!prokomutlar`,
+  `f!pro-rapor`, `f!prodenetim`, `f!slot`, `f!tahmin`, `f!karistir`, `f!sahip-kontrol`, `f!prefix`, `f!bakim` vb.
 
 Her komut, slash menüsü veya önek sistemi çalıştırılmadan önce kullanıcının `/kurallari-kabul` ile kuralları onaylamasını zorunlu kılar.
 Furmin Pro üyeliği gereken komutlar yardım menüsünde 💎 simgesiyle gösterilir ve yardım menüsünde ayrı **Pro Komutları** / **Sahip Komutları** sayfaları bulunur.

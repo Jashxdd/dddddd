@@ -4,6 +4,7 @@ import { getBannedWords, isAutomodEnabled } from '../../utils/automodConfig.js';
 import { getKeywordRuleInfo } from '../../utils/discordAutomod.js';
 import { getWarningStats } from '../../utils/warnStorage.js';
 import { getAcceptedUsers } from '../../utils/rulesStorage.js';
+import { describeAutoRoles } from '../../utils/autoRoleStorage.js';
 
 export default {
   category: 'Sistem',
@@ -17,13 +18,22 @@ export default {
     await interaction.deferReply({ ephemeral: true });
 
     const guildId = interaction.guildId;
-    const [modLogChannelId, automodEnabled, bannedWords, discordAutomodInfo, warningStats, acceptedUsers] = await Promise.all([
+    const [
+      modLogChannelId,
+      automodEnabled,
+      bannedWords,
+      discordAutomodInfo,
+      warningStats,
+      acceptedUsers,
+      autoRoleSummary
+    ] = await Promise.all([
       getModLogChannelId(guildId),
       isAutomodEnabled(guildId),
       getBannedWords(guildId),
       getKeywordRuleInfo(interaction.guild),
       getWarningStats(guildId),
-      getAcceptedUsers(guildId)
+      getAcceptedUsers(guildId),
+      describeAutoRoles(guildId, interaction.guild)
     ]);
 
     const modLogChannel = modLogChannelId
@@ -49,6 +59,14 @@ export default {
           value: acceptedUsers.length
             ? `📝 ${acceptedUsers.length} kişi kuralları kabul etti.`
             : '⚠️ Kuralları kabul eden kayıtlı bir üye bulunmuyor.',
+          inline: true
+        },
+        {
+          name: 'Otomatik Roller',
+          value:
+            autoRoleSummary.count > 0
+              ? `🔁 ${autoRoleSummary.count} rol: ${autoRoleSummary.mentionList}`
+              : '⚪ Ayarlanmamış. `/otorol ekle` ile hızlıca kurabilirsiniz.',
           inline: true
         },
         {

@@ -1,4 +1,4 @@
-import { Events } from 'discord.js';
+import { EmbedBuilder, Events } from 'discord.js';
 import { hasAcceptedRules } from '../utils/rulesStorage.js';
 import { isProMember } from '../utils/proMembership.js';
 import { getMaintenanceState } from '../utils/maintenanceStorage.js';
@@ -20,16 +20,19 @@ export default {
     }
 
     const maintenance = await getMaintenanceState();
-    if (
-      maintenance.enabled &&
-      interaction.user.id !== interaction.client.ownerId &&
-      !command.ignoreMaintenance
-    ) {
-      const reason = maintenance.message ? ` Not: ${maintenance.message}` : '';
-      await interaction.reply({
-        content: `🔧 Furmin şu anda bakım modunda.${reason || ' Lütfen daha sonra tekrar dene.'}`,
-        ephemeral: true
-      });
+    if (maintenance.enabled && interaction.user.id !== interaction.client.ownerId && !command.ignoreMaintenance) {
+      const embed = new EmbedBuilder()
+        .setColor(0xf39c12)
+        .setTitle('🔧 Furmin Bakım Modunda')
+        .setDescription('Sistemler kısa süreli bakımda. Komutlar geçici olarak devre dışı bırakıldı.')
+        .setFooter({ text: 'Furmin Hizmet Durumu' })
+        .setTimestamp();
+
+      if (maintenance.message) {
+        embed.addFields({ name: 'Bakım Notu', value: maintenance.message });
+      }
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
       return;
     }
 

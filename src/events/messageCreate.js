@@ -14,6 +14,21 @@ import { isProMember } from '../utils/proMembership.js';
 import { getMaintenanceState } from '../utils/maintenanceStorage.js';
 import { config } from '../config.js';
 
+function createMaintenanceEmbed(client, note) {
+  const embed = new EmbedBuilder()
+    .setColor(0xf39c12)
+    .setTitle('🔧 Furmin Bakım Modunda')
+    .setDescription('Sistemler kısa süreli bakımda. Komutlar geçici olarak devre dışı bırakıldı.')
+    .setFooter({ text: `${client.user?.username ?? 'Furmin'} • Hizmet Durumu` })
+    .setTimestamp();
+
+  if (note) {
+    embed.addFields({ name: 'Bakım Notu', value: note });
+  }
+
+  return embed;
+}
+
 export default {
   name: Events.MessageCreate,
   async execute(message) {
@@ -77,11 +92,8 @@ export default {
 
     if (mentionFormats.includes(trimmed)) {
       if (maintenance.enabled && message.author.id !== message.client.ownerId) {
-        const info = maintenance.message ? ` Not: ${maintenance.message}` : '';
-        await message.reply({
-          content: `🔧 Furmin şu anda bakım modunda.${info || ' Lütfen daha sonra tekrar dene.'}`,
-          allowedMentions: { repliedUser: false }
-        });
+        const embed = createMaintenanceEmbed(message.client, maintenance.message);
+        await message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
         return;
       }
 
@@ -156,11 +168,8 @@ export default {
 
       if (maintenance.enabled && message.author.id !== message.client.ownerId && !command.ignoreMaintenance) {
         if (mePermissions) {
-          const note = maintenance.message ? ` Not: ${maintenance.message}` : '';
-          await message.reply({
-            content: `🔧 Furmin şu anda bakım modunda.${note || ' Lütfen daha sonra tekrar dene.'}`,
-            allowedMentions: { repliedUser: false }
-          });
+          const embed = createMaintenanceEmbed(message.client, maintenance.message);
+          await message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
         }
         return;
       }

@@ -5,6 +5,7 @@ import { getBannedWords, isAutomodEnabled } from '../../utils/automodConfig.js';
 import { getAcceptedUsers } from '../../utils/rulesStorage.js';
 import { getWarningStats } from '../../utils/warnStorage.js';
 import { isProMember, listProMembers } from '../../utils/proMembership.js';
+import { describeAutoRoles } from '../../utils/autoRoleStorage.js';
 
 export default {
   category: 'Sistem',
@@ -21,7 +22,17 @@ export default {
 
     const guildId = interaction.guildId;
 
-    const [prefixInfo, modLogId, automod, bannedWords, acceptedUsers, warningStats, proMembers, isMember] = await Promise.all([
+    const [
+      prefixInfo,
+      modLogId,
+      automod,
+      bannedWords,
+      acceptedUsers,
+      warningStats,
+      proMembers,
+      isMember,
+      autoRoleSummary
+    ] = await Promise.all([
       describePrefix(guildId ?? ''),
       getModLogChannelId(guildId ?? ''),
       isAutomodEnabled(guildId ?? ''),
@@ -29,7 +40,8 @@ export default {
       getAcceptedUsers(guildId ?? ''),
       getWarningStats(guildId ?? ''),
       listProMembers(),
-      isProMember(interaction.user.id)
+      isProMember(interaction.user.id),
+      describeAutoRoles(guildId ?? '', interaction.guild)
     ]);
 
     let modLogDisplay = 'Ayarlanmamış';
@@ -57,7 +69,12 @@ export default {
           value: [
             `• Yerel otomod: **${automod ? 'Açık' : 'Kapalı'}**`,
             `• Yasaklı kelime sayısı: **${bannedWords.length}**`,
-            `• Uyarı kayıtları: **${warningStats.totalWarnings}** uyarı / **${warningStats.totalUsers}** üye`
+            `• Uyarı kayıtları: **${warningStats.totalWarnings}** uyarı / **${warningStats.totalUsers}** üye`,
+            `• Otomatik roller: ${
+              autoRoleSummary.count > 0
+                ? `${autoRoleSummary.count} rol (${autoRoleSummary.mentionList})`
+                : 'Ayarlanmamış'
+            }`
           ].join('\n')
         },
         {
