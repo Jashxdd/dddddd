@@ -37,9 +37,9 @@ export default {
       }
 
       if (mePermissions) {
-        await message.channel
-          .send({ content: `👋 ${message.author}, AFK durumun kaldirildi. Tekrar hos geldin!` })
-          .catch(() => {});
+      await message.channel
+        .send({ content: `👋 ${message.author}, AFK durumun kaldırıldı. Tekrar hoş geldin!` })
+        .catch(() => {});
       }
     }
 
@@ -57,7 +57,7 @@ export default {
     if (mentionedAfkUsers.length && mePermissions) {
       const lines = mentionedAfkUsers.map(({ user, status }) => {
         const since = time(Math.floor(status.timestamp / 1000), 'R');
-        return `${user} su anda AFK. Sebep: **${status.reason}** (${since})`;
+        return `${user} şu anda AFK. Sebep: **${status.reason}** (${since})`;
       });
 
       await message.channel
@@ -80,11 +80,11 @@ export default {
         .setTitle('Merhaba!')
         .setDescription(
           [
-            `Komutlar için slash menüsünü veya prefix sistemini kullanabilirsin. Varsayılan prefix: **${prefix}**`,
-            '`/yardim` komutu slash olarak tüm kategorileri listeler, `yardim` prefix komutu ise sohbetten göz atmanı sağlar.'
+            `Komutlar için slash menüsünü veya önek sistemini kullanabilirsin. Varsayılan önek: **${prefix}**`,
+            '`/yardim` komutu slash olarak tüm kategorileri listeler, `yardim` önek komutu ise sohbetten göz atmanı sağlar.'
           ].join('\n')
         )
-        .setFooter({ text: 'Marpel Yardım Merkezi' })
+        .setFooter({ text: 'Furmin Yardım Merkezi' })
         .setTimestamp();
 
       const row = new ActionRowBuilder();
@@ -120,7 +120,7 @@ export default {
       const slice = message.content.slice(detectedPrefix.length).trim();
       if (!slice.length) {
         await message.reply({
-          content: `❓ Bir komut ismi yazmalısın. \`${prefix}yardim\` yazarak prefix komut listesini görebilirsin.`,
+          content: `❓ Bir komut adı yazmalısın. \`${prefix}yardim\` yazarak önek komut listesini görebilirsin.`,
           allowedMentions: { repliedUser: false }
         });
         return;
@@ -157,7 +157,7 @@ export default {
         if (!allowed) {
           await message.reply({
             content:
-              '💎 Bu komut sadece Pro üyelerine açıktır. `/premium` ile avantajları öğrenebilir ve bot sahibinden erişim isteyebilirsin.',
+              '💎 Bu komut sadece Pro üyelerine açıktır. `/premium` ile avantajları öğrenebilir ve bot sahibinden erişim talep edebilirsin.',
             allowedMentions: { repliedUser: false }
           });
           return;
@@ -171,7 +171,7 @@ export default {
           mentionPrefixes: mentionFormats
         });
       } catch (error) {
-        console.error(`Prefix komutu çalıştırılırken hata oluştu: ${canonicalName}`, error);
+        console.error(`Önek komutu çalıştırılırken hata oluştu: ${canonicalName}`, error);
         await message.reply({
           content: 'Komut çalıştırılırken beklenmedik bir hata oluştu.',
           allowedMentions: { repliedUser: false }
@@ -198,20 +198,20 @@ export default {
     if (!canSend) return;
 
     await message.channel.send({
-      content: `⚠️ ${message.author}, yasakli bir ifade (**${matchedWord}**) kullandigin icin mesajin silindi. Lutfen sunucu kurallarina uy.`
+      content: `⚠️ ${message.author}, yasaklı bir ifade (**${matchedWord}**) kullandığın için mesajın silindi. Lütfen sunucu kurallarına uy.`
     });
 
     const snippet = message.content.length > 1024 ? `${message.content.slice(0, 1021)}...` : message.content;
 
     await sendModerationLog(message.client, message.guild.id, {
-      action: 'Automod (Kelime Filtresi)',
-      moderator: 'Otomatik Sistem',
+      action: 'Otomatik Moderasyon',
+      moderator: 'Furmin Otomatik Sistem',
       target: formatUserMention(message.author),
-      reason: `Yasakli kelime: **${matchedWord}**`,
+      reason: `Yasaklı kelime: **${matchedWord}**`,
       color: 0xe74c3c,
       extraFields: [
         { name: 'Kanal', value: message.channel.toString(), inline: true },
-        { name: 'Mesaj Icerigi', value: snippet || 'Mesaj bos' }
+        { name: 'Mesaj İçeriği', value: snippet || 'Mesaj boş' }
       ]
     });
   }

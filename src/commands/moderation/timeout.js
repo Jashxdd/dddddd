@@ -7,8 +7,8 @@ const durationChoices = [
   { label: '1 saat', value: 60 * 60 * 1000 },
   { label: '6 saat', value: 6 * 60 * 60 * 1000 },
   { label: '12 saat', value: 12 * 60 * 60 * 1000 },
-  { label: '1 gun', value: 24 * 60 * 60 * 1000 },
-  { label: '3 gun', value: 3 * 24 * 60 * 60 * 1000 },
+  { label: '1 gün', value: 24 * 60 * 60 * 1000 },
+  { label: '3 gün', value: 3 * 24 * 60 * 60 * 1000 },
   { label: '1 hafta', value: 7 * 24 * 60 * 60 * 1000 }
 ];
 
@@ -16,18 +16,18 @@ export default {
   category: 'Moderasyon',
   data: new SlashCommandBuilder()
     .setName('sustur')
-    .setDescription('Bir kullaniciyi belirli bir sure icin zaman asimina sokar (timeout).')
+    .setDescription('Bir kullanıcıyı belirli bir süre için zaman aşımına sokar (timeout).')
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
     .addUserOption((option) =>
       option
         .setName('kullanici')
-        .setDescription('Zaman asimina sokulacak kullanici')
+        .setDescription('Zaman aşımına sokulacak kullanıcı')
         .setRequired(true)
     )
     .addStringOption((option) => {
       let builder = option
         .setName('sure')
-        .setDescription('Uygulanacak sure')
+        .setDescription('Uygulanacak süre')
         .setRequired(true);
 
       for (const choice of durationChoices) {
@@ -45,7 +45,7 @@ export default {
   async execute(interaction) {
     if (!interaction.inGuild()) {
       await interaction.reply({
-        content: 'Bu komut sadece sunucu icinde kullanilabilir.',
+        content: 'Bu komut sadece sunucu içinde kullanılabilir.',
         ephemeral: true
       });
       return;
@@ -53,22 +53,22 @@ export default {
 
     const target = interaction.options.getMember('kullanici');
     if (!target) {
-      await interaction.reply({ content: 'Belirtilen kullanici sunucuda bulunamadi.', ephemeral: true });
+      await interaction.reply({ content: 'Belirtilen kullanıcı sunucuda bulunamadı.', ephemeral: true });
       return;
     }
 
     if (target.id === interaction.user.id) {
-      await interaction.reply({ content: 'Kendini susturamazsin.', ephemeral: true });
+      await interaction.reply({ content: 'Kendini susturamazsın.', ephemeral: true });
       return;
     }
 
     if (target.user.bot) {
-      await interaction.reply({ content: 'Botlari susturamazsin.', ephemeral: true });
+      await interaction.reply({ content: 'Botları susturamazsın.', ephemeral: true });
       return;
     }
 
     if (!target.moderatable || target.roles.highest.comparePositionTo(interaction.member.roles.highest) >= 0) {
-      await interaction.reply({ content: 'Bu kullaniciya zaman asimi uygulanamiyor.', ephemeral: true });
+      await interaction.reply({ content: 'Bu kullanıcıya zaman aşımı uygulanamıyor.', ephemeral: true });
       return;
     }
 
@@ -83,19 +83,19 @@ export default {
     const until = time(Math.floor((Date.now() + durationMs) / 1000));
 
     await interaction.reply({
-      content: `🔇 ${target.user.tag} kullanicisi ${reason} nedeniyle ${until} tarihine kadar susturuldu.`,
+      content: `🔇 ${target.user.tag} kullanıcısı ${reason} nedeniyle ${until} tarihine kadar susturuldu.`,
       ephemeral: true
     });
 
-    await sendModerationLog(interaction.client, interaction.guildId, {
-      action: 'Zaman Asimi',
+      await sendModerationLog(interaction.client, interaction.guildId, {
+        action: 'Zaman Aşımı',
       target: formatUserMention(target.user),
       moderator: formatUserMention(interaction.user),
       reason,
       color: 0xf1c40f,
       extraFields: [
-        { name: 'Sure', value: durationLabel, inline: true },
-        { name: 'Bitis', value: until, inline: true }
+        { name: 'Süre', value: durationLabel, inline: true },
+        { name: 'Bitiş', value: until, inline: true }
       ]
     });
   }

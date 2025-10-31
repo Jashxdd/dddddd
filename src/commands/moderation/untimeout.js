@@ -5,12 +5,12 @@ export default {
   category: 'Moderasyon',
   data: new SlashCommandBuilder()
     .setName('sustur-kaldir')
-    .setDescription('Zaman asimina sokulmus bir kullanicinin susturmasini kaldirir.')
+    .setDescription('Zaman aşımına sokulmuş bir kullanıcının susturmasını kaldırır.')
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
     .addUserOption((option) =>
       option
         .setName('kullanici')
-        .setDescription('Susturmasi kaldirilacak kullanici')
+        .setDescription('Susturması kaldırılacak kullanıcı')
         .setRequired(true)
     )
     .addStringOption((option) =>
@@ -22,7 +22,7 @@ export default {
   async execute(interaction) {
     if (!interaction.inGuild()) {
       await interaction.reply({
-        content: 'Bu komut sadece sunucu icinde kullanilabilir.',
+        content: 'Bu komut sadece sunucu içinde kullanılabilir.',
         ephemeral: true
       });
       return;
@@ -30,20 +30,20 @@ export default {
 
     const target = interaction.options.getMember('kullanici');
     if (!target) {
-      await interaction.reply({ content: 'Belirtilen kullanici sunucuda bulunamadi.', ephemeral: true });
+      await interaction.reply({ content: 'Belirtilen kullanıcı sunucuda bulunamadı.', ephemeral: true });
       return;
     }
 
     if (!target.isCommunicationDisabled()) {
       await interaction.reply({
-        content: 'Bu kullanici su anda susturulmus degil.',
+        content: 'Bu kullanıcı şu anda susturulmuş değil.',
         ephemeral: true
       });
       return;
     }
 
     if (!target.moderatable || target.roles.highest.comparePositionTo(interaction.member.roles.highest) >= 0) {
-      await interaction.reply({ content: 'Bu kullanicinin susturmasini kaldiramazsin.', ephemeral: true });
+      await interaction.reply({ content: 'Bu kullanıcının susturmasını kaldıramazsın.', ephemeral: true });
       return;
     }
 
@@ -51,10 +51,10 @@ export default {
 
     await target.timeout(null, reason);
 
-    await interaction.reply({ content: `🔊 ${target.user.tag} kullanicisinin susturmasi kaldirildi.`, ephemeral: true });
+    await interaction.reply({ content: `🔊 ${target.user.tag} kullanıcısının susturması kaldırıldı.`, ephemeral: true });
 
     await sendModerationLog(interaction.client, interaction.guildId, {
-      action: 'Zaman Asimi Kaldirildi',
+      action: 'Zaman Aşımı Kaldırıldı',
       target: formatUserMention(target.user),
       moderator: formatUserMention(interaction.user),
       reason,

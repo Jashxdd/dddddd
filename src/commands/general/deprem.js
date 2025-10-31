@@ -2,7 +2,7 @@ import { EmbedBuilder, SlashCommandBuilder, time } from 'discord.js';
 
 async function fetchEarthquakes(limit = 5) {
   const endpoint = `https://api.orhanaydogdu.com.tr/deprem/live.php?limit=${limit}`;
-  const response = await fetch(endpoint, { headers: { 'User-Agent': 'MarpelBot/1.0' } });
+  const response = await fetch(endpoint, { headers: { 'User-Agent': 'FurminBot/1.0' } });
   if (!response.ok) {
     throw new Error(`Deprem verisi alınamadı: ${response.status}`);
   }

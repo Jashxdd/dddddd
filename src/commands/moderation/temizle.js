@@ -5,12 +5,12 @@ export default {
   category: 'Moderasyon',
   data: new SlashCommandBuilder()
     .setName('temizle')
-    .setDescription('Kanaldaki son mesajlari toplu olarak siler.')
+    .setDescription('Kanaldaki son mesajları toplu olarak siler.')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
     .addIntegerOption((option) =>
       option
         .setName('adet')
-        .setDescription('Silinecek mesaj sayisi (1-100)')
+        .setDescription('Silinecek mesaj sayısı (1-100)')
         .setMinValue(1)
         .setMaxValue(100)
         .setRequired(true)
@@ -18,13 +18,13 @@ export default {
     .addUserOption((option) =>
       option
         .setName('kullanici')
-        .setDescription('Sadece belirtilen kullanicinin mesajlarini sil')
+        .setDescription('Sadece belirtilen kullanıcının mesajlarını sil')
         .setRequired(false)
     ),
   async execute(interaction) {
     if (!interaction.inGuild()) {
       await interaction.reply({
-        content: 'Bu komut sadece sunucu icinde kullanilabilir.',
+        content: 'Bu komut sadece sunucu içinde kullanılabilir.',
         ephemeral: true
       });
       return;
@@ -36,7 +36,7 @@ export default {
     const channel = interaction.channel;
 
     if (!channel?.isTextBased() || channel.isDMBased()) {
-      await interaction.reply({ content: 'Bu komut sadece metin kanallarinda kullanilabilir.', ephemeral: true });
+      await interaction.reply({ content: 'Bu komut sadece metin kanallarında kullanılabilir.', ephemeral: true });
       return;
     }
 
@@ -52,31 +52,31 @@ export default {
         deleted = await channel.bulkDelete(amount, true);
       }
     } catch (error) {
-      await interaction.editReply({ content: '⚠️ Mesajlar silinirken bir hata olustu. Bazi mesajlar 14 gunden eski olabilir.' });
+      await interaction.editReply({ content: '⚠️ Mesajlar silinirken bir hata oluştu. Bazı mesajlar 14 günden eski olabilir.' });
       return;
     }
 
     const deletedCount = deleted?.size ?? 0;
 
     await interaction.editReply({
-      content: deletedCount ? `🧹 Toplam ${deletedCount} mesaj silindi.` : '⚠️ Silinecek mesaj bulunamadi.'
+      content: deletedCount ? `🧹 Toplam ${deletedCount} mesaj silindi.` : '⚠️ Silinecek mesaj bulunamadı.'
     });
 
     if (deletedCount) {
       const extraFields = [
         { name: 'Kanal', value: channel.toString(), inline: true },
-        { name: 'Silinen Mesaj Sayisi', value: String(deletedCount), inline: true }
+        { name: 'Silinen Mesaj Sayısı', value: String(deletedCount), inline: true }
       ];
 
       if (targetUser) {
-        extraFields.push({ name: 'Hedef Kullanici', value: formatUserMention(targetUser), inline: true });
+        extraFields.push({ name: 'Hedef Kullanıcı', value: formatUserMention(targetUser), inline: true });
       }
 
       await sendModerationLog(interaction.client, interaction.guildId, {
         action: 'Mesaj Temizleme',
         moderator: formatUserMention(interaction.user),
         reason: targetUser
-          ? 'Belirtilen kullanicinin mesajlari filtrelenerek silindi.'
+          ? 'Belirtilen kullanıcının mesajları filtrelenerek silindi.'
           : 'Kanaldaki mesajlar toplu olarak temizlendi.',
         color: 0x2980b9,
         extraFields

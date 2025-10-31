@@ -134,7 +134,7 @@ function buildOverviewPage(categories, prefix) {
 
   const embed = new EmbedBuilder()
     .setColor(0x5865f2)
-    .setTitle('🗂️ Marpel Komut Merkezi')
+    .setTitle('🗂️ Furmin Komut Merkezi')
     .setDescription(
       'Aşağıdaki menü ve butonları kullanarak tüm kategorileri gezebilir, pro komutlarını ve prefix sistemini inceleyebilirsin.'
     )

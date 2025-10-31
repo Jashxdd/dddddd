@@ -6,7 +6,7 @@ export function buildWarningLeaderboard({ guild, entries }) {
     .setColor(0x8e44ad)
     .setTitle('💎 Uyarı Liderlik Tablosu')
     .setDescription('En fazla uyarıya sahip üyeler burada listelenir.')
-    .setFooter({ text: guild?.name ?? 'Marpel Pro' })
+    .setFooter({ text: guild?.name ?? 'Furmin Pro' })
     .setTimestamp();
 
   if (!entries.length) {

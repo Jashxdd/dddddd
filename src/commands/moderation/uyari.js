@@ -6,41 +6,41 @@ export default {
   category: 'Moderasyon',
   data: new SlashCommandBuilder()
     .setName('uyari')
-    .setDescription('Uyari sistemini yonetir.')
+    .setDescription('Uyarı sistemini yönetir.')
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
     .addSubcommand((sub) =>
       sub
         .setName('ekle')
-        .setDescription('Bir kullaniciya uyari ekler.')
+        .setDescription('Bir kullanıcıya uyarı ekler.')
         .addUserOption((option) =>
-          option.setName('kullanici').setDescription('Uyarilacak kullanici').setRequired(true)
+          option.setName('kullanici').setDescription('Uyarılacak kullanıcı').setRequired(true)
         )
         .addStringOption((option) =>
-          option.setName('sebep').setDescription('Uyarinin sebebi').setRequired(true)
+          option.setName('sebep').setDescription('Uyarının sebebi').setRequired(true)
         )
     )
     .addSubcommand((sub) =>
       sub
         .setName('liste')
-        .setDescription('Bir kullanicinin uyarilarini listeler.')
+        .setDescription('Bir kullanıcının uyarılarını listeler.')
         .addUserOption((option) =>
           option
             .setName('kullanici')
-            .setDescription('Uyarilari goruntulenecek kullanici (varsayilan: kendin)')
+            .setDescription('Uyarıları görüntülenecek kullanıcı (varsayılan: kendin)')
             .setRequired(false)
         )
     )
     .addSubcommand((sub) =>
       sub
         .setName('sil')
-        .setDescription('Belirli bir uyariyi kaldirir.')
+        .setDescription('Belirli bir uyarıyı kaldırır.')
         .addUserOption((option) =>
-          option.setName('kullanici').setDescription('Uyarisi silinecek kullanici').setRequired(true)
+          option.setName('kullanici').setDescription('Uyarısı silinecek kullanıcı').setRequired(true)
         )
         .addIntegerOption((option) =>
           option
             .setName('numara')
-            .setDescription('Silinecek uyarinin numarasi (1, 2, 3, ...)')
+            .setDescription('Silinecek uyarının numarası (1, 2, 3, ...)')
             .setMinValue(1)
             .setRequired(true)
         )
@@ -48,14 +48,14 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName('temizle')
-        .setDescription('Bir kullanicinin tum uyarilarini siler.')
+        .setDescription('Bir kullanıcının tüm uyarılarını siler.')
         .addUserOption((option) =>
-          option.setName('kullanici').setDescription('Uyarilari temizlenecek kullanici').setRequired(true)
+          option.setName('kullanici').setDescription('Uyarıları temizlenecek kullanıcı').setRequired(true)
         )
     ),
   async execute(interaction) {
     if (!interaction.inGuild()) {
-      await interaction.reply({ content: 'Bu komut sadece sunucularda kullanilabilir.', ephemeral: true });
+      await interaction.reply({ content: 'Bu komut sadece sunucularda kullanılabilir.', ephemeral: true });
       return;
     }
 
@@ -64,12 +64,12 @@ export default {
     if (sub === 'ekle') {
       const member = interaction.options.getMember('kullanici');
       if (!member) {
-        await interaction.reply({ content: 'Kullanici bulunamadi.', ephemeral: true });
+        await interaction.reply({ content: 'Kullanıcı bulunamadı.', ephemeral: true });
         return;
       }
 
       if (member.user.bot) {
-        await interaction.reply({ content: 'Botlari uyaramazsin.', ephemeral: true });
+        await interaction.reply({ content: 'Botları uyaramazsın.', ephemeral: true });
         return;
       }
 
@@ -78,12 +78,12 @@ export default {
       await addWarning(interaction.guildId, member.id, interaction.user.id, reason);
 
       await interaction.reply({
-        content: `⚠️ ${member} kullanicisina uyari eklendi. Sebep: ${reason}`,
+        content: `⚠️ ${member} kullanıcısına uyarı eklendi. Sebep: ${reason}`,
         ephemeral: true
       });
 
       await sendModerationLog(interaction.client, interaction.guildId, {
-        action: 'Uyari Ekle',
+        action: 'Uyarı Ekle',
         moderator: formatUserMention(interaction.user),
         target: formatUserMention(member),
         reason,
@@ -97,7 +97,7 @@ export default {
       const warnings = await listWarnings(interaction.guildId, user.id);
 
       if (!warnings.length) {
-        await interaction.reply({ content: `${user} icin kayitli uyari bulunmuyor.`, ephemeral: true });
+        await interaction.reply({ content: `${user} için kayıtlı uyarı bulunmuyor.`, ephemeral: true });
         return;
       }
 
@@ -107,7 +107,7 @@ export default {
       });
 
       await interaction.reply({
-        content: `📋 ${user} icin ${warnings.length} uyari bulundu:\n${lines.join('\n')}`,
+        content: `📋 ${user} için ${warnings.length} uyarı bulundu:\n${lines.join('\n')}`,
         ephemeral: true
       });
       return;
@@ -120,17 +120,17 @@ export default {
 
       await interaction.reply({
         content: removed
-          ? `🗑️ ${member} icin ${number}. uyari silindi.`
-          : '⚠️ Belirtilen numarada bir uyari bulunamadi.',
+          ? `🗑️ ${member} için ${number}. uyarı silindi.`
+          : '⚠️ Belirtilen numarada bir uyarı bulunamadı.',
         ephemeral: true
       });
 
       if (removed) {
         await sendModerationLog(interaction.client, interaction.guildId, {
-          action: 'Uyari Sil',
+          action: 'Uyarı Sil',
           moderator: formatUserMention(interaction.user),
           target: formatUserMention(member),
-          reason: `${number}. uyari kaldirildi.`,
+          reason: `${number}. uyarı kaldırıldı.`,
           color: 0x3498db
         });
       }
@@ -143,17 +143,17 @@ export default {
 
       await interaction.reply({
         content: cleared
-          ? `🧹 ${member} icin tum uyarilar temizlendi.`
-          : 'ℹ️ Bu kullanicinin zaten kayitli uyarisi bulunmuyor.',
+          ? `🧹 ${member} için tüm uyarılar temizlendi.`
+          : 'ℹ️ Bu kullanıcının zaten kayıtlı uyarısı bulunmuyor.',
         ephemeral: true
       });
 
       if (cleared) {
         await sendModerationLog(interaction.client, interaction.guildId, {
-          action: 'Uyari Temizleme',
+          action: 'Uyarı Temizleme',
           moderator: formatUserMention(interaction.user),
           target: formatUserMention(member),
-          reason: 'Kullanicinin tum uyarilari temizlendi.',
+          reason: 'Kullanıcının tüm uyarıları temizlendi.',
           color: 0x1abc9c
         });
       }

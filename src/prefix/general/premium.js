@@ -6,7 +6,7 @@ export default {
   name: 'premium',
   aliases: ['pro'],
   category: 'Extra',
-  description: 'Marpel Pro avantajlarını listeler ve başvuru bilgisi verir.',
+  description: 'Furmin Pro avantajlarını listeler ve başvuru bilgisi verir.',
   menuGroup: 'Pro Üyelik',
   async execute(message) {
     const proMembers = await listProMembers();
@@ -14,7 +14,7 @@ export default {
 
     const embed = new EmbedBuilder()
       .setColor(0x9b59b6)
-      .setTitle('💎 Marpel Pro Üyeliği')
+      .setTitle('💎 Furmin Pro Üyeliği')
       .setDescription(
         isPro
           ? 'Pro üyesisin! Yardım menüsünde 💎 simgeli komutların tamamını kullanabilirsin.'

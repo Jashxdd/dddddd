@@ -57,7 +57,7 @@ export default {
 
     const embed = new EmbedBuilder()
       .setColor(0x5865f2)
-      .setTitle('Marpel Komut Merkezi')
+      .setTitle('Furmin Komut Merkezi')
       .setDescription('Slash veya prefix komutlarını kullanarak botu yönetebilirsin. Detaylı menü için `/yardim` komutunu aç.')
       .setFooter({ text: `Prefix: ${prefix}` })
       .setTimestamp();

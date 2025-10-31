@@ -48,7 +48,7 @@ export function buildProfileEmbed({ member, user, guild, warningsCount }) {
 
   embed.addFields({ name: 'Toplam Uyarı', value: formatNumber(warningsCount), inline: true });
 
-  embed.setFooter({ text: guild?.name ?? 'Marpel Sistemleri' }).setTimestamp();
+  embed.setFooter({ text: guild?.name ?? 'Furmin Sistemleri' }).setTimestamp();
   return embed;
 }
 

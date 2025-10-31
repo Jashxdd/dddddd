@@ -44,7 +44,7 @@ export default {
     if (sub === 'ekle') {
       const target = interaction.options.getUser('kullanici', true);
       await grantPro(target.id);
-      await interaction.reply({ content: `✅ ${target} artık **Marpel Pro** üyesi.`, ephemeral: true });
+      await interaction.reply({ content: `✅ ${target} artık **Furmin Pro** üyesi.`, ephemeral: true });
       return;
     }
 

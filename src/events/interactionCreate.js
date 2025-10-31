@@ -12,7 +12,7 @@ export default {
     const command = client.commands.get(interaction.commandName);
     if (!command) {
       await interaction.reply({
-        content: 'Komut bulunamadi veya gecici olarak devre disi.',
+        content: 'Komut bulunamadı veya geçici olarak devre dışı.',
         ephemeral: true
       });
       return;
@@ -26,7 +26,7 @@ export default {
     ) {
       await interaction.reply({
         content:
-          '⚠️ Komutlari kullanmadan once sunucu kurallarini kabul etmelisin. Lütfen `/kurallar` komutu ile kurallari inceleyip `/kurallari-kabul` komutu ile onayla.',
+          '⚠️ Komutları kullanmadan önce sunucu kurallarını kabul etmelisin. Lütfen `/kurallar` komutu ile kuralları inceleyip `/kurallari-kabul` komutu ile onayla.',
         ephemeral: true
       });
       return;
@@ -47,9 +47,9 @@ export default {
     try {
       await command.execute(interaction, client);
     } catch (error) {
-      console.error(`Komut calistirilirken hata olustu: ${interaction.commandName}`, error);
+      console.error(`Komut çalıştırılırken hata oluştu: ${interaction.commandName}`, error);
 
-      const content = 'Komut calistirilirken beklenmedik bir hata olustu.';
+      const content = 'Komut çalıştırılırken beklenmedik bir hata oluştu.';
       if (interaction.deferred || interaction.replied) {
         await interaction.editReply({ content });
       } else {

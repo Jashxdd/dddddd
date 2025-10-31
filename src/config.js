@@ -29,7 +29,7 @@ for (const candidate of candidateConfigPaths) {
     configSource = candidate;
     break;
   } catch (error) {
-    console.warn(`⚠️ ${candidate} dosyasi okunurken hata olustu. Sonraki kaynak denenecek.`, error);
+    console.warn(`⚠️ ${candidate} dosyası okunurken hata oluştu. Sonraki kaynak denenecek.`, error);
     fileConfig = {};
     configSource = '';
   }
@@ -117,7 +117,7 @@ export const config = {
   clientId: pick(fileConfig.clientId, process.env.CLIENT_ID),
   guildId: pick(fileConfig.guildId, process.env.GUILD_ID),
   ownerId: pick(fileConfig.ownerId, process.env.OWNER_ID),
-  defaultPrefix: pick(fileConfig.defaultPrefix, process.env.DEFAULT_PREFIX) || 'm!',
+  defaultPrefix: pick(fileConfig.defaultPrefix, process.env.DEFAULT_PREFIX) || 'f!',
   supportServerUrl: pick(fileConfig.supportServerUrl, process.env.SUPPORT_SERVER_URL),
   inviteUrl: pick(fileConfig.inviteUrl, process.env.INVITE_URL),
   proInfoUrl: pick(fileConfig.proInfoUrl, process.env.PRO_INFO_URL),
@@ -135,17 +135,17 @@ export function describeConfigSource() {
     return `Dosya: ${configSource}`;
   }
 
-  return '.env degiskenleri';
+  return '.env değişkenleri';
 }
 
 export function assertConfig(options = {}) {
   const { requireClientId = true } = options;
 
   if (!config.token) {
-    throw new Error('Bot tokeni bulunamadi. config.json dosyasini (veya .env) guncelleyip DISCORD_TOKEN ayarladiginizdan emin olun.');
+    throw new Error('Bot tokeni bulunamadı. config.json dosyasını (veya .env) güncelleyip DISCORD_TOKEN ayarladığınızdan emin olun.');
   }
 
   if (requireClientId && !config.clientId) {
-    throw new Error('Client ID bulunamadi. config.json veya .env uzerinden CLIENT_ID ayarlayin.');
+    throw new Error('Client ID bulunamadı. config.json veya .env üzerinden CLIENT_ID ayarlayın.');
   }
 }

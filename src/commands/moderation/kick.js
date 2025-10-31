@@ -5,13 +5,13 @@ export default {
   category: 'Moderasyon',
   data: new SlashCommandBuilder()
     .setName('kick')
-    .setDescription('Bir uyeyi sunucudan atar.')
+    .setDescription('Bir üyeyi sunucudan atar.')
     .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers)
     .setDMPermission(false)
     .addUserOption((option) =>
       option
         .setName('uye')
-        .setDescription('Atilacak uyenin secimi')
+        .setDescription('Atılacak üyenin seçimi')
         .setRequired(true)
     )
     .addStringOption((option) =>
@@ -26,7 +26,7 @@ export default {
 
     if (!interaction.guild) {
       await interaction.reply({
-        content: 'Bu komut sadece sunucu icinde kullanilabilir.',
+        content: 'Bu komut sadece sunucu içinde kullanılabilir.',
         ephemeral: true
       });
       return;
@@ -34,7 +34,7 @@ export default {
 
     if (!member) {
       await interaction.reply({
-        content: 'Belirtilen uye sunucuda bulunamadi.',
+        content: 'Belirtilen üye sunucuda bulunamadı.',
         ephemeral: true
       });
       return;
@@ -42,7 +42,7 @@ export default {
 
     if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.KickMembers)) {
       await interaction.reply({
-        content: 'Uyelere kick atabilmem icin yetkim yok.',
+        content: 'Üyelere kick atabilmem için yetkim yok.',
         ephemeral: true
       });
       return;
@@ -50,7 +50,7 @@ export default {
 
     if (!member.kickable) {
       await interaction.reply({
-        content: 'Bu uyeyi atamiyorum. Rollerimi kontrol edin.',
+        content: 'Bu üyeyi atamıyorum. Rollerimi kontrol edin.',
         ephemeral: true
       });
       return;
@@ -59,7 +59,7 @@ export default {
     await member.kick(reason);
 
     await interaction.reply({
-      content: `${member.user.tag} kullanicisi sunucudan atildi. Sebep: ${reason}`
+      content: `${member.user.tag} kullanıcısı sunucudan atıldı. Sebep: ${reason}`
     });
 
     await sendModerationLog(interaction.client, interaction.guildId, {

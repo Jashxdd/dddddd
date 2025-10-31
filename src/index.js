@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 assertConfig({ requireClientId: false });
-console.log(`⚙️  Yapilandirma yuklendi (${describeConfigSource()}).`);
+console.log(`⚙️ Yapılandırma yüklendi (${describeConfigSource()}).`);
 
 const client = new Client({
   intents: [
@@ -56,7 +56,7 @@ async function registerCommands() {
     });
   }
 
-  console.log(`🧩 ${client.commands.size} slash komutu yuklendi.`);
+  console.log(`🧩 ${client.commands.size} slash komutu yüklendi.`);
 }
 
 async function registerPrefixCommands() {
@@ -81,7 +81,7 @@ async function registerPrefixCommands() {
     });
   }
 
-  console.log(`⌨️  ${client.prefixCommands.size} prefix komutu yüklendi.`);
+  console.log(`⌨️ ${client.prefixCommands.size} önek komutu yüklendi.`);
 }
 
 async function registerEvents() {
@@ -96,7 +96,7 @@ async function registerEvents() {
     const event = eventModule.default ?? eventModule;
 
     if (!event?.name || !event?.execute) {
-      console.warn(`\u26a0\ufe0f  ${file} etkinligi icin name veya execute eksik.`);
+      console.warn(`⚠️ ${file} etkinliği için name veya execute eksik.`);
       continue;
     }
 
@@ -116,7 +116,7 @@ async function bootstrap() {
 
     await client.login(config.token);
   } catch (error) {
-    console.error('Bot baslatilirken hata olustu:', error);
+    console.error('Bot başlatılırken hata oluştu:', error);
     process.exit(1);
   }
 }

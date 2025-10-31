@@ -10,8 +10,8 @@ const activityTypeMap = {
 };
 
 const fallbackActivities = [
-  { name: '/yardim ile komutlarini kesfet', type: ActivityType.Listening },
-  { name: 'sunucu kurallarini koruyor', type: ActivityType.Watching },
+  { name: '/yardim ile komutlarını keşfet', type: ActivityType.Listening },
+  { name: 'sunucu kurallarını koruyor', type: ActivityType.Watching },
   { name: 'moderasyon ekibine destek oluyor', type: ActivityType.Competing }
 ];
 
@@ -51,13 +51,13 @@ async function syncApplicationCommands(client) {
   try {
     await client.application.fetch();
   } catch (error) {
-    console.error('❌ Uygulama bilgileri alinamadi. Slash komutlari senkronize edilemedi.', error);
+    console.error('❌ Uygulama bilgileri alınamadı. Slash komutları senkronize edilemedi.', error);
     return;
   }
 
   const applicationId = client.application?.id;
   if (!applicationId) {
-    console.error('❌ Uygulama ID tespit edilemedi. Slash komutlari guncellenemiyor.');
+    console.error('❌ Uygulama ID tespit edilemedi. Slash komutları güncellenemiyor.');
     return;
   }
 
@@ -69,7 +69,7 @@ async function syncApplicationCommands(client) {
       guildIds.add(guild.id);
     }
   } catch (error) {
-    console.warn('⚠️ Sunucu listesi cekilirken hata olustu. Komutlar sadece cache verileriyle guncellenecek.', error);
+    console.warn('⚠️ Sunucu listesi çekilirken hata oluştu. Komutlar yalnızca önbellekteki verilerle güncellenecek.', error);
   }
 
   if (config.guildId) {
@@ -98,11 +98,11 @@ async function syncApplicationCommands(client) {
 
       if (result.status === 'fulfilled') {
         const { guildId, guildName } = result.value;
-        console.log(`✅ Slash komutlari ${guildName ?? fallbackGuild?.name ?? guildId} (${guildId}) icin guncellendi.`);
+        console.log(`✅ Slash komutları ${guildName ?? fallbackGuild?.name ?? guildId} (${guildId}) için güncellendi.`);
       } else {
         const guildId = guildIdList[index];
         const guildName = fallbackGuild?.name ?? 'Bilinmeyen Sunucu';
-        console.error(`❌ ${guildName} (${guildId}) icin slash komutlari guncellenemedi:`, result.reason);
+        console.error(`❌ ${guildName} (${guildId}) için slash komutları güncellenemedi:`, result.reason);
       }
     });
   }
@@ -110,10 +110,10 @@ async function syncApplicationCommands(client) {
   try {
     await client.rest.put(Routes.applicationCommands(applicationId), { body: payload });
     console.log(
-      '🌐 Slash komutlari global olarak guncellendi. (Global degisikliklerin Discord tarafinda aktif olmasi ~1 saati bulabilir)'
+      '🌐 Slash komutları global olarak güncellendi. (Global değişikliklerin Discord tarafında aktif olması yaklaşık 1 saati bulabilir)'
     );
   } catch (error) {
-    console.error('Global slash komutlari guncellenirken hata olustu:', error);
+    console.error('Global slash komutları güncellenirken hata oluştu:', error);
   }
 }
 
@@ -149,7 +149,7 @@ export default {
   name: Events.ClientReady,
   once: true,
   async execute(client) {
-    console.log(`✅ ${client.user.tag} olarak giris yapildi.`);
+    console.log(`✅ ${client.user.tag} olarak giriş yapıldı.`);
     if (config.ownerId) {
       console.log(`👑 Bot sahibi: ${config.ownerId}`);
     }

@@ -16,12 +16,12 @@ export default {
   category: 'Moderasyon',
   data: new SlashCommandBuilder()
     .setName('yavas-mod')
-    .setDescription('Metin kanalindaki yavas mod ayarini degistirir.')
+    .setDescription('Metin kanalındaki yavaş mod ayarını değiştirir.')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
     .addStringOption((option) => {
       let builder = option
         .setName('sure')
-        .setDescription('Yavas mod sure secimi')
+        .setDescription('Yavaş mod süre seçimi')
         .setRequired(true);
 
       for (const duration of durations) {
@@ -33,13 +33,13 @@ export default {
     .addChannelOption((option) =>
       option
         .setName('kanal')
-        .setDescription('Yavas mod uygulanacak kanal (varsayilan: mevcut kanal)')
+        .setDescription('Yavaş mod uygulanacak kanal (varsayılan: mevcut kanal)')
         .setRequired(false)
     ),
   async execute(interaction) {
     if (!interaction.inGuild()) {
       await interaction.reply({
-        content: 'Bu komut sadece sunucularda kullanilabilir.',
+        content: 'Bu komut sadece sunucularda kullanılabilir.',
         ephemeral: true
       });
       return;
@@ -48,18 +48,18 @@ export default {
     const channel = interaction.options.getChannel('kanal') ?? interaction.channel;
 
     if (!channel?.isTextBased() || channel.isDMBased() || typeof channel.setRateLimitPerUser !== 'function') {
-      await interaction.reply({ content: 'Yavas mod sadece metin kanallarinda ayarlanabilir.', ephemeral: true });
+      await interaction.reply({ content: 'Yavaş mod sadece metin kanallarında ayarlanabilir.', ephemeral: true });
       return;
     }
 
     const seconds = Number(interaction.options.getString('sure'));
 
-    await channel.setRateLimitPerUser(seconds, `Yavas mod ${interaction.user.tag} tarafindan guncellendi`);
+    await channel.setRateLimitPerUser(seconds, `Yavaş mod ${interaction.user.tag} tarafından güncellendi`);
 
     const messageContent =
       seconds === 0
-        ? `⏹️ ${channel} kanalindaki yavas mod kapatildi.`
-        : `🐢 ${channel} kanalindaki yavas mod ${seconds} saniye olarak ayarlandi.`;
+        ? `⏹️ ${channel} kanalındaki yavaş mod kapatıldı.`
+        : `🐢 ${channel} kanalındaki yavaş mod ${seconds} saniye olarak ayarlandı.`;
 
     await interaction.reply({
       content: messageContent,
@@ -67,14 +67,14 @@ export default {
     });
 
     await sendModerationLog(interaction.client, interaction.guildId, {
-      action: 'Yavas Mod',
+      action: 'Yavaş Mod',
       moderator: formatUserMention(interaction.user),
       reason:
-        seconds === 0 ? 'Kanal icin yavas mod devre disi birakildi.' : 'Kanalin yavas mod suresi guncellendi.',
+        seconds === 0 ? 'Kanal için yavaş mod devre dışı bırakıldı.' : 'Kanalın yavaş mod süresi güncellendi.',
       color: 0x9b59b6,
       extraFields: [
         { name: 'Kanal', value: channel.toString(), inline: true },
-        { name: 'Sure', value: seconds === 0 ? 'Pasif' : `${seconds} saniye`, inline: true }
+        { name: 'Süre', value: seconds === 0 ? 'Pasif' : `${seconds} saniye`, inline: true }
       ]
     });
   }

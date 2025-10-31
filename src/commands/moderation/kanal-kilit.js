@@ -5,23 +5,23 @@ export default {
   category: 'Moderasyon',
   data: new SlashCommandBuilder()
     .setName('kanal-kilit')
-    .setDescription('Kanalin kilit durumunu degistirir.')
+    .setDescription('Kanalın kilit durumunu değiştirir.')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
     .addBooleanOption((option) =>
       option
         .setName('kilitle')
-        .setDescription('True secilirse kanal kilitlenir, false secilirse acilir.')
+        .setDescription('True seçilirse kanal kilitlenir, false seçilirse açılır.')
         .setRequired(true)
     )
     .addChannelOption((option) =>
       option
         .setName('kanal')
-        .setDescription('Kilitlenecek kanal (varsayilan: mevcut kanal)')
+        .setDescription('Kilitlenecek kanal (varsayılan: mevcut kanal)')
         .setRequired(false)
     ),
   async execute(interaction) {
     if (!interaction.inGuild()) {
-      await interaction.reply({ content: 'Bu komut sadece sunucularda kullanilabilir.', ephemeral: true });
+      await interaction.reply({ content: 'Bu komut sadece sunucularda kullanılabilir.', ephemeral: true });
       return;
     }
 
@@ -29,7 +29,7 @@ export default {
     const lock = interaction.options.getBoolean('kilitle');
 
     if (!channel?.isTextBased() || channel.isDMBased()) {
-      await interaction.reply({ content: 'Kanal sadece metin tabanliysa kilitlenebilir.', ephemeral: true });
+      await interaction.reply({ content: 'Kanal sadece metin tabanlıysa kilitlenebilir.', ephemeral: true });
       return;
     }
 
@@ -39,7 +39,7 @@ export default {
       SendMessages: lock ? false : null
     });
 
-    const message = lock ? `🔒 ${channel} kanali kilitlendi.` : `🔓 ${channel} kanali artik mesajlara acik.`;
+    const message = lock ? `🔒 ${channel} kanalı kilitlendi.` : `🔓 ${channel} kanalı artık mesajlara açık.`;
 
     await interaction.reply({
       content: message,
@@ -49,11 +49,11 @@ export default {
     await sendModerationLog(interaction.client, interaction.guildId, {
       action: 'Kanal Kilidi',
       moderator: formatUserMention(interaction.user),
-      reason: lock ? 'Kanal mesaj gonderimine kapatildi.' : 'Kanal kilidi kaldirildi.',
+      reason: lock ? 'Kanal mesaj gönderimine kapatıldı.' : 'Kanal kilidi kaldırıldı.',
       color: lock ? 0xc0392b : 0x27ae60,
       extraFields: [
         { name: 'Kanal', value: channel.toString(), inline: true },
-        { name: 'Durum', value: lock ? 'Kilitli' : 'Acik', inline: true }
+        { name: 'Durum', value: lock ? 'Kilitli' : 'Açık', inline: true }
       ]
     });
   }

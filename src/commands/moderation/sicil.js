@@ -11,7 +11,7 @@ export function buildWarningHistoryEmbed({ guild, member, warnings, requester })
     })
     .setTitle('Ceza Geçmişi')
     .setDescription(`${user} kullanıcısına ait kayıtlı uyarılar ve notlar listeleniyor.`)
-    .setFooter({ text: requester ? `Talep eden: ${requester.tag}` : guild?.name ?? 'Marpel Moderasyon' })
+    .setFooter({ text: requester ? `Talep eden: ${requester.tag}` : guild?.name ?? 'Furmin Moderasyon' })
     .setTimestamp();
 
   if (!warnings.length) {

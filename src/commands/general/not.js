@@ -28,7 +28,7 @@ export function buildSearchEmbed({ guild, keyword, results }) {
     .setColor(0x3498db)
     .setTitle('Nesne Arama Sonucu')
     .setDescription(`Aranan terim: **${keyword}**`)
-    .setFooter({ text: guild?.name ?? 'Marpel Sistemleri' })
+    .setFooter({ text: guild?.name ?? 'Furmin Sistemleri' })
     .setTimestamp();
 
   if (!results.length) {

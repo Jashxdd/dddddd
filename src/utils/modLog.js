@@ -30,7 +30,7 @@ export async function sendModerationLog(client, guildId, details) {
 
   const me = channel.guild.members.me;
   if (me && !channel.permissionsFor(me)?.has(PermissionFlagsBits.SendMessages)) {
-    console.warn('Mod-log kanalina mesaj gondermek icin iznim yok.');
+    console.warn('Mod-log kanalına mesaj göndermek için iznim yok.');
     return false;
   }
 
@@ -102,7 +102,7 @@ export async function sendModerationLog(client, guildId, details) {
     .send(payload)
     .then(() => true)
     .catch(async (error) => {
-      console.warn('Mod-log mesajı gonderilirken hata olustu:', error);
+      console.warn('Mod-log mesajı gönderilirken hata oluştu:', error);
       if (error.code === 50001 /* Missing Access */ || error.code === 50013 /* Missing Permissions */) {
         await clearModLogChannelId(guildId);
       }

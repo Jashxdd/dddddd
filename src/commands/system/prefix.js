@@ -4,7 +4,7 @@ import { describePrefix, setPrefix, resetPrefix } from '../../utils/prefixStorag
 function validatePrefix(value) {
   const trimmed = value.trim();
   if (trimmed.length < 1 || trimmed.length > 5) {
-    throw new Error('Prefix 1 ila 5 karakter arasında olmalıdır.');
+    throw new Error('Önek 1 ila 5 karakter arasında olmalıdır.');
   }
   return trimmed;
 }
@@ -14,17 +14,17 @@ export default {
   menuGroup: 'Sistemler',
   data: new SlashCommandBuilder()
     .setName('prefix')
-    .setDescription('Prefix sistemini görüntüler veya değiştirir.')
+    .setDescription('Önek sistemini görüntüler veya değiştirir.')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild)
     .addSubcommand((sub) =>
       sub
         .setName('goster')
-        .setDescription('Geçerli sunucu prefix bilgisini gösterir.')
+        .setDescription('Geçerli sunucu önek bilgisini gösterir.')
     )
     .addSubcommand((sub) =>
       sub
         .setName('ayarla')
-        .setDescription('Yeni prefix belirler.')
+        .setDescription('Yeni önek belirler.')
         .addStringOption((option) =>
           option.setName('deger').setDescription('Yeni prefix (1-5 karakter)').setRequired(true)
         )
@@ -32,7 +32,7 @@ export default {
     .addSubcommand((sub) =>
       sub
         .setName('sifirla')
-        .setDescription('Prefixi varsayılana döndürür.')
+        .setDescription('Öneği varsayılan değere döndürür.')
     ),
   async execute(interaction) {
     const sub = interaction.options.getSubcommand();
@@ -41,9 +41,9 @@ export default {
       const info = await describePrefix(interaction.guildId);
       const embed = new EmbedBuilder()
         .setColor(0x5865f2)
-        .setTitle('Prefix Bilgisi')
-        .setDescription(`Geçerli prefix: **${info.prefix}**`)
-        .setFooter({ text: info.isCustom ? 'Özel prefix tanımlandı.' : 'Varsayılan prefix kullanılıyor.' });
+        .setTitle('Önek Bilgisi')
+        .setDescription(`Geçerli önek: **${info.prefix}**`)
+        .setFooter({ text: info.isCustom ? 'Özel önek tanımlandı.' : 'Varsayılan önek kullanılıyor.' });
       await interaction.reply({ embeds: [embed], ephemeral: true });
       return;
     }
@@ -60,7 +60,7 @@ export default {
 
       await setPrefix(interaction.guildId, validated);
       await interaction.reply({
-        content: `✅ Prefix başarıyla **${validated}** olarak güncellendi. Yardım menüsü yeni prefix ile güncellendi.`,
+        content: `✅ Önek başarıyla **${validated}** olarak güncellendi. Yardım menüsü yeni önek ile güncellendi.`,
         ephemeral: true
       });
       return;
@@ -69,7 +69,7 @@ export default {
     if (sub === 'sifirla') {
       const value = await resetPrefix(interaction.guildId);
       await interaction.reply({
-        content: `🔄 Prefix sıfırlandı. Varsayılan prefix: **${value}**`,
+        content: `🔄 Önek sıfırlandı. Varsayılan önek: **${value}**`,
         ephemeral: true
       });
       return;

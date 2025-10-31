@@ -1,234 +1,78 @@
-# Discord.js v14 Genel Botu
+# Furmin - Discord.js v14 Çok Amaçlı Botu
 
-Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlikli kapsamli bir bottur. Slash komutlari **Moderasyon**, **Sistem**, **Kullanici** ve **Eglence** kategorilerine ayrilarak tek bir Node.js projesi icinde toplanmistir.
+Furmin, Discord.js v14 kullanılarak geliştirilen kapsamlı bir moderasyon, sistem ve eğlence botudur. Tüm komutlar tek bir Node.js
+projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, pro üyelik kısıtlamaları ve hem slash hem de önek
+(`f!`) komut desteği aynı anda sunulur.
 
-## One Cikan Ozellikler
-
-- ✅ Hazir config dosyasi sayesinde token ve bot sahibi ID bilgisini girip calistirmaya hazir olma
-- ✅ Slash komut tabanli yapi (ban, kick, timeout, kanal kilitleme, uyari sistemi, kural yonetimi, yardim vb.)
-- ✅ Prefix sistemi: sunucu bazli onek ayarlama (`/prefix` veya `m!prefix`), mention ile destek/davet butonlari ve `m!yardim` gibi hizli komutlar
-- ✅ Discord'un kendi otomatik moderasyon sistemini (`/discord-otomod`) ve yerel kelime filtresini (`/otomod`) birlikte kullanma
-- ✅ Kullanicilar icin kural onayi zorunlulugu ve kural kayitlarini yonetmek icin yonetim komutlari
-- ✅ Uyari saklama sistemi, toplu mesaj silme, yavas mod ayarlama gibi ekstra moderasyon araclari
-- ✅ Ban, kick, uyari ve otomod islemlerini otomatik kaydeden ayarlanabilir mod-log sistemi
-- ✅ Mod-log, yeni uye katilimlari, ayrilanlar, yasaklamalar ve mesaj duzenleme/silme gibi olaylari da raporlar
-- ✅ Eglence komutlari (`/espri`, `/zar`, `/yazi-tura`, `/kedi`, `/bilmece`, `/motivasyon`) ve kullanici odakli yardim/istatistik komutlari
-- ✅ Bot acildiginda slash komutlarini otomatik senkronize eden dagitim akisi (istege bagli `npm run deploy:commands` komutu mevcut)
-- ✅ Yardim menusu icin emojili sayfalar, kategori secim menusu, ileri/geri/ilk/son butonlari ile kontrol
-- ✅ Ayarlanabilir "oynuyor/izliyor/dinliyor" durumlari ile otomatik aktivite rotasyonu
-- ✅ Marpel Pro uyelik sistemi: bot sahibinin yonetebildigi pro listesi, pro-only komutlar ve yardim menusunde 💎 rozetleri
+## Öne Çıkan Özellikler
+- ✅ Slash ve önek komutlarını tek projede toplayan esnek komut yükleyiciler
+- ✅ Kuralları kabul etmeden komut çalıştırmayı engelleyen Türkçe doğrulama akışı
+- ✅ Furmin Otomatik Sistem kelime filtresi + Discord AutoMod yapılandırma komutları
+- ✅ Ban, kick, timeout, rol verme/çekme, kanal kilitleme, yavaş mod ve uyarı kayıt sistemi
+- ✅ Ayrıntılı mod-log: ban/kick, mesaj silme/düzenleme, toplu silme, üye giriş/çıkış, rol değişimi, kanal/rol oluşturma-silme,
+  ses kanalı hareketleri ve otomatik filtre ihlalleri
+- ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme
+- ✅ Furmin Pro üyelik denetimi ile premium komutlara erişim yönetimi
+- ✅ Hazır yapılandırma yükleyicisi (config.json ya da .env) ve otomatik durum mesajı rotasyonu
 
 ## Kurulum
-
-1. [Node.js 18.17+](https://nodejs.org/) surumunun kurulu oldugundan emin olun.
-2. Depoyu bilgisayariniza klonlayin ve projeye girin.
-
+1. [Node.js 18.17+](https://nodejs.org/) sürümünü kurun.
+2. Depoyu klonlayın ve dizine girin.
    ```bash
    git clone <repo-url>
-   cd discord-bot
+   cd dddddd
    ```
-
-3. Bagimliliklari yukleyin.
-
+3. Bağımlılıkları kurun.
    ```bash
    npm install
    ```
+4. `config.example.json` dosyasını `config.json` olarak kopyalayın veya `.env` kullanın ve aşağıdaki alanları doldurun:
+   | Alan | Açıklama |
+   |------|---------|
+   | `token` | Bot tokeniniz |
+   | `clientId` | Uygulama (bot) ID'niz |
+   | `guildId` | (İsteğe bağlı) Slash komutlarını önce test sunucusunda yayınlamak için |
+   | `ownerId` | Bot sahibinin Discord kullanıcı ID'si |
+   | `defaultPrefix` | Sunucu öneğinin varsayılan değeri (varsayılan `f!`) |
+   | `supportServerUrl` / `inviteUrl` / `proInfoUrl` | Butonlarda gösterilecek bağlantılar |
+   | `presenceStatus`, `presenceInterval`, `activities` | Durum rotasyonu için isteğe bağlı ayarlar |
 
-4. Yapilandirma dosyanizi olusturun. Tercihinize gore iki secenekten birini kullanabilirsiniz:
+   > Furmin yapılandırma yükleyicisi hem proje kökünde hem de `config/` klasöründe `config.json` arar ve yer tutucu değerleri
+   > otomatik olarak yok sayar. Dosya bulunamazsa `.env` değişkenleri kullanılmaya devam edilir.
 
-   - `config.example.json` dosyasini kopyalayin ve kendi bilgilerinizi girin.
+## Komut Kategorileri
+- **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem`, `/doviz`,
+  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim` ve daha fazlası.
+- **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
+  `/rol-ver`, `/rol-al`, `/sicil`, `/uyari` ve otomatik moderasyon komutları.
+- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/ayarlar`, `/bot-bilgi`, `/prefix`, `/pro-uyelik`.
+- **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`.
+- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!ses`, `f!premium`, `f!prefix` vb.
 
-     ```bash
-     cp config.example.json config.json
-     ```
+Her komut, slash menüsü veya önek sistemi çalıştırılmadan önce kullanıcının `/kurallari-kabul` ile kuralları onaylamasını zorunlu kılar.
+Furmin Pro üyeliği gereken komutlar yardım menüsünde 💎 simgesiyle gösterilir.
 
-     | Alan      | Aciklama |
-     |-----------|---------|
-     | `token`   | Bot tokeniniz |
-     | `clientId`| Discord uygulama (bot) ID'niz |
-     | `guildId` | (Opsiyonel) Slash komutlarini sadece test sunucusuna yuklemek istiyorsaniz bu sunucunun ID'si |
-     | `ownerId` | Bot sahibinin Discord kullanici ID'si |
-     | `presenceStatus` | (Opsiyonel) Botun durum etiketi (`online`, `idle`, `dnd` vb.) |
-     | `presenceInterval` | (Opsiyonel) Aktivite rotasyonu icin saniye cinsinden aralik (varsayilan `60`) |
-     | `activities` | (Opsiyonel) Durum rotasyonunda kullanilacak etkinlik listesi |
+## Moderasyon Logu
+`/modlog` ile ayarlanan kanal, aşağıdaki olayları zengin embed mesajlarıyla raporlar:
+- Ban/kick, timeout değişimleri, uyarı yönetimi ve toplu silme işlemleri
+- Mesaj silme/düzenleme, otomatik kelime filtresi ihlalleri ve Discord AutoMod eylemleri
+- Üye giriş/çıkışları, rol ve takma ad değişiklikleri, zaman aşımı güncellemeleri
+- Kanal ve rol oluşturma-silme işlemleri ile mod-log testi
+- Ses kanalı giriş/çıkışları, taşınmalar, yetkili susturma/sağırlaştırma değişimleri ve yayın başlangıç/bitişleri
 
-     > Ornek `activities` dizisi:
-     > ```json
-     > {
-     >   "activities": [
-     >     { "name": "sunucunuzu izliyor", "type": "Watching" },
-     >     { "name": "moderasyon yardimi sunuyor", "type": "Playing" }
-     >   ]
-     > }
-     > ```
+## Premium ve Önek Sistemi
+- Varsayılan önek `f!` olup `/prefix` veya `f!prefix` ile sunucuya özel olarak değiştirilebilir.
+- Botu etiketlediğinizde Furmin, önek bilgisini, destek sunucusu ve davet bağlantısı düğmelerini içeren rehber bir embed gönderir.
+- Pro üyelik listesi bot sahibi tarafından `/pro-uyelik` ile yönetilir; premium komutlar yalnızca yetkilendirilen kullanıcılar için açılır.
 
-   - Alternatif olarak `.env.example` dosyasini `.env` olarak kopyalayip ayni bilgileri ortama degisken olarak girebilirsiniz. `config.json` dosyasi varsa `.env` uzerindeki degerlerin yerine gecerek calisir.
-
-   > 💡 `config.json` dosyasini projenin kok dizininde veya `config/config.json` yolunda tutabilirsiniz. Dosyayi yeniden adlandirmayi unutsaniz bile (ornegin `config.example.json` u dogrudan duzenlerseniz) bot gerekli bilgileri bulup yukleyecektir.
-
-5. Slash komutlari bot her acildiginda otomatik olarak senkronize edilir. Ilk kurulumda islemi hizlandirmak veya manuel tetiklemek isterseniz:
-
-   ```bash
-   npm run deploy:commands
-   ```
-
-   Varsayilan olarak komutlar global olarak yayimlanir. Sadece belirli bir sunucuda denemek icin `config.json` veya `.env` dosyasina `guildId` / `GUILD_ID` degerini ekleyin. Botu baslattiginizda komutlar ayni tercihe gore otomatik guncellenir.
-
-   Bot acildiginda once erisebildigi tum sunuculara slash komutlarini aninda yazar, ardindan global kaydi gunceller. Global guncellemelerin Discord tarafinda gorunmesi yaklasik 1 saate kadar surebilir; bu nedenle hizli test icin `guildId` belirtmek avantaj saglar.
-
-6. Botu baslatin.
-
-   ```bash
-   npm start
-   ```
-
-   Baslangicta konsolda `⚙️  Yapilandirma yuklendi (...)` mesaji gorurseniz bot tokeni basariyla okunmus demektir. Devaminda slash komutlarin otomatik guncellendigini ve durum mesajlarinin ayarlandigini belirten loglari gorursunuz.
-
-## Komutlar
-
-Komutlar yardim menusu uzerinden dinamik olarak listelenir. Baslica kategoriler ve ornekler asagidadir:
-
-### Genel
-- `/yardim`, `/ping`, `/afk`, `/avatar`, `/banner`, `/profil`
-- `/kullanici-bilgi`, `/sunucu-bilgi`, `/roller`, `/rol-bilgi`, `/yetkiler`, `/lrenk`
-- `/emoji-bilgi`, `/emojiler`, `/doviz`, `/spotify`, `/sifre`, `/uyarilarim`, `/not`
-- `/sunucu-istatistik`, `/kanal-bilgi`, `/sunucu-saat`, `/deprem`, `/ses`, `/premium`, `/rank`
-
-### Moderasyon
-- `/ban`, `/kick`, `/sustur`, `/sustur-kaldir`, `/sicil`
-- `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/uyari`
-- `/rol-ver`, `/rol-al`, `/takma-ad`
-- `/otomod` (yerel kelime filtresi), `/discord-otomod` (Discord otomatik moderasyon)
-
-### Sistem
-- `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`
-- `/modlog`, `/bot-bilgi`, `/ayarlar`
-
-### Eğlence
-- `/espri`, `/zar`, `/yazi-tura`
-- `/kedi`, `/bilmece`, `/motivasyon`
-
-Herhangi bir komutu kullanmadan once `/kurallar` komutu ile kurallari inceleyip `/kurallari-kabul` komutu ile onay vermeniz gerekir. Bot sahibi (`config.json` veya `.env` uzerinden tanimlanir) bu kisitlamadan muaf tutulur.
-
-### Prefix Komutlari
-
-- `m!yardim` - Slash menusu acilmadan kategori ozetini gosterir, destek ve davet baglantilarini sunar.
-- `m!profil`, `m!sicil`, `m!not`, `m!quakes`, `m!rank` - Slash karsiliklari ile ayni bilgileri mesaj olarak uretir.
-- `m!prefix`, `m!prefix sifirla` - Sunucuya ozel onek tanimlama ve varsayilana donme.
-- `m!premium` - Marpel Pro uyeligi hakkinda bilgi verir.
-- `m!lrenk`, `m!roller`, `m!ses` - Renk rolleri, tum roller ve ses komutlari icin hizli referans.
-
-## Dosya Yapisi
-
+## Komut Dağıtımı ve Çalıştırma
+Slash komutları bot açılışında otomatik olarak senkronize edilir. İlk kurulumda süreci hızlandırmak için:
+```bash
+npm run deploy:commands
 ```
-src/
-├── commands/
-│   ├── fun/
-│   │   ├── bilmece.js
-│   │   ├── espri.js
-│   │   ├── kedi.js
-│   │   ├── motivasyon.js
-│   │   ├── yazi-tura.js
-│   │   └── zar.js
-│   ├── general/
-│   │   ├── afk.js
-│   │   ├── avatar.js
-│   │   ├── banner.js
-│   │   ├── deprem.js
-│   │   ├── doviz.js
-│   │   ├── emoji-bilgi.js
-│   │   ├── emojiler.js
-│   │   ├── kullanici-bilgi.js
-│   │   ├── lrenk.js
-│   │   ├── not.js
-│   │   ├── ping.js
-│   │   ├── premium.js
-│   │   ├── profil.js
-│   │   ├── rank.js
-│   │   ├── rol-bilgi.js
-│   │   ├── roller.js
-│   │   ├── ses.js
-│   │   ├── sifre.js
-│   │   ├── spotify.js
-│   │   ├── sunucu-bilgi.js
-│   │   ├── sunucu-istatistik.js
-│   │   ├── sunucu-saat.js
-│   │   ├── uyarilarim.js
-│   │   ├── yardim.js
-│   │   └── yetkiler.js
-│   ├── moderation/
-│   │   ├── automod.js
-│   │   ├── ban.js
-│   │   ├── discord-automod.js
-│   │   ├── kanal-kilit.js
-│   │   ├── kick.js
-│   │   ├── rol-al.js
-│   │   ├── rol-ver.js
-│   │   ├── sicil.js
-│   │   ├── timeout.js
-│   │   ├── untimeout.js
-│   │   ├── temizle.js
-│   │   ├── uyari.js
-│   │   ├── takma-ad.js
-│   │   └── yavasmod.js
-│   └── system/
-│       ├── ayarlar.js
-│       ├── bot-bilgi.js
-│       ├── prefix.js
-│       ├── pro-uyelik.js
-│       ├── kurallar-yonet.js
-│       ├── kurallar.js
-│       ├── kurallari-kabul.js
-│       └── modlog.js
-├── prefix/
-│   ├── general/
-│   │   ├── lrenk.js
-│   │   ├── not.js
-│   │   ├── premium.js
-│   │   ├── profil.js
-│   │   ├── quakes.js
-│   │   ├── rank.js
-│   │   ├── roller.js
-│   │   ├── ses.js
-│   │   └── yardim.js
-│   ├── moderation/
-│   │   └── sicil.js
-│   └── system/
-│       └── prefix.js
-├── config.js
-├── deploy-commands.js
-├── events/
-│   ├── guildBanAdd.js
-│   ├── guildBanRemove.js
-│   ├── guildMemberAdd.js
-│   ├── guildMemberRemove.js
-│   ├── interactionCreate.js
-│   ├── messageBulkDelete.js
-│   ├── messageCreate.js
-│   ├── messageDelete.js
-│   ├── messageUpdate.js
-│   └── ready.js
-├── index.js
-└── utils/
-    ├── automodConfig.js
-    ├── discordAutomod.js
-    ├── loadCommands.js
-    ├── loadPrefixCommands.js
-    ├── modLog.js
-    ├── modLogStorage.js
-    ├── prefixStorage.js
-    ├── proMembership.js
-    ├── rulesStorage.js
-    └── warnStorage.js
+Ardından botu başlatmak için:
+```bash
+npm start
 ```
-
-## Gelistirme Notlari
-
-- Yeni bir komut eklemek icin ilgili kategori klasorune `.js` dosyasi olusturup `SlashCommandBuilder` kullanan bir `data` ve `execute` fonksiyonu tanimlamaniz yeterlidir.
-- Yardim menusu kategorileri `command.category` alanina gore otomatik olarak olusturur.
-- Bot verileri (`data/` klasoru) git tarafindan takip edilmez; uyarilar, kural onaylari, otomod ve mod-log ayarlari burada saklanir.
-- Slash komutlarinda degisiklik yaptiktan sonra botu yeniden baslatarak otomatik senkronizasyonu kullanabilir veya `npm run deploy:commands` komutunu calistirabilirsiniz.
-
-## Lisans
-
-Bu proje MIT lisansi ile dagitilmistir.
+Konsolda yapılandırma kaynağı, yüklenen komut sayısı ve slash komutlarının tüm sunucularla global olarak senkronize edildiğine dair
+loglar görüntülenir. Durum rotasyonu, `config.json` / `.env` ayarlarınıza göre Furmin adını ve etkinliklerini Türkçe olarak gösterir.

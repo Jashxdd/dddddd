@@ -6,18 +6,18 @@ export default {
   category: 'Extra',
   menuGroup: 'Pro Üyelik',
   proOnly: false,
-  data: new SlashCommandBuilder().setName('premium').setDescription('Marpel Pro avantajlarını ve erişim talimatlarını gösterir.'),
+  data: new SlashCommandBuilder().setName('premium').setDescription('Furmin Pro avantajlarını ve erişim talimatlarını gösterir.'),
   async execute(interaction) {
     const proMembers = await listProMembers();
     const isPro = proMembers.includes(interaction.user.id);
 
     const embed = new EmbedBuilder()
       .setColor(0x9b59b6)
-      .setTitle('💎 Marpel Pro Üyeliği')
+      .setTitle('💎 Furmin Pro Üyeliği')
       .setDescription(
         isPro
-          ? 'Zaten Marpel Pro üyesisin! Aşağıda mevcut avantajlarını ve özel komutları görebilirsin.'
-          : 'Marpel Pro üyeliği ile gelişmiş otomasyon, log raporları ve ekstra eğlence komutlarına erişirsin. Aşağıdaki adımları takip ederek sahibi bilgilendirebilirsin.'
+          ? 'Zaten Furmin Pro üyesisin! Aşağıda mevcut avantajlarını ve özel komutları görebilirsin.'
+          : 'Furmin Pro üyeliği ile gelişmiş otomasyon, log raporları ve ekstra eğlence komutlarına erişirsin. Aşağıdaki adımları takip ederek sahibi bilgilendirebilirsin.'
       )
       .addFields(
         {
@@ -33,7 +33,7 @@ export default {
               : 'Bot sahibine ulaşarak pro erişimi talep et.'
         }
       )
-      .setFooter({ text: 'Marpel Pro sistemi • Pro komutlar yardim menüsünde 💎 ile işaretlenir.' })
+      .setFooter({ text: 'Furmin Pro sistemi • Pro komutlar yardim menüsünde 💎 ile işaretlenir.' })
       .setTimestamp();
 
     if (proMembers.length) {
