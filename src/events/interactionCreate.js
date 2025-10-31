@@ -1,5 +1,6 @@
 import { Events } from 'discord.js';
 import { hasAcceptedRules } from '../utils/rulesStorage.js';
+import { isProMember } from '../utils/proMembership.js';
 
 const bypassCommands = new Set(['kurallar', 'kurallari-kabul']);
 
@@ -29,6 +30,18 @@ export default {
         ephemeral: true
       });
       return;
+    }
+
+    if (command.proOnly && interaction.user.id !== interaction.client.ownerId) {
+      const proMember = await isProMember(interaction.user.id);
+      if (!proMember) {
+        await interaction.reply({
+          content:
+            '💎 Bu komut sadece **Pro** üyelerine açıktır. Bot sahibinden pro üyelik talep edebilir veya `/premium` ile avantajları öğrenebilirsin.',
+          ephemeral: true
+        });
+        return;
+      }
     }
 
     try {

@@ -6,6 +6,7 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
 
 - ✅ Hazir config dosyasi sayesinde token ve bot sahibi ID bilgisini girip calistirmaya hazir olma
 - ✅ Slash komut tabanli yapi (ban, kick, timeout, kanal kilitleme, uyari sistemi, kural yonetimi, yardim vb.)
+- ✅ Prefix sistemi: sunucu bazli onek ayarlama (`/prefix` veya `m!prefix`), mention ile destek/davet butonlari ve `m!yardim` gibi hizli komutlar
 - ✅ Discord'un kendi otomatik moderasyon sistemini (`/discord-otomod`) ve yerel kelime filtresini (`/otomod`) birlikte kullanma
 - ✅ Kullanicilar icin kural onayi zorunlulugu ve kural kayitlarini yonetmek icin yonetim komutlari
 - ✅ Uyari saklama sistemi, toplu mesaj silme, yavas mod ayarlama gibi ekstra moderasyon araclari
@@ -15,6 +16,7 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
 - ✅ Bot acildiginda slash komutlarini otomatik senkronize eden dagitim akisi (istege bagli `npm run deploy:commands` komutu mevcut)
 - ✅ Yardim menusu icin emojili sayfalar, kategori secim menusu, ileri/geri/ilk/son butonlari ile kontrol
 - ✅ Ayarlanabilir "oynuyor/izliyor/dinliyor" durumlari ile otomatik aktivite rotasyonu
+- ✅ Marpel Pro uyelik sistemi: bot sahibinin yonetebildigi pro listesi, pro-only komutlar ve yardim menusunde 💎 rozetleri
 
 ## Kurulum
 
@@ -87,13 +89,13 @@ Bu proje, Discord.js v14 kullanilarak hazirlanmis, moderasyon ve eglence agirlik
 Komutlar yardim menusu uzerinden dinamik olarak listelenir. Baslica kategoriler ve ornekler asagidadir:
 
 ### Genel
-- `/yardim`, `/ping`, `/afk`, `/avatar`, `/banner`
-- `/kullanici-bilgi`, `/sunucu-bilgi`, `/roller`, `/rol-bilgi`, `/yetkiler`
-- `/emoji-bilgi`, `/emojiler`, `/doviz`, `/spotify`, `/sifre`, `/uyarilarim`
-- `/sunucu-istatistik`, `/kanal-bilgi`, `/sunucu-saat`
+- `/yardim`, `/ping`, `/afk`, `/avatar`, `/banner`, `/profil`
+- `/kullanici-bilgi`, `/sunucu-bilgi`, `/roller`, `/rol-bilgi`, `/yetkiler`, `/lrenk`
+- `/emoji-bilgi`, `/emojiler`, `/doviz`, `/spotify`, `/sifre`, `/uyarilarim`, `/not`
+- `/sunucu-istatistik`, `/kanal-bilgi`, `/sunucu-saat`, `/deprem`, `/ses`, `/premium`, `/rank`
 
 ### Moderasyon
-- `/ban`, `/kick`, `/sustur`, `/sustur-kaldir`
+- `/ban`, `/kick`, `/sustur`, `/sustur-kaldir`, `/sicil`
 - `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/uyari`
 - `/rol-ver`, `/rol-al`, `/takma-ad`
 - `/otomod` (yerel kelime filtresi), `/discord-otomod` (Discord otomatik moderasyon)
@@ -107,6 +109,14 @@ Komutlar yardim menusu uzerinden dinamik olarak listelenir. Baslica kategoriler 
 - `/kedi`, `/bilmece`, `/motivasyon`
 
 Herhangi bir komutu kullanmadan once `/kurallar` komutu ile kurallari inceleyip `/kurallari-kabul` komutu ile onay vermeniz gerekir. Bot sahibi (`config.json` veya `.env` uzerinden tanimlanir) bu kisitlamadan muaf tutulur.
+
+### Prefix Komutlari
+
+- `m!yardim` - Slash menusu acilmadan kategori ozetini gosterir, destek ve davet baglantilarini sunar.
+- `m!profil`, `m!sicil`, `m!not`, `m!quakes`, `m!rank` - Slash karsiliklari ile ayni bilgileri mesaj olarak uretir.
+- `m!prefix`, `m!prefix sifirla` - Sunucuya ozel onek tanimlama ve varsayilana donme.
+- `m!premium` - Marpel Pro uyeligi hakkinda bilgi verir.
+- `m!lrenk`, `m!roller`, `m!ses` - Renk rolleri, tum roller ve ses komutlari icin hizli referans.
 
 ## Dosya Yapisi
 
@@ -124,13 +134,20 @@ src/
 │   │   ├── afk.js
 │   │   ├── avatar.js
 │   │   ├── banner.js
+│   │   ├── deprem.js
 │   │   ├── doviz.js
 │   │   ├── emoji-bilgi.js
 │   │   ├── emojiler.js
 │   │   ├── kullanici-bilgi.js
+│   │   ├── lrenk.js
+│   │   ├── not.js
 │   │   ├── ping.js
+│   │   ├── premium.js
+│   │   ├── profil.js
+│   │   ├── rank.js
 │   │   ├── rol-bilgi.js
 │   │   ├── roller.js
+│   │   ├── ses.js
 │   │   ├── sifre.js
 │   │   ├── spotify.js
 │   │   ├── sunucu-bilgi.js
@@ -147,19 +164,37 @@ src/
 │   │   ├── kick.js
 │   │   ├── rol-al.js
 │   │   ├── rol-ver.js
+│   │   ├── sicil.js
 │   │   ├── timeout.js
 │   │   ├── untimeout.js
 │   │   ├── temizle.js
 │   │   ├── uyari.js
 │   │   ├── takma-ad.js
 │   │   └── yavasmod.js
-│   ├── system/
-│   │   ├── ayarlar.js
-│   │   ├── bot-bilgi.js
-│   │   ├── kurallar-yonet.js
-│   │   ├── kurallar.js
-│   │   ├── kurallari-kabul.js
-│   │   └── modlog.js
+│   └── system/
+│       ├── ayarlar.js
+│       ├── bot-bilgi.js
+│       ├── prefix.js
+│       ├── pro-uyelik.js
+│       ├── kurallar-yonet.js
+│       ├── kurallar.js
+│       ├── kurallari-kabul.js
+│       └── modlog.js
+├── prefix/
+│   ├── general/
+│   │   ├── lrenk.js
+│   │   ├── not.js
+│   │   ├── premium.js
+│   │   ├── profil.js
+│   │   ├── quakes.js
+│   │   ├── rank.js
+│   │   ├── roller.js
+│   │   ├── ses.js
+│   │   └── yardim.js
+│   ├── moderation/
+│   │   └── sicil.js
+│   └── system/
+│       └── prefix.js
 ├── config.js
 ├── deploy-commands.js
 ├── events/
@@ -178,8 +213,11 @@ src/
     ├── automodConfig.js
     ├── discordAutomod.js
     ├── loadCommands.js
+    ├── loadPrefixCommands.js
     ├── modLog.js
     ├── modLogStorage.js
+    ├── prefixStorage.js
+    ├── proMembership.js
     ├── rulesStorage.js
     └── warnStorage.js
 ```

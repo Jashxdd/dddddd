@@ -117,6 +117,10 @@ export const config = {
   clientId: pick(fileConfig.clientId, process.env.CLIENT_ID),
   guildId: pick(fileConfig.guildId, process.env.GUILD_ID),
   ownerId: pick(fileConfig.ownerId, process.env.OWNER_ID),
+  defaultPrefix: pick(fileConfig.defaultPrefix, process.env.DEFAULT_PREFIX) || 'm!',
+  supportServerUrl: pick(fileConfig.supportServerUrl, process.env.SUPPORT_SERVER_URL),
+  inviteUrl: pick(fileConfig.inviteUrl, process.env.INVITE_URL),
+  proInfoUrl: pick(fileConfig.proInfoUrl, process.env.PRO_INFO_URL),
   presenceStatus: pick(fileConfig.presenceStatus, process.env.PRESENCE_STATUS) || 'online',
   presenceInterval: pickNumber(
     60,

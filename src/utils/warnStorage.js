@@ -142,3 +142,15 @@ export async function getWarningStats(guildId) {
 
   return { totalUsers: affectedUsers, totalWarnings };
 }
+
+export async function getGuildWarningEntries(guildId) {
+  if (!guildId) return [];
+
+  await ensureLoaded();
+  ensureGuild(guildId);
+
+  return Object.entries(cache[guildId] ?? {}).map(([userId, warnings]) => ({
+    userId,
+    warnings: Array.isArray(warnings) ? [...warnings] : []
+  }));
+}

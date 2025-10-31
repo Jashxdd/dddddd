@@ -3,6 +3,7 @@ import { readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadCommands } from './utils/loadCommands.js';
+import { loadPrefixCommands } from './utils/loadPrefixCommands.js';
 import { assertConfig, config, describeConfigSource } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -24,9 +25,20 @@ const client = new Client({
 });
 
 client.commands = new Collection();
-client.commandCategories = new Collection();
+client.prefixCommands = new Collection();
+client.prefixAliases = new Collection();
+client.commandCatalog = new Collection();
 client.ownerId = config.ownerId;
 client.afkStatuses = new Map();
+
+function registerCatalogEntry(category, entry) {
+  const targetCategory = category ?? 'Diğer';
+  if (!client.commandCatalog.has(targetCategory)) {
+    client.commandCatalog.set(targetCategory, []);
+  }
+
+  client.commandCatalog.get(targetCategory).push(entry);
+}
 
 async function registerCommands() {
   const commands = await loadCommands();
@@ -34,18 +46,42 @@ async function registerCommands() {
   for (const command of commands) {
     client.commands.set(command.data.name, command);
 
-    const category = command.category ?? 'Diğer';
-    if (!client.commandCategories.has(category)) {
-      client.commandCategories.set(category, []);
-    }
-
-    client.commandCategories.get(category).push({
+    registerCatalogEntry(command.category, {
+      type: 'slash',
       name: command.data.name,
-      description: command.data.description ?? 'Aciklama eklenmemis.'
+      displayName: `/${command.data.name}`,
+      description: command.data.description ?? 'Açıklama eklenmemiş.',
+      proOnly: Boolean(command.proOnly),
+      group: command.menuGroup ?? 'Slash Komutları'
     });
   }
 
   console.log(`🧩 ${client.commands.size} slash komutu yuklendi.`);
+}
+
+async function registerPrefixCommands() {
+  const commands = await loadPrefixCommands();
+
+  for (const command of commands) {
+    client.prefixCommands.set(command.name, command);
+
+    for (const alias of command.aliases ?? []) {
+      if (!client.prefixAliases.has(alias)) {
+        client.prefixAliases.set(alias, command.name);
+      }
+    }
+
+    registerCatalogEntry(command.category, {
+      type: 'prefix',
+      name: command.name,
+      displayName: `${command.displayPrefix ?? config.defaultPrefix}${command.name}`,
+      description: command.description ?? 'Açıklama eklenmemiş.',
+      proOnly: Boolean(command.proOnly),
+      group: command.menuGroup ?? 'Prefix Komutları'
+    });
+  }
+
+  console.log(`⌨️  ${client.prefixCommands.size} prefix komutu yüklendi.`);
 }
 
 async function registerEvents() {
@@ -75,6 +111,7 @@ async function registerEvents() {
 async function bootstrap() {
   try {
     await registerCommands();
+    await registerPrefixCommands();
     await registerEvents();
 
     await client.login(config.token);

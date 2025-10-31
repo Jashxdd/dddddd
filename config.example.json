@@ -3,6 +3,10 @@
   "clientId": "DISCORD_UYGULAMA_ID",
   "guildId": "TEST_SUNUCUSU_ID (opsiyonel)",
   "ownerId": "BOT_SAHIBI_DISCORD_ID",
+  "defaultPrefix": "m!",
+  "supportServerUrl": "https://discord.gg/ornek",
+  "inviteUrl": "https://discord.com/api/oauth2/authorize?client_id=DISCORD_UYGULAMA_ID&permissions=8&scope=bot%20applications.commands",
+  "proInfoUrl": "https://ornek.site/pro",
   "presenceStatus": "online",
   "presenceInterval": 75,
   "activities": [
