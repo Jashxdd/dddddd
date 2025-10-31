@@ -10,6 +10,7 @@ import {
 } from 'discord.js';
 import { describePrefix } from '../../utils/prefixStorage.js';
 import { config } from '../../config.js';
+import { splitLinesIntoFieldChunks } from '../../utils/embedChunks.js';
 
 const categoryMetadata = {
   Genel: {
@@ -95,7 +96,8 @@ function formatCommand(command, prefix) {
   const typeIcon = command.type === 'slash' ? '⚡' : '⌨️';
   const label = command.type === 'slash' ? `/${command.name}` : `${prefix}${command.name}`;
   const proBadge = command.proOnly ? ' 💎' : '';
-  return `${typeIcon} **${label}**${proBadge} — ${command.description}`;
+  const ownerBadge = command.ownerOnly ? ' ⭐' : '';
+  return `${typeIcon} **${label}**${proBadge}${ownerBadge} — ${command.description}`;
 }
 
 function buildCategoryPage(categoryName, commands, prefix, pageIndex, totalPages) {
@@ -114,9 +116,12 @@ function buildCategoryPage(categoryName, commands, prefix, pageIndex, totalPages
       .sort((a, b) => a.name.localeCompare(b.name, 'tr'))
       .map((command) => formatCommand(command, prefix));
 
-    embed.addFields({
-      name: groupName,
-      value: lines.join('\n') || 'Komut bulunamadı.'
+    const chunks = splitLinesIntoFieldChunks(lines);
+    chunks.forEach((value, index) => {
+      embed.addFields({
+        name: index === 0 ? groupName : '\u200B',
+        value
+      });
     });
   }
 
@@ -145,15 +150,20 @@ function buildOverviewPage(categories, prefix) {
   const lines = categories.map(([categoryName, commands]) => {
     const meta = getCategoryMeta(categoryName);
     const proOnly = commands.every((command) => command.proOnly);
-    const badge = proOnly ? ' 💎' : '';
+    const ownerOnly = commands.every((command) => command.ownerOnly);
+    const badge = `${proOnly ? ' 💎' : ''}${ownerOnly ? ' ⭐' : ''}`;
     return `${meta.emoji} **${categoryName}** — ${commands.length} komut${badge}\n> ${meta.description}`;
   });
 
+  const categoryChunks = splitLinesIntoFieldChunks(lines, 1024);
+  categoryChunks.forEach((value, index) => {
+    embed.addFields({
+      name: index === 0 ? 'Kategoriler' : '\u200B',
+      value
+    });
+  });
+
   embed.addFields(
-    {
-      name: 'Kategoriler',
-      value: lines.join('\n\n') || 'Komut bulunamadı.'
-    },
     {
       name: 'Hızlı Bilgiler',
       value: `• Slash komutları: **${slashCount}**\n• Prefix komutları: **${prefixCount}**\n• Prefix: \`${prefix}\``
@@ -224,7 +234,8 @@ function createLinkRow() {
   if (config.proInfoUrl) {
     row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Üyelik').setURL(config.proInfoUrl));
   }
-  return row.components.length ? row : null;
+  const components = row.components ?? [];
+  return components.length ? row : null;
 }
 
 export default {

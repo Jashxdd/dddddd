@@ -1,6 +1,7 @@
 import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'discord.js';
 import { describePrefix } from '../../utils/prefixStorage.js';
 import { config } from '../../config.js';
+import { splitLinesIntoFieldChunks } from '../../utils/embedChunks.js';
 
 const categoryMetadata = {
   Genel: { emoji: '🧭', description: 'Bilgi ve kullanıcı araçları', color: 0x1abc9c, order: 1 },
@@ -20,8 +21,8 @@ function getMeta(name) {
 function formatLine(command, prefix) {
   const icon = command.type === 'slash' ? '⚡' : '⌨️';
   const label = command.type === 'slash' ? `/${command.name}` : `${prefix}${command.name}`;
-  const badge = command.proOnly ? ' 💎' : '';
-  return `${icon} **${label}**${badge} — ${command.description}`;
+  const badges = `${command.proOnly ? ' 💎' : ''}${command.ownerOnly ? ' ⭐' : ''}`;
+  return `${icon} **${label}**${badges} — ${command.description}`;
 }
 
 export default {
@@ -68,13 +69,15 @@ export default {
       return `${meta.emoji} **${categoryName}** — ${commands.length} komut${proBadge}\n> ${meta.description}`;
     });
 
-    embed.addFields(
-      { name: 'Kategoriler', value: summaries.join('\n\n') },
-      {
-        name: 'İstatistikler',
-        value: `• Slash komutları: **${slashCount}**\n• Prefix komutları: **${prefixCount}**\n• En çok kullanılan: ${sorted[0]?.[0] ?? 'Bilinmiyor'}`
-      }
-    );
+    const categoryChunks = splitLinesIntoFieldChunks(summaries, 1024);
+    categoryChunks.forEach((value, index) => {
+      embed.addFields({ name: index === 0 ? 'Kategoriler' : '\u200B', value });
+    });
+
+    embed.addFields({
+      name: 'İstatistikler',
+      value: `• Slash komutları: **${slashCount}**\n• Prefix komutları: **${prefixCount}**\n• En çok kullanılan: ${sorted[0]?.[0] ?? 'Bilinmiyor'}`
+    });
 
     const highlightCategory = sorted[0];
     if (highlightCategory) {

@@ -43,11 +43,11 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 
 ## Komut Kategorileri
 - **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem`, `/doviz`,
-  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk` ve daha fazlası.
+  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu` ve otomatik moderasyon komutları.
 - **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/ayarlar`, `/bot-bilgi`, `/prefix`, `/pro-uyelik`,
-  `/sistem-ozeti`, `/premium-komutlar`.
+  `/sistem-ozeti`, `/premium-komutlar`, `/pro-panel`, `/sahip-duyuru`.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`.
 - **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!ses`, `f!premium`, `f!prokomutlar`, `f!prefix` vb.
 
@@ -66,7 +66,7 @@ Furmin Pro üyeliği gereken komutlar yardım menüsünde 💎 simgesiyle göste
 - Varsayılan önek `f!` olup `/prefix` veya `f!prefix` ile sunucuya özel olarak değiştirilebilir.
 - Botu etiketlediğinizde Furmin, önek bilgisini, destek sunucusu ve davet bağlantısı düğmelerini içeren rehber bir embed gönderir.
 - Pro üyelik listesi bot sahibi tarafından `/pro-uyelik` ile yönetilir; premium komutlar yalnızca yetkilendirilen kullanıcılar için açılır.
-- `/premium` ve `/premium-komutlar` komutları pro avantajlarını ve özel komut listesini gösterir; önek tarafında `f!premium` ve `f!prokomutlar` karşılıkları bulunur.
+- `/premium`, `/premium-komutlar` ve `/pro-panel` komutları pro avantajlarını, özel komut listesini ve sistem özetini gösterir; önek tarafında `f!premium` ve `f!prokomutlar` karşılıkları bulunur.
 - Furmin Pro üyeleri, `/uyari-raporu` gibi yönetim raporlarını ve gelişmiş sistem özetlerini kullanarak sunucuyu detaylıca denetleyebilir.
 
 ## Komut Dağıtımı ve Çalıştırma

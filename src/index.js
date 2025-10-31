@@ -52,6 +52,7 @@ async function registerCommands() {
       displayName: `/${command.data.name}`,
       description: command.data.description ?? 'Açıklama eklenmemiş.',
       proOnly: Boolean(command.proOnly),
+      ownerOnly: Boolean(command.ownerOnly),
       group: command.menuGroup ?? 'Slash Komutları'
     });
   }
@@ -77,6 +78,7 @@ async function registerPrefixCommands() {
       displayName: `${command.displayPrefix ?? config.defaultPrefix}${command.name}`,
       description: command.description ?? 'Açıklama eklenmemiş.',
       proOnly: Boolean(command.proOnly),
+      ownerOnly: Boolean(command.ownerOnly),
       group: command.menuGroup ?? 'Prefix Komutları'
     });
   }
