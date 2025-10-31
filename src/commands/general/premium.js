@@ -49,7 +49,17 @@ export default {
     if (proCommands.length) {
       const preview = proCommands
         .slice(0, 8)
-        .map((command) => `${command.type === 'slash' ? '⚡' : '⌨️'} ${command.displayName} — ${command.description}`)
+        .map((command) => {
+          const forms = [];
+          if (command.slash) {
+            forms.push(`⚡ /${command.slash.name}`);
+          }
+          if (command.prefix) {
+            forms.push(`⌨️ ${command.prefix.display}`);
+          }
+          const badge = command.ownerOnly ? ' ⭐' : '';
+          return `${forms.join(' • ') || 'Komut'}${badge} — ${command.description}`;
+        })
         .join('\n');
 
       embed.addFields({
@@ -64,10 +74,14 @@ export default {
 
     const row = new ActionRowBuilder();
     if (config.supportServerUrl) {
-      row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setURL(config.supportServerUrl));
+      row.addComponents(
+        new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setEmoji('🤝').setURL(config.supportServerUrl)
+      );
     }
     if (config.proInfoUrl) {
-      row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Bilgilendirme').setURL(config.proInfoUrl));
+      row.addComponents(
+        new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Bilgilendirme').setEmoji('💎').setURL(config.proInfoUrl)
+      );
     }
 
     await interaction.reply({ embeds: [embed], components: row.components.length ? [row] : [], ephemeral: true });

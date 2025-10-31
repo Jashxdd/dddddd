@@ -90,14 +90,16 @@ export default {
       const row = new ActionRowBuilder();
       if (config.supportServerUrl) {
         row.addComponents(
-          new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setURL(config.supportServerUrl)
+          new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setEmoji('🤝').setURL(config.supportServerUrl)
         );
       }
       if (config.inviteUrl) {
-        row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Davet Et').setURL(config.inviteUrl));
+        row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Davet Et').setEmoji('📨').setURL(config.inviteUrl));
       }
       if (config.proInfoUrl) {
-        row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Üyelik').setURL(config.proInfoUrl));
+        row.addComponents(
+          new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Üyelik').setEmoji('💎').setURL(config.proInfoUrl)
+        );
       }
 
       await message.reply({ embeds: [embed], components: row.components.length ? [row] : [] });
@@ -162,6 +164,14 @@ export default {
           });
           return;
         }
+      }
+
+      if (command.ownerOnly && message.author.id !== message.client.ownerId) {
+        await message.reply({
+          content: '⭐ Bu komut yalnızca Furmin sahibine açıktır.',
+          allowedMentions: { repliedUser: false }
+        });
+        return;
       }
 
       try {

@@ -37,6 +37,17 @@ export default {
       Promise.resolve(collectProCommands(client.commandCatalog))
     ]);
 
+    let slashTotal = 0;
+    let prefixTotal = 0;
+    let ownerOnly = 0;
+    for (const category of client.commandCatalog.values()) {
+      for (const command of category.values()) {
+        if (command.slash) slashTotal += 1;
+        if (command.prefix) prefixTotal += 1;
+        if (command.ownerOnly) ownerOnly += 1;
+      }
+    }
+
     const embed = new EmbedBuilder()
       .setColor(0x5865f2)
       .setAuthor({ name: client.user.tag, iconURL: client.user.displayAvatarURL({ size: 128 }) ?? undefined })
@@ -67,6 +78,14 @@ export default {
           value: proMembers.length
             ? `${proMembers.length} pro üye • ${proCommands.length} özel komut`
             : 'Henüz pro üye veya komut tanımlanmadı.',
+          inline: true
+        },
+        {
+          name: 'Komut Dağılımı',
+          value:
+            `⚡ Slash: **${slashTotal}**\n` +
+            `⌨️ Prefix: **${prefixTotal}**\n` +
+            `⭐ Sahip özel: **${ownerOnly}**`,
           inline: true
         },
         {

@@ -83,7 +83,7 @@ function sortCategories(entries) {
 function splitByGroup(commands) {
   const map = new Map();
   for (const command of commands) {
-    const group = command.group ?? 'Komutlar';
+    const group = command.menuGroup ?? 'Komutlar';
     if (!map.has(group)) {
       map.set(group, []);
     }
@@ -93,11 +93,28 @@ function splitByGroup(commands) {
 }
 
 function formatCommand(command, prefix) {
-  const typeIcon = command.type === 'slash' ? '⚡' : '⌨️';
-  const label = command.type === 'slash' ? `/${command.name}` : `${prefix}${command.name}`;
+  const labels = [];
+
+  if (command.slash) {
+    labels.push(`⚡ \`/${command.slash.name}\``);
+  }
+
+  if (command.prefix) {
+    let basePrefix = prefix;
+    if (command.prefix.displayPrefix && command.prefix.displayPrefix !== config.defaultPrefix) {
+      basePrefix = command.prefix.displayPrefix;
+    }
+    const aliasLabel = command.prefix.aliases?.length
+      ? ` (alias: ${command.prefix.aliases.map((alias) => `\`${basePrefix}${alias}\``).join(', ')})`
+      : '';
+    labels.push(`⌨️ \`${basePrefix}${command.prefix.name}\`${aliasLabel}`);
+  }
+
   const proBadge = command.proOnly ? ' 💎' : '';
   const ownerBadge = command.ownerOnly ? ' ⭐' : '';
-  return `${typeIcon} **${label}**${proBadge}${ownerBadge} — ${command.description}`;
+  const labelText = labels.join(' • ') || 'Komut';
+
+  return `${labelText}${proBadge}${ownerBadge} — ${command.description ?? 'Açıklama eklenmemiş.'}`;
 }
 
 function buildCategoryPage(categoryName, commands, prefix, pageIndex, totalPages) {
@@ -113,7 +130,11 @@ function buildCategoryPage(categoryName, commands, prefix, pageIndex, totalPages
   for (const [groupName, groupCommands] of grouped) {
     const lines = groupCommands
       .slice()
-      .sort((a, b) => a.name.localeCompare(b.name, 'tr'))
+      .sort((a, b) => {
+        const aName = a.slash?.name ?? a.prefix?.name ?? 'zzz';
+        const bName = b.slash?.name ?? b.prefix?.name ?? 'zzz';
+        return aName.localeCompare(bName, 'tr');
+      })
       .map((command) => formatCommand(command, prefix));
 
     const chunks = splitLinesIntoFieldChunks(lines);
@@ -132,9 +153,13 @@ function buildOverviewPage(categories, prefix) {
   const totalCommands = categories.reduce((sum, [, cmds]) => sum + cmds.length, 0);
   let slashCount = 0;
   let prefixCount = 0;
+  let proCount = 0;
+  let ownerCount = 0;
   for (const [, cmds] of categories) {
-    slashCount += cmds.filter((cmd) => cmd.type === 'slash').length;
-    prefixCount += cmds.filter((cmd) => cmd.type === 'prefix').length;
+    slashCount += cmds.filter((cmd) => Boolean(cmd.slash)).length;
+    prefixCount += cmds.filter((cmd) => Boolean(cmd.prefix)).length;
+    proCount += cmds.filter((cmd) => cmd.proOnly).length;
+    ownerCount += cmds.filter((cmd) => cmd.ownerOnly).length;
   }
 
   const embed = new EmbedBuilder()
@@ -166,14 +191,19 @@ function buildOverviewPage(categories, prefix) {
   embed.addFields(
     {
       name: 'Hızlı Bilgiler',
-      value: `• Slash komutları: **${slashCount}**\n• Prefix komutları: **${prefixCount}**\n• Prefix: \`${prefix}\``
+      value:
+        `• Slash komutları: **${slashCount}**\n` +
+        `• Prefix komutları: **${prefixCount}**\n` +
+        `• Pro komutları: **${proCount}**\n` +
+        `• Sahip komutları: **${ownerCount}**\n` +
+        `• Prefix: \`${prefix}\``
     },
     {
       name: 'Pro Üyelik',
       value:
         config.proInfoUrl
-          ? `💎 Bazı komutlar sadece **Pro** üyelerine özeldir. Detaylar için [buraya tıkla](${config.proInfoUrl}).`
-          : '💎 Bazı komutlar sadece **Pro** üyelerine özeldir. Bot sahibinden erişim isteyebilirsin.'
+          ? `💎 Pro komutlar yardım listesinde **💎** simgesiyle işaretlenir. Detaylar için [buraya tıkla](${config.proInfoUrl}).`
+          : '💎 Pro komutlar yardım listesinde **💎** simgesiyle işaretlenir. Erişim için bot sahibine ulaş.'
     }
   );
 
@@ -226,13 +256,17 @@ function createCategoryMenu(categories, currentIndex) {
 function createLinkRow() {
   const row = new ActionRowBuilder();
   if (config.supportServerUrl) {
-    row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setURL(config.supportServerUrl));
+    row.addComponents(
+      new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setEmoji('🤝').setURL(config.supportServerUrl)
+    );
   }
   if (config.inviteUrl) {
-    row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Davet Et').setURL(config.inviteUrl));
+    row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Davet Et').setEmoji('📨').setURL(config.inviteUrl));
   }
   if (config.proInfoUrl) {
-    row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Üyelik').setURL(config.proInfoUrl));
+    row.addComponents(
+      new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Üyelik').setEmoji('💎').setURL(config.proInfoUrl)
+    );
   }
   const components = row.components ?? [];
   return components.length ? row : null;
@@ -243,7 +277,10 @@ export default {
   menuGroup: 'Yardım Menüsü',
   data: new SlashCommandBuilder().setName('yardim').setDescription('Kategori kategori tüm komutları listeler.'),
   async execute(interaction) {
-    const catalogEntries = Array.from(interaction.client.commandCatalog.entries());
+    const catalogEntries = Array.from(interaction.client.commandCatalog.entries()).map(([categoryName, entries]) => [
+      categoryName,
+      Array.from(entries.values())
+    ]);
     const categories = sortCategories(catalogEntries);
 
     if (!categories.length) {

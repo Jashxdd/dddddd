@@ -44,6 +44,14 @@ export default {
       }
     }
 
+    if (command.ownerOnly && interaction.user.id !== interaction.client.ownerId) {
+      await interaction.reply({
+        content: '⭐ Bu komut yalnızca Furmin sahibine açıktır.',
+        ephemeral: true
+      });
+      return;
+    }
+
     try {
       await command.execute(interaction, client);
     } catch (error) {

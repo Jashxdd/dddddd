@@ -4,6 +4,7 @@ import { collectProCommands } from '../../utils/commandCatalog.js';
 export default {
   name: 'prokomutlar',
   aliases: ['prolistesi', 'pro-komutlar'],
+  catalogKey: 'premium-komutlar',
   category: 'Extra',
   description: 'Pro üyelerin erişebildiği komutların özetini gösterir.',
   menuGroup: 'Pro Üyelik',
@@ -27,7 +28,17 @@ export default {
 
     const summary = proCommands
       .slice(0, 15)
-      .map((command) => `${command.type === 'slash' ? '⚡' : '⌨️'} ${command.displayName}`)
+      .map((command) => {
+        const forms = [];
+        if (command.slash) {
+          forms.push(`⚡ /${command.slash.name}`);
+        }
+        if (command.prefix) {
+          forms.push(`⌨️ ${command.prefix.display}`);
+        }
+        const badge = command.ownerOnly ? ' ⭐' : '';
+        return `${forms.join(' • ') || 'Komut'}${badge}`;
+      })
       .join('\n');
 
     embed.addFields({

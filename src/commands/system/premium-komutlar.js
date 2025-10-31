@@ -25,31 +25,43 @@ export default {
     if (proCommands.length) {
       const sections = new Map();
       for (const command of proCommands) {
-        const key = `${command.type}_${command.category}`;
-        if (!sections.has(key)) {
-          sections.set(key, []);
+        if (!sections.has(command.category)) {
+          sections.set(command.category, []);
         }
 
-        sections.get(key).push(command);
+        sections.get(command.category).push(command);
       }
 
-      const sortedKeys = Array.from(sections.keys()).sort((a, b) => a.localeCompare(b, 'tr'));
+      const sortedCategories = Array.from(sections.keys()).sort((a, b) => a.localeCompare(b, 'tr'));
 
-      for (const key of sortedKeys) {
-        const commands = sections.get(key);
+      for (const category of sortedCategories) {
+        const commands = sections.get(category);
         if (!commands) continue;
 
-        const [type, category] = key.split('_');
-        const icon = type === 'slash' ? '⚡' : '⌨️';
         const lines = commands
           .slice()
-          .sort((a, b) => a.name.localeCompare(b.name, 'tr'))
-          .map((command) => `${icon} **${command.displayName}** — ${command.description}`);
+          .sort((a, b) => {
+            const aName = a.slash?.name ?? a.prefix?.name ?? 'zzz';
+            const bName = b.slash?.name ?? b.prefix?.name ?? 'zzz';
+            return aName.localeCompare(bName, 'tr');
+          })
+          .map((command) => {
+            const forms = [];
+            if (command.slash) {
+              forms.push(`⚡ \`/${command.slash.name}\``);
+            }
+            if (command.prefix) {
+              forms.push(`⌨️ \`${command.prefix.display}\``);
+            }
+            const label = forms.length ? forms.join(' • ') : 'Komut';
+            const badges = `${command.ownerOnly ? ' ⭐' : ''}`;
+            return `${label}${badges} — ${command.description}`;
+          });
 
         const chunks = splitLinesIntoFieldChunks(lines);
         chunks.forEach((value, index) => {
           embed.addFields({
-            name: index === 0 ? `${icon} ${category}` : '\u200B',
+            name: index === 0 ? `📂 ${category}` : '\u200B',
             value
           });
         });

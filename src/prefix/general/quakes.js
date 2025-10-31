@@ -3,6 +3,7 @@ import { buildEarthquakeEmbed, fetchEarthquakes } from '../../commands/general/d
 export default {
   name: 'quakes',
   aliases: ['deprem'],
+  catalogKey: 'deprem',
   category: 'Genel',
   description: 'Son depremleri listeler.',
   menuGroup: 'Kullanıcı Sistemleri',

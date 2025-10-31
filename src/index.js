@@ -28,16 +28,77 @@ client.commands = new Collection();
 client.prefixCommands = new Collection();
 client.prefixAliases = new Collection();
 client.commandCatalog = new Collection();
+const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları']);
 client.ownerId = config.ownerId;
 client.afkStatuses = new Map();
 
-function registerCatalogEntry(category, entry) {
+function normaliseCatalogKey(entry) {
+  const rawKey = entry.catalogKey ?? entry.name ?? entry.displayName ?? `${entry.type ?? 'cmd'}:${entry.name}`;
+  return String(rawKey).trim().toLowerCase();
+}
+
+function ensureCatalogBucket(category, key, seed) {
   const targetCategory = category ?? 'Diğer';
   if (!client.commandCatalog.has(targetCategory)) {
-    client.commandCatalog.set(targetCategory, []);
+    client.commandCatalog.set(targetCategory, new Collection());
   }
 
-  client.commandCatalog.get(targetCategory).push(entry);
+  const categoryMap = client.commandCatalog.get(targetCategory);
+  if (!categoryMap.has(key)) {
+    categoryMap.set(key, {
+      key,
+      description: seed.description ?? 'Açıklama eklenmemiş.',
+      menuGroup: seed.group ?? 'Komutlar',
+      proOnly: Boolean(seed.proOnly),
+      ownerOnly: Boolean(seed.ownerOnly),
+      slash: null,
+      prefix: null
+    });
+  }
+
+  return categoryMap.get(key);
+}
+
+function registerCatalogEntry(category, entry) {
+  const key = normaliseCatalogKey(entry);
+  const bucket = ensureCatalogBucket(category, key, entry);
+
+  if (entry.description) {
+    bucket.description = entry.description;
+  }
+
+  if (entry.group) {
+    if (!GENERIC_GROUPS.has(entry.group) || bucket.menuGroup === 'Komutlar') {
+      bucket.menuGroup = entry.group;
+    }
+  }
+
+  bucket.proOnly = bucket.proOnly || Boolean(entry.proOnly);
+  bucket.ownerOnly = bucket.ownerOnly || Boolean(entry.ownerOnly);
+
+  if (entry.type === 'slash') {
+    bucket.slash = {
+      name: entry.name,
+      description: entry.description ?? bucket.description,
+      displayName: entry.displayName ?? `/${entry.name}`
+    };
+    if (entry.group) {
+      if (!GENERIC_GROUPS.has(entry.group) || bucket.menuGroup === 'Komutlar') {
+        bucket.menuGroup = entry.group;
+      }
+    }
+  } else if (entry.type === 'prefix') {
+    bucket.prefix = {
+      name: entry.name,
+      displayPrefix: entry.displayPrefix ?? config.defaultPrefix,
+      aliases: Array.isArray(entry.aliases) ? entry.aliases : []
+    };
+    if (entry.group) {
+      if (!GENERIC_GROUPS.has(entry.group) || bucket.menuGroup === 'Komutlar') {
+        bucket.menuGroup = entry.group;
+      }
+    }
+}
 }
 
 async function registerCommands() {
@@ -53,7 +114,8 @@ async function registerCommands() {
       description: command.data.description ?? 'Açıklama eklenmemiş.',
       proOnly: Boolean(command.proOnly),
       ownerOnly: Boolean(command.ownerOnly),
-      group: command.menuGroup ?? 'Slash Komutları'
+      group: command.menuGroup ?? 'Slash Komutları',
+      catalogKey: command.catalogKey ?? command.data.name
     });
   }
 
@@ -79,7 +141,10 @@ async function registerPrefixCommands() {
       description: command.description ?? 'Açıklama eklenmemiş.',
       proOnly: Boolean(command.proOnly),
       ownerOnly: Boolean(command.ownerOnly),
-      group: command.menuGroup ?? 'Prefix Komutları'
+      group: command.menuGroup ?? 'Prefix Komutları',
+      catalogKey: command.catalogKey ?? command.name,
+      aliases: command.aliases,
+      displayPrefix: command.displayPrefix
     });
   }
 

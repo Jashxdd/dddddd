@@ -19,10 +19,25 @@ function getMeta(name) {
 }
 
 function formatLine(command, prefix) {
-  const icon = command.type === 'slash' ? '⚡' : '⌨️';
-  const label = command.type === 'slash' ? `/${command.name}` : `${prefix}${command.name}`;
+  const parts = [];
+
+  if (command.slash) {
+    parts.push(`⚡ \`/${command.slash.name}\``);
+  }
+
+  if (command.prefix) {
+    let basePrefix = prefix;
+    if (command.prefix.displayPrefix && command.prefix.displayPrefix !== config.defaultPrefix) {
+      basePrefix = command.prefix.displayPrefix;
+    }
+    const aliasText = command.prefix.aliases?.length
+      ? ` (alias: ${command.prefix.aliases.map((alias) => `\`${basePrefix}${alias}\``).join(', ')})`
+      : '';
+    parts.push(`⌨️ \`${basePrefix}${command.prefix.name}\`${aliasText}`);
+  }
+
   const badges = `${command.proOnly ? ' 💎' : ''}${command.ownerOnly ? ' ⭐' : ''}`;
-  return `${icon} **${label}**${badges} — ${command.description}`;
+  return `${parts.join(' • ') || 'Komut'}${badges} — ${command.description ?? 'Açıklama eklenmemiş.'}`;
 }
 
 export default {
@@ -32,7 +47,10 @@ export default {
   description: 'Komut merkezinin özetini gösterir.',
   menuGroup: 'Yardım Menüsü',
   async execute(message) {
-    const catalog = Array.from(message.client.commandCatalog.entries());
+    const catalog = Array.from(message.client.commandCatalog.entries()).map(([categoryName, entries]) => [
+      categoryName,
+      Array.from(entries.values())
+    ]);
     if (!catalog.length) {
       await message.reply({ content: 'Kayıtlı komut bulunamadı.' });
       return;
@@ -51,9 +69,13 @@ export default {
 
     let slashCount = 0;
     let prefixCount = 0;
+    let proCount = 0;
+    let ownerCount = 0;
     for (const [, commands] of sorted) {
-      slashCount += commands.filter((command) => command.type === 'slash').length;
-      prefixCount += commands.filter((command) => command.type === 'prefix').length;
+      slashCount += commands.filter((command) => Boolean(command.slash)).length;
+      prefixCount += commands.filter((command) => Boolean(command.prefix)).length;
+      proCount += commands.filter((command) => command.proOnly).length;
+      ownerCount += commands.filter((command) => command.ownerOnly).length;
     }
 
     const embed = new EmbedBuilder()
@@ -75,8 +97,21 @@ export default {
     });
 
     embed.addFields({
+      name: 'Pro Üyelik',
+      value:
+        config.proInfoUrl
+          ? `💎 Pro komutlar yardım listesinde **💎** simgesiyle işaretlenir. Ayrıntılar ve başvuru için [buraya tıkla](${config.proInfoUrl}).`
+          : '💎 Pro komutlar yardım listesinde **💎** simgesiyle işaretlenir. Erişim için bot sahibine ulaş.'
+    });
+
+    embed.addFields({
       name: 'İstatistikler',
-      value: `• Slash komutları: **${slashCount}**\n• Prefix komutları: **${prefixCount}**\n• En çok kullanılan: ${sorted[0]?.[0] ?? 'Bilinmiyor'}`
+      value:
+        `• Slash komutları: **${slashCount}**\n` +
+        `• Prefix komutları: **${prefixCount}**\n` +
+        `• Pro komutları: **${proCount}**\n` +
+        `• Sahip komutları: **${ownerCount}**\n` +
+        `• En çok kullanılan kategori: ${sorted[0]?.[0] ?? 'Bilinmiyor'}`
     });
 
     const highlightCategory = sorted[0];
@@ -84,22 +119,32 @@ export default {
       const [categoryName, commands] = highlightCategory;
       const lines = commands
         .slice(0, 6)
-        .sort((a, b) => a.name.localeCompare(b.name, 'tr'))
+        .sort((a, b) => {
+          const aName = a.slash?.name ?? a.prefix?.name ?? 'zzz';
+          const bName = b.slash?.name ?? b.prefix?.name ?? 'zzz';
+          return aName.localeCompare(bName, 'tr');
+        })
         .map((command) => formatLine(command, prefix));
 
       embed.addFields({ name: `Öne çıkan: ${categoryName}`, value: lines.join('\n') });
     }
 
     const row = new ActionRowBuilder();
-    row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Primary).setCustomId('prefix_help_slash').setLabel('/yardim Aç'));
+    row.addComponents(
+      new ButtonBuilder().setStyle(ButtonStyle.Primary).setCustomId('prefix_help_slash').setLabel('/yardim Aç').setEmoji('🗂️')
+    );
     if (config.supportServerUrl) {
-      row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setURL(config.supportServerUrl));
+      row.addComponents(
+        new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setEmoji('🤝').setURL(config.supportServerUrl)
+      );
     }
     if (config.inviteUrl) {
-      row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Davet Et').setURL(config.inviteUrl));
+      row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Davet Et').setEmoji('📨').setURL(config.inviteUrl));
     }
     if (config.proInfoUrl) {
-      row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Üyelik').setURL(config.proInfoUrl));
+      row.addComponents(
+        new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Üyelik').setEmoji('💎').setURL(config.proInfoUrl)
+      );
     }
 
     const reply = await message.reply({ embeds: [embed], components: [row], allowedMentions: { repliedUser: false } });
