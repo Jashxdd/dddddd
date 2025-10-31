@@ -46,15 +46,22 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 
 ## Komut Kategorileri
 - **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem`, `/doviz`,
-  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu` ve daha fazlası.
+  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/odak-ipuclari`, `/saglik-molasi`, `/paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
-  `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/pro-denetim` ve otomatik moderasyon komutları.
+  `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu` ve otomatik moderasyon komutları.
 - **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/otorol`, `/ayarlar`, `/bot-bilgi`, `/prefix`,
-  `/pro-uyelik`, `/sistem-ozeti`, `/premium-komutlar`, `/pro-panel`, `/pro-rapor`, `/sahip-duyuru`, `/sahip-kontrol`, `/bakim`.
+  `/pro-uyelik`, `/sistem-ozeti`, `/premium-komutlar`, `/pro-panel`, `/pro-rapor`, `/sahip-duyuru`, `/sahip-kontrol`, `/bakim`, `/pro-uyari-analiz`, `/pro-rol-analiz`, `/pro-kanal-ozet`, `/pro-bakim-durumu`, `/pro-otomasyon`, `/pro-icerik-plan`, `/pro-ekip-plani`, `/pro-gelisim`, `/pro-arsiv`, `/pro-hizli-eylem`.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
 - **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!otorol`, `f!ses`, `f!premium`, `f!prokomutlar`,
   `f!pro-rapor`, `f!prodenetim`, `f!slot`, `f!tahmin`, `f!karistir`, `f!sahip-kontrol`, `f!prefix`, `f!bakim` vb.
 
+
+### 30 Yeni Komutun Özeti
+- **Genel (10 adet):** `/gunun-sozu`, `/odak-ipuclari`, `/saglik-molasi`, `/paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham`.
+- **Moderasyon (10 adet):** `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu`.
+- **Pro Yönetimi (10 adet):** `/pro-uyari-analiz`, `/pro-rol-analiz`, `/pro-kanal-ozet`, `/pro-bakim-durumu`, `/pro-otomasyon`, `/pro-icerik-plan`, `/pro-ekip-plani`, `/pro-gelisim`, `/pro-arsiv`, `/pro-hizli-eylem`.
+
+Tüm yeni komutların önek karşılıkları aynı isimlerle `f!` ön ekiyle sunulur ve yardım menüsündeki ilgili kategori sayfalarına otomatik olarak eklenir.
 Her komut, slash menüsü veya önek sistemi çalıştırılmadan önce kullanıcının `/kurallari-kabul` ile kuralları onaylamasını zorunlu kılar.
 Furmin Pro üyeliği gereken komutlar yardım menüsünde 💎 simgesiyle gösterilir ve yardım menüsünde ayrı **Pro Komutları** / **Sahip Komutları** sayfaları bulunur.
 
