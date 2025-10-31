@@ -97,3 +97,12 @@ Ardından botu başlatmak için:
 npm start
 ```
 Konsolda yapılandırma kaynağı, yüklenen komut sayısı ve seçilen senkronizasyon moduna göre ( `commandSyncMode` / `COMMAND_SYNC_MODE` → `global`, `test`, `hybrid`) yapılan REST dağıtımının özeti görüntülenir. `test` modu yalnızca `commandTestGuilds` listesine, `hybrid` modu ise hem belirlenen sunuculara hem globale kayıt yaparak çift komut görünümünü engeller. Durum rotasyonu, `config.json` / `.env` ayarlarınıza göre Furmin adını ve etkinliklerini Türkçe olarak gösterir.
+
+## Testler
+Furmin’deki tüm JavaScript dosyalarının sözdizimini doğrulamak için aşağıdaki komutu kullanabilirsiniz:
+
+```bash
+npm run check:syntax
+```
+
+Bu komut, `src/` dizinindeki tüm komut ve olay dosyalarını `node --check` ile tarayarak olası yazım hatalarını hızlıca tespit eder.

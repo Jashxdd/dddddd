@@ -6,7 +6,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "deploy:commands": "node src/deploy-commands.js"
+    "deploy:commands": "node src/deploy-commands.js",
+    "check:syntax": "node scripts/checkSyntax.js"
   },
   "engines": {
     "node": ">=18.17.0"
