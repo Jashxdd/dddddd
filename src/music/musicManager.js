@@ -14,25 +14,65 @@ function safeTitle(text) {
   return text.length > 256 ? `${text.slice(0, 253)}...` : text;
 }
 
-async function resolveTrack(query) {
-  let info = null;
-
-  if (play.yt_validate(query) === 'video') {
-    info = await play.video_basic_info(query);
-  } else {
-    const searchResults = await play.search(query, { limit: 1, source: { youtube: 'video' } });
-    if (!searchResults.length) {
-      throw new Error('Parça bulunamadı. Farklı bir arama deneyin.');
-    }
-    info = await play.video_basic_info(searchResults[0].url);
+async function ensurePlaySession() {
+  if (typeof play.is_expired === 'function' && play.is_expired()) {
+    await play.refreshToken();
   }
+}
+
+async function fetchYoutubeInfo(url) {
+  const info = await play.video_basic_info(url);
 
   return {
-    title: safeTitle(info?.video_details?.title ?? query),
-    url: info?.video_details?.url ?? query,
+    title: safeTitle(info?.video_details?.title ?? url),
+    url,
     durationInSec: Number.parseInt(info?.video_details?.durationInSec ?? '0', 10) || 0,
     author: info?.video_details?.channel?.name ?? 'Bilinmeyen Kanal'
   };
+}
+
+async function resolveSpotifyTrack(url) {
+  const spotifyInfo = await play.spotify(url);
+  const primaryArtist = spotifyInfo?.artists?.[0]?.name ?? '';
+  const searchTerm = [spotifyInfo?.name, primaryArtist].filter(Boolean).join(' ');
+
+  if (!searchTerm) {
+    throw new Error('Spotify parçası çözümlenemedi.');
+  }
+
+  return resolveYoutubeSearch(searchTerm, spotifyInfo?.name ?? searchTerm);
+}
+
+async function resolveYoutubeSearch(searchTerm, fallbackTitle) {
+  const results = await play.search(searchTerm, { limit: 1, source: { youtube: 'video' } });
+  if (!results.length) {
+    throw new Error('Parça bulunamadı. Farklı bir arama deneyin.');
+  }
+
+  const chosen = results[0];
+  const info = await fetchYoutubeInfo(chosen.url);
+
+  if (fallbackTitle && !info.title) {
+    info.title = safeTitle(fallbackTitle);
+  }
+
+  return info;
+}
+
+async function resolveTrack(query) {
+  await ensurePlaySession();
+
+  const validation = typeof play.validate === 'function' ? play.validate(query) : play.yt_validate(query);
+
+  if (validation === 'yt_video' || validation === 'video') {
+    return fetchYoutubeInfo(query);
+  }
+
+  if (validation === 'sp_track') {
+    return resolveSpotifyTrack(query);
+  }
+
+  return resolveYoutubeSearch(query, query);
 }
 
 function createQueue(guildId, voiceChannel, textChannel) {
@@ -62,6 +102,7 @@ function createQueue(guildId, voiceChannel, textChannel) {
 }
 
 async function createResource(url) {
+  await ensurePlaySession();
   const stream = await play.stream(url, { discordPlayerCompatibility: true });
   return createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true });
 }

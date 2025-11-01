@@ -7,6 +7,7 @@
   "supportServerUrl": "https://discord.gg/ornek",
   "inviteUrl": "https://discord.com/api/oauth2/authorize?client_id=DISCORD_UYGULAMA_ID&permissions=8&scope=bot%20applications.commands",
   "proInfoUrl": "https://ornek.site/pro",
+  "botLogChannelId": "BOT_LOG_KANAL_ID",
   "presenceStatus": "online",
   "presenceInterval": 75,
   "commandSyncMode": "global",

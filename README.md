@@ -17,6 +17,8 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Furmin Pro yönetim merkezi: tüm premium analizler `/pro` komutunun alt komutlarında toplanır, önek tarafı aynı raporları ayrı komutlarla sunar
 - ✅ Herkese açık butonlu rol paneli (`/rol-panel` ve `f!rolpanel`) ve Pro üyelik yönetimini tek komutta toplayan `/pro uyelik`
 - ✅ Furmin Müzik sistemi: YouTube tabanlı oynatma, sıra yönetimi, duraklat/devam/atla/dur komutları (slash + önek)
+- ✅ Furmin Müzik sistemi: YouTube/Spotify aramasıyla oynatma, sıra yönetimi, duraklat/devam/atla/dur komutları (slash + önek)
+- ✅ Bot sahibine özel log kanalı: yeni sunucu katılımları ve kullanıcı geri bildirimleri otomatik olarak embed şeklinde iletilir
 - ✅ Komut senkronizasyon modları (`global`, `test`, `hybrid`) ile çift kayıtları engelleyen REST dağıtımı
 - ✅ Yalnızca bot sahibinin açıp kapatabildiği bakım modu ve nazik bakım bildirimleri
 - ✅ Pro komut kataloğu, uyarı raporu ve sistem özeti ile yöneticilere özel analiz paneli
@@ -42,7 +44,8 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
    | `guildId` | (İsteğe bağlı) Slash komutlarını önce test sunucusunda yayınlamak için |
    | `ownerId` | Bot sahibinin Discord kullanıcı ID'si |
    | `defaultPrefix` | Sunucu öneğinin varsayılan değeri (varsayılan `f!`) |
-   | `supportServerUrl` / `inviteUrl` / `proInfoUrl` | Butonlarda gösterilecek bağlantılar |
+  | `supportServerUrl` / `inviteUrl` / `proInfoUrl` | Butonlarda gösterilecek bağlantılar |
+  | `botLogChannelId` | Botun kendi loglarını göndereceği kanalın ID'si (opsiyonel) |
    | `presenceStatus`, `presenceInterval`, `activities` | Durum rotasyonu için isteğe bağlı ayarlar |
 
    > Furmin yapılandırma yükleyicisi hem proje kökünde hem de `config/` klasöründe `config.json` arar ve yer tutucu değerleri
@@ -60,6 +63,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - **Müzik:** `/muzik-oynat`, `/muzik-atla`, `/muzik-duraklat`, `/muzik-devam`, `/muzik-dur`, `/muzik-kuyruk`, `/muzik-simdi`.
 - **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
   `f!pro-rapor`, `f!prodenetim`, `f!slot`, `f!tahmin`, `f!karistir`, `f!muzik-oynat`, `f!muzik-atla`, `f!muzik-duraklat`, `f!muzik-devam`, `f!muzik-dur`, `f!muzik-kuyruk`, `f!muzik-simdi`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!bakim` vb.
+  `f!istek` ile kullanıcılar bot geliştiricisine öneri/istek/sorun iletebilir.
 
 ### Yeni Sistemler ve Güncellemeler
 - Slash tarafındaki tüm Pro araçları artık tek `/pro` komutunda toplanır; önek tarafında aynı raporlar bireysel komutlar olarak çalışmaya devam eder.
@@ -79,6 +83,11 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - Üye giriş/çıkışları, rol ve takma ad değişiklikleri, zaman aşımı güncellemeleri
 - Kanal ve rol oluşturma-silme işlemleri ile mod-log testi
 - Ses kanalı giriş/çıkışları, taşınmalar, yetkili susturma/sağırlaştırma değişimleri ve yayın başlangıç/bitişleri
+
+## Bot Geri Bildirim Günlükleri
+- `config.json` / `.env` içerisinde `botLogChannelId` belirlediğinizde Furmin, yeni sunuculara katıldığında bu kanala otomatik olarak log bırakır.
+- Kullanıcılar `f!istek <mesaj>` komutuyla öneri/istek/sorun bildirimi gönderebilir; bot mesajı log kanalına modern embed olarak iletir ve kullanıcıyı bilgilendirir.
+- Log kanalı ayarlanmadığında kullanıcıya nazik bir uyarı gönderilir.
 
 ## Premium ve Önek Sistemi
 - Varsayılan önek `f!` olup `/prefix` veya `f!prefix` ile sunucuya özel olarak değiştirilebilir.

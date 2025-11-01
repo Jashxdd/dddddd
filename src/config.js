@@ -147,6 +147,7 @@ export const config = {
   supportServerUrl: pick(fileConfig.supportServerUrl, process.env.SUPPORT_SERVER_URL),
   inviteUrl: pick(fileConfig.inviteUrl, process.env.INVITE_URL),
   proInfoUrl: pick(fileConfig.proInfoUrl, process.env.PRO_INFO_URL),
+  botLogChannelId: pick(fileConfig.botLogChannelId, process.env.BOT_LOG_CHANNEL_ID),
   presenceStatus: pick(fileConfig.presenceStatus, process.env.PRESENCE_STATUS) || 'online',
   presenceInterval: pickNumber(
     60,
