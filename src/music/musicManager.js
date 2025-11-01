@@ -472,9 +472,15 @@ export class MusicManager {
   }
 
   async addTrack({ guild, voiceChannel, textChannel, query, requestedBy }) {
+    const normalizedQuery = typeof query === 'string' ? query.trim() : '';
+
+    if (!normalizedQuery) {
+      throw new Error('Lütfen geçerli bir bağlantı veya arama terimi belirtin.');
+    }
+
     let track;
     try {
-      track = await resolveTrack(query);
+      track = await resolveTrack(normalizedQuery);
     } catch (error) {
       throw new Error(error?.message ?? 'Parça çözümlenemedi.');
     }

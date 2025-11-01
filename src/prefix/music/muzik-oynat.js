@@ -46,8 +46,8 @@ export default {
       return;
     }
 
-    const query = args.join(' ');
-    if (!query.length) {
+    const query = args.join(' ').trim();
+    if (!query) {
       await message.reply({ content: 'Lütfen bir bağlantı veya arama terimi yaz.', allowedMentions: { repliedUser: false } });
       return;
     }

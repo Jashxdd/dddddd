@@ -80,7 +80,17 @@ export default {
       return;
     }
 
-    const query = interaction.options.getString('parca', true);
+    const rawQuery = interaction.options.getString('parca', true);
+    const query = rawQuery?.trim();
+
+    if (!query) {
+      await interaction.reply({
+        content: 'Lütfen geçerli bir bağlantı veya arama terimi gir.',
+        ephemeral: true
+      });
+      return;
+    }
+
     await interaction.deferReply();
 
     try {
