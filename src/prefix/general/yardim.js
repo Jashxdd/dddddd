@@ -165,6 +165,7 @@ export default {
       .setDescription(
         [
           'Slash veya prefix komutlarını kullanarak botu yönetebilirsin.',
+          'Discord slash komut sınırı 100 olduğu için ek araçlar prefix menüsünde listelenir.',
           `> Slash menüsü: \`/yardim\` • Prefix menüsü: \`${prefix}yardim\``,
           `> Global panel: \`${prefix}furmin-merkez\` komutu modern Furmin Merkez kartını açar.`
         ].join('\n')
@@ -205,6 +206,7 @@ export default {
         `• Prefix komutları: **${prefixCount}**\n` +
         `• Pro komutları: **${proCount}**\n` +
         `• Sahip komutları: **${ownerCount}**\n` +
+        '• Slash komut limiti: **100** (fazlası prefix olarak sunulur)\n' +
         `• En çok kullanılan kategori: ${topCategory ? `${topCategory.emoji} ${topCategory.name}` : 'Bilinmiyor'}`
     });
 

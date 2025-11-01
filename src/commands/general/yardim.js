@@ -174,6 +174,7 @@ function buildOverviewPage(displayCategories, prefix, statsCategories = displayC
     .setDescription(
       [
         'Aşağıdaki menü ve butonları kullanarak tüm kategorileri gezebilir, pro komutlarını ve prefix sistemini inceleyebilirsin.',
+        'Slash komut sınırı 100 olduğundan ek araçlar prefix tarafında yer alır.',
         `> 🌌 Global panel için \`${prefix}furmin-merkez\` komutunu kullan.`
       ].join('\n')
     )
@@ -205,6 +206,7 @@ function buildOverviewPage(displayCategories, prefix, statsCategories = displayC
         `• Prefix komutları: **${prefixCount}**\n` +
         `• Pro komutları: **${proCount}**\n` +
         `• Sahip komutları: **${ownerCount}**\n` +
+        '• Slash komut limiti: **100** (fazlası prefix olarak sunulur)\n' +
         `• Prefix: \`${prefix}\``
     },
     {
