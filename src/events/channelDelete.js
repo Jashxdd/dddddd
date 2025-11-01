@@ -1,5 +1,6 @@
 import { ChannelType, Events } from 'discord.js';
 import { sendModerationLog } from '../utils/modLog.js';
+import { removePrivateVoice } from '../utils/privateVoiceStorage.js';
 
 function describeChannelType(channel) {
   switch (channel.type) {
@@ -36,5 +37,7 @@ export default {
         { name: 'Kanal ID', value: channel.id, inline: false }
       ]
     });
+
+    await removePrivateVoice(channel.guild.id, channel.id);
   }
 };

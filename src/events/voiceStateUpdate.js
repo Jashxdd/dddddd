@@ -1,5 +1,6 @@
 import { Events } from 'discord.js';
 import { formatUserMention, sendModerationLog } from '../utils/modLog.js';
+import { getPrivateVoiceByChannel, removePrivateVoice } from '../utils/privateVoiceStorage.js';
 
 function formatChannel(channel) {
   if (!channel) return 'Yok';
@@ -48,7 +49,10 @@ export default {
       changes.push(newState.streaming ? '• Yayın başlattı.' : '• Yayını sonlandırdı.');
     }
 
-    if (!changes.length) return;
+    if (!changes.length) {
+      await handlePrivateVoiceCleanup(oldState);
+      return;
+    }
 
     const subject = newState.member ?? newState.member?.user ?? { id: newState.id };
 
@@ -59,5 +63,20 @@ export default {
       color: 0x2980b9,
       extraFields
     });
+
+    await handlePrivateVoiceCleanup(oldState);
   }
 };
+
+async function handlePrivateVoiceCleanup(state) {
+  const channel = state?.channel;
+  if (!channel) return;
+  const data = await getPrivateVoiceByChannel(channel.guild.id, channel.id);
+  if (!data) return;
+
+  const nonBotMembers = channel.members.filter((member) => !member.user.bot);
+  if (nonBotMembers.size > 0) return;
+
+  await channel.delete('Özel ses odası boş kaldı.').catch(() => {});
+  await removePrivateVoice(channel.guild.id, channel.id);
+}

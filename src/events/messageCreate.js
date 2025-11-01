@@ -13,6 +13,7 @@ import { getPrefix } from '../utils/prefixStorage.js';
 import { isProMember } from '../utils/proMembership.js';
 import { getMaintenanceState } from '../utils/maintenanceStorage.js';
 import { config } from '../config.js';
+import { findAutoReplyMatch } from '../utils/autoReplyStorage.js';
 
 function createMaintenanceEmbed(client, note) {
   const embed = new EmbedBuilder()
@@ -220,6 +221,15 @@ export default {
       }
 
       return;
+    }
+
+    if (!maintenance.enabled) {
+      const autoReply = await findAutoReplyMatch(message.guild.id, message.content);
+      if (autoReply && mePermissions) {
+        await message.channel
+          .send({ content: autoReply.response, allowedMentions: { repliedUser: false } })
+          .catch(() => {});
+      }
     }
 
     const enabled = await isAutomodEnabled(message.guild.id);

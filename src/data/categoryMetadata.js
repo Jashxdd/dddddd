@@ -34,11 +34,18 @@ export const categoryMetadata = {
     order: 5,
     group: 'Müzik Sistemleri'
   },
+  'Özel Ses': {
+    emoji: '🎧',
+    color: 0x2ecc71,
+    description: 'Kişisel ses odaları ve kontrol panelleri.',
+    order: 6,
+    group: 'Dinamik Ses'
+  },
   Extra: {
     emoji: '👑',
     color: 0x9b59b6,
     description: 'Pro üyelik ayrıcalıkları ve gelişmiş rapor komutları.',
-    order: 6,
+    order: 7,
     group: 'Pro Üyelik'
   },
   'Pro Komutları': {

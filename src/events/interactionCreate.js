@@ -3,6 +3,105 @@ import { hasAcceptedRules } from '../utils/rulesStorage.js';
 import { isProMember } from '../utils/proMembership.js';
 import { getMaintenanceState } from '../utils/maintenanceStorage.js';
 import { getRolePanel } from '../utils/rolePanelStorage.js';
+import {
+  getPrivateVoiceByChannel,
+  updatePrivateVoice,
+  removePrivateVoice
+} from '../utils/privateVoiceStorage.js';
+import { buildPrivateVoiceButtons, buildPrivateVoiceEmbed } from '../utils/privateVoicePanel.js';
+
+async function handlePrivateVoiceButton(interaction) {
+  const parts = interaction.customId.split(':');
+  if (parts.length < 4) return false;
+  const [prefix, action, guildId, channelId] = parts;
+  if (prefix !== 'pvoice') {
+    return false;
+  }
+
+  if (guildId !== interaction.guildId) {
+    await interaction.reply({ content: 'Bu panel farklı bir sunucuya ait görünüyor.', ephemeral: true });
+    return true;
+  }
+
+  const data = await getPrivateVoiceByChannel(guildId, channelId);
+  if (!data) {
+    await interaction.reply({ content: 'Bu özel oda artık geçerli değil.', ephemeral: true });
+    return true;
+  }
+
+  const channel = interaction.guild.channels.cache.get(channelId) ??
+    (await interaction.guild.channels.fetch(channelId).catch(() => null));
+
+  if (!channel) {
+    await removePrivateVoice(guildId, channelId);
+    await interaction.reply({ content: 'Ses kanalı bulunamadı. Panel kapatılıyor.', ephemeral: true });
+    return true;
+  }
+
+  const isOwner = interaction.user.id === data.ownerId;
+  const hasManageChannels = interaction.member?.permissions?.has(PermissionFlagsBits.ManageChannels);
+  const isBotOwner = interaction.user.id === interaction.client.ownerId;
+  if (!isOwner && !hasManageChannels && !isBotOwner) {
+    await interaction.reply({ content: 'Bu kontrolü kullanmak için oda sahibi olmalısın.', ephemeral: true });
+    return true;
+  }
+
+  let locked = Boolean(data.locked);
+  let limit = Number.isFinite(data.limit) ? data.limit : channel.userLimit ?? 0;
+
+  if (action === 'toggle') {
+    locked = !locked;
+    await channel.permissionOverwrites.edit(interaction.guild.id, {
+      Connect: locked ? false : true
+    });
+    await updatePrivateVoice(guildId, channelId, { locked });
+  } else if (action === 'limitup') {
+    const nextLimit = Math.min(99, Math.max(limit, channel.userLimit ?? 0) + 1);
+    await channel.setUserLimit(nextLimit).catch(() => {});
+    limit = nextLimit;
+    await updatePrivateVoice(guildId, channelId, { limit });
+  } else if (action === 'limitdown') {
+    const current = Math.max(limit, channel.userLimit ?? 0);
+    const nextLimit = current <= 1 ? 0 : current - 1;
+    await channel.setUserLimit(nextLimit).catch(() => {});
+    limit = nextLimit;
+    await updatePrivateVoice(guildId, channelId, { limit: nextLimit || null });
+  } else if (action === 'delete') {
+    await channel.delete('Özel ses odası panel üzerinden kapatıldı.').catch(() => {});
+    await removePrivateVoice(guildId, channelId);
+    const embed = buildPrivateVoiceEmbed({
+      channel: null,
+      owner: `<@${data.ownerId}>`,
+      locked: false,
+      limit: null,
+      createdAt: data.createdAt
+    });
+    await interaction.update({ embeds: [embed], components: [] });
+    setTimeout(() => {
+      interaction.message.delete().catch(() => {});
+    }, 5000);
+    return true;
+  } else if (action === 'refresh') {
+    // no-op, fall through to update embed
+  } else {
+    return false;
+  }
+
+  const freshData = await getPrivateVoiceByChannel(guildId, channelId);
+  const embed = buildPrivateVoiceEmbed({
+    channel: channel.toString(),
+    owner: `<@${freshData?.ownerId ?? data.ownerId}>`,
+    locked: freshData?.locked ?? locked,
+    limit: Number.isFinite(freshData?.limit) ? freshData.limit : channel.userLimit ?? limit,
+    createdAt: freshData?.createdAt ?? data.createdAt
+  });
+  const components = buildPrivateVoiceButtons(guildId, channelId, {
+    locked: freshData?.locked ?? locked
+  });
+
+  await interaction.update({ embeds: [embed], components });
+  return true;
+}
 
 const bypassCommands = new Set(['kurallar', 'kurallari-kabul']);
 
@@ -11,6 +110,10 @@ export default {
   async execute(interaction, client) {
     if (interaction.isButton()) {
       if (!interaction.inGuild()) return;
+      const handled = await handlePrivateVoiceButton(interaction);
+      if (handled) {
+        return;
+      }
       const [prefix, guildId, panelId, roleId] = interaction.customId.split(':');
       if (prefix !== 'rolepanel' || !guildId || !panelId || !roleId) {
         return;
