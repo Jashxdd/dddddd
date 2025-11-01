@@ -2,37 +2,11 @@ import { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from 'disc
 import { describePrefix } from '../../utils/prefixStorage.js';
 import { config } from '../../config.js';
 import { splitLinesIntoFieldChunks } from '../../utils/embedChunks.js';
+import { getCategoryMeta } from '../../data/categoryMetadata.js';
+import { buildFurminHubEmbed, buildSupportLinkRow } from '../../utils/hubCard.js';
+import { collectCatalogSummary } from '../../utils/catalogSummary.js';
 
 const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları', 'Slash & Prefix']);
-
-const categoryMetadata = {
-  Genel: { emoji: '🧭', description: 'Bilgi ve kullanıcı araçları', color: 0x1abc9c, order: 1 },
-  Moderasyon: { emoji: '🛡️', description: 'Ceza ve yönetim komutları', color: 0xe74c3c, order: 2 },
-  Sistem: { emoji: '⚙️', description: 'Kurallar, mod-log ve otomasyon', color: 0x95a5a6, order: 3 },
-  'Eğlence': { emoji: '🎉', description: 'Eğlence ve mini oyunlar', color: 0xf1c40f, order: 4 },
-  'Müzik': { emoji: '🎵', description: 'Müzik sistemi ve oynatma kontrolü', color: 0x3498db, order: 5 },
-  Extra: { emoji: '👑', description: 'Pro üyelik avantajları', color: 0x9b59b6, order: 6 },
-  'Pro Komutları': {
-    emoji: '💎',
-    description: 'Tüm pro komutlarını tek listede gösterir',
-    color: 0x8e44ad,
-    order: 90,
-    synthetic: true
-  },
-  'Sahip Komutları': {
-    emoji: '⭐',
-    description: 'Yalnızca Furmin sahibinin erişebileceği araçlar',
-    color: 0xf39c12,
-    order: 91,
-    synthetic: true
-  }
-};
-
-const defaultMetadata = { emoji: '📁', description: 'Kategori açıklaması eklenmemiş', color: 0x5865f2, order: 99 };
-
-function getMeta(name) {
-  return categoryMetadata[name] ?? defaultMetadata;
-}
 
 function commandKey(command) {
   if (command.key) return command.key;
@@ -69,8 +43,8 @@ function sortCategoryEntries(entries) {
   return entries
     .filter(([, commands]) => commands.length)
     .sort(([a], [b]) => {
-      const metaA = getMeta(a);
-      const metaB = getMeta(b);
+      const metaA = getCategoryMeta(a);
+      const metaB = getCategoryMeta(b);
       if (metaA.order !== metaB.order) return metaA.order - metaB.order;
       return a.localeCompare(b, 'tr');
     });
@@ -177,27 +151,29 @@ export default {
     const sorted = sortCategoryEntries(prepareCategoryEntries([...catalog, ...extraCategories]));
 
     const { prefix } = await describePrefix(message.guildId ?? '');
-
-    let slashCount = 0;
-    let prefixCount = 0;
-    let proCount = 0;
-    let ownerCount = 0;
-    for (const [, commands] of sortedBase) {
-      slashCount += commands.filter((command) => Boolean(command.slash)).length;
-      prefixCount += commands.filter((command) => Boolean(command.prefix)).length;
-      proCount += commands.filter((command) => command.proOnly).length;
-      ownerCount += commands.filter((command) => command.ownerOnly).length;
-    }
+    const { stats: baseStats, topCategory } = collectCatalogSummary(message.client);
+    const { totalCommands, slashCount, prefixCount, proCount, ownerCount } = baseStats;
+    const guildCount = message.client.guilds.cache.size;
+    const memberCount = message.client.guilds.cache.reduce((total, guild) => {
+      const cached = guild.memberCount ?? guild.approximateMemberCount ?? 0;
+      return total + (Number.isFinite(cached) ? cached : 0);
+    }, 0);
 
     const embed = new EmbedBuilder()
       .setColor(0x5865f2)
       .setTitle('Furmin Komut Merkezi')
-      .setDescription('Slash veya prefix komutlarını kullanarak botu yönetebilirsin. Detaylı menü için `/yardim` komutunu aç.')
+      .setDescription(
+        [
+          'Slash veya prefix komutlarını kullanarak botu yönetebilirsin.',
+          `> Slash menüsü: \`/yardim\` • Prefix menüsü: \`${prefix}yardim\``,
+          `> Global panel: \`${prefix}furmin-merkez\` komutu modern Furmin Merkez kartını açar.`
+        ].join('\n')
+      )
       .setFooter({ text: `Prefix: ${prefix}` })
       .setTimestamp();
 
     const summaries = sorted.map(([categoryName, commands]) => {
-      const meta = getMeta(categoryName);
+      const meta = getCategoryMeta(categoryName);
       const proBadge = commands.every((command) => command.proOnly) ? ' 💎' : '';
       return `${meta.emoji} **${categoryName}** — ${commands.length} komut${proBadge}\n> ${meta.description}`;
     });
@@ -205,6 +181,12 @@ export default {
     const categoryChunks = splitLinesIntoFieldChunks(summaries, 1024);
     categoryChunks.forEach((value, index) => {
       embed.addFields({ name: index === 0 ? 'Kategoriler' : '\u200B', value });
+    });
+
+    embed.addFields({
+      name: 'Furmin Merkez',
+      value:
+        `🌌 \`${prefix}furmin-merkez\` komutu destek bağlantıları, global istatistikler ve öne çıkan sistemleri tek embed'de sunar.`
     });
 
     embed.addFields({
@@ -218,11 +200,12 @@ export default {
     embed.addFields({
       name: 'İstatistikler',
       value:
+        `• Toplam komut: **${totalCommands}**\n` +
         `• Slash komutları: **${slashCount}**\n` +
         `• Prefix komutları: **${prefixCount}**\n` +
         `• Pro komutları: **${proCount}**\n` +
         `• Sahip komutları: **${ownerCount}**\n` +
-        `• En çok kullanılan kategori: ${sortedBase[0]?.[0] ?? 'Bilinmiyor'}`
+        `• En çok kullanılan kategori: ${topCategory ? `${topCategory.emoji} ${topCategory.name}` : 'Bilinmiyor'}`
     });
 
     const highlightCategory = sortedBase[0];
@@ -241,6 +224,9 @@ export default {
     }
 
     const quickRow = new ActionRowBuilder();
+    quickRow.addComponents(
+      new ButtonBuilder().setStyle(ButtonStyle.Secondary).setCustomId('prefix_help_hub').setLabel('Furmin Merkez').setEmoji('🌌')
+    );
     quickRow.addComponents(
       new ButtonBuilder().setStyle(ButtonStyle.Primary).setCustomId('prefix_help_slash').setLabel('/yardim Aç').setEmoji('🗂️')
     );
@@ -265,23 +251,10 @@ export default {
       );
     }
 
-    const linkRow = new ActionRowBuilder();
-    if (config.supportServerUrl) {
-      linkRow.addComponents(
-        new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setEmoji('🤝').setURL(config.supportServerUrl)
-      );
-    }
-    if (config.inviteUrl) {
-      linkRow.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Davet Et').setEmoji('📨').setURL(config.inviteUrl));
-    }
-    if (config.proInfoUrl) {
-      linkRow.addComponents(
-        new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Üyelik').setEmoji('💎').setURL(config.proInfoUrl)
-      );
-    }
+    const linkRow = buildSupportLinkRow();
 
     const rows = [quickRow];
-    if (linkRow.components.length) {
+    if (linkRow) {
       rows.push(linkRow);
     }
 
@@ -293,6 +266,19 @@ export default {
     });
 
     collector.on('collect', async (interaction) => {
+      if (interaction.customId === 'prefix_help_hub') {
+        const hubEmbed = buildFurminHubEmbed({
+          client: message.client,
+          prefix,
+          stats: { ...baseStats, guildCount, memberCount },
+          topCategory,
+          extraDescriptionLines: ['Bu panel yalnızca sana görünür ve bağlantıları hızlıca erişilebilir kılar.']
+        });
+
+        await interaction.reply({ embeds: [hubEmbed], ephemeral: true });
+        return;
+      }
+
       if (interaction.customId === 'prefix_help_slash') {
         await interaction.reply({
           content: '📬 Slash menüsünü açmak için `/yardim` komutunu kullanabilirsin. Slash menüsü etkileşimlidir ve yalnızca sana görünür.',

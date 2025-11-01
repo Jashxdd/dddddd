@@ -11,81 +11,11 @@ import {
 import { describePrefix } from '../../utils/prefixStorage.js';
 import { config } from '../../config.js';
 import { splitLinesIntoFieldChunks } from '../../utils/embedChunks.js';
+import { getCategoryMeta } from '../../data/categoryMetadata.js';
+import { buildFurminHubEmbed, buildSupportLinkRow } from '../../utils/hubCard.js';
+import { collectCatalogSummary, computeCatalogStats } from '../../utils/catalogSummary.js';
 
 const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları', 'Slash & Prefix']);
-
-const categoryMetadata = {
-  Genel: {
-    emoji: '🧭',
-    color: 0x1abc9c,
-    description: 'Sunucu bilgisi, profiller ve günlük yaşam araçları.',
-    order: 1,
-    group: 'Kullanıcı Sistemleri'
-  },
-  Moderasyon: {
-    emoji: '🛡️',
-    color: 0xe74c3c,
-    description: 'Sunucu düzenini sağlayan cezalar, uyarılar ve kayıtlar.',
-    order: 2,
-    group: 'Koruma & Log'
-  },
-  Sistem: {
-    emoji: '⚙️',
-    color: 0x95a5a6,
-    description: 'Otomasyonlar, kurallar, mod-log ve yönetim panelleri.',
-    order: 3,
-    group: 'Sistemler'
-  },
-  'Eğlence': {
-    emoji: '🎉',
-    color: 0xf1c40f,
-    description: 'Sohbete renk katan eğlence, mini oyunlar ve espriler.',
-    order: 4,
-    group: 'Eğlence'
-  },
-  'Müzik': {
-    emoji: '🎵',
-    color: 0x3498db,
-    description: 'Furmin müzik kuyruğu ve oynatma kontrolleri.',
-    order: 5,
-    group: 'Müzik Sistemleri'
-  },
-  Extra: {
-    emoji: '👑',
-    color: 0x9b59b6,
-    description: 'Pro üyelik ayrıcalıkları ve gelişmiş rapor komutları.',
-    order: 6,
-    group: 'Pro Üyelik'
-  },
-  'Pro Komutları': {
-    emoji: '💎',
-    color: 0x8e44ad,
-    description: 'Pro üyelik sahipleri için tüm özel komutların listesi.',
-    order: 90,
-    group: 'Pro Üyelik',
-    synthetic: true
-  },
-  'Sahip Komutları': {
-    emoji: '⭐',
-    color: 0xf39c12,
-    description: 'Yalnızca Furmin sahibinin erişebileceği komutlar.',
-    order: 91,
-    group: 'Sahip Kontrolleri',
-    synthetic: true
-  }
-};
-
-const defaultMetadata = {
-  emoji: '📁',
-  color: 0x5865f2,
-  description: 'Bu kategori için açıklama eklenmemiş.',
-  order: 99,
-  group: 'Genel'
-};
-
-function getCategoryMeta(name) {
-  return categoryMetadata[name] ?? defaultMetadata;
-}
 
 function sortCategories(entries) {
   return entries
@@ -234,24 +164,18 @@ function buildCategoryPage(categoryName, commands, prefix, pageIndex, totalPages
   return embed;
 }
 
-function buildOverviewPage(displayCategories, prefix, statsCategories = displayCategories) {
-  const totalCommands = statsCategories.reduce((sum, [, cmds]) => sum + cmds.length, 0);
-  let slashCount = 0;
-  let prefixCount = 0;
-  let proCount = 0;
-  let ownerCount = 0;
-  for (const [, cmds] of statsCategories) {
-    slashCount += cmds.filter((cmd) => Boolean(cmd.slash)).length;
-    prefixCount += cmds.filter((cmd) => Boolean(cmd.prefix)).length;
-    proCount += cmds.filter((cmd) => cmd.proOnly).length;
-    ownerCount += cmds.filter((cmd) => cmd.ownerOnly).length;
-  }
+function buildOverviewPage(displayCategories, prefix, statsCategories = displayCategories, statsOverride = null) {
+  const stats = statsOverride ?? computeCatalogStats(statsCategories);
+  const { totalCommands, slashCount, prefixCount, proCount, ownerCount } = stats;
 
   const embed = new EmbedBuilder()
     .setColor(0x5865f2)
     .setTitle('🗂️ Furmin Komut Merkezi')
     .setDescription(
-      'Aşağıdaki menü ve butonları kullanarak tüm kategorileri gezebilir, pro komutlarını ve prefix sistemini inceleyebilirsin.'
+      [
+        'Aşağıdaki menü ve butonları kullanarak tüm kategorileri gezebilir, pro komutlarını ve prefix sistemini inceleyebilirsin.',
+        `> 🌌 Global panel için \`${prefix}furmin-merkez\` komutunu kullan.`
+      ].join('\n')
     )
     .setThumbnail('https://cdn.discordapp.com/emojis/1133533213615415356.webp?size=96&quality=lossless')
     .setFooter({ text: `Toplam ${totalCommands} komut • Prefix: ${prefix}` })
@@ -295,6 +219,24 @@ function buildOverviewPage(displayCategories, prefix, statsCategories = displayC
   return embed;
 }
 
+function buildHubPage(client, prefix, baseStats, topCategory) {
+  const memberCount = client.guilds.cache.reduce((total, guild) => {
+    const cached = guild.memberCount ?? guild.approximateMemberCount ?? 0;
+    return total + (Number.isFinite(cached) ? cached : 0);
+  }, 0);
+
+  return buildFurminHubEmbed({
+    client,
+    prefix,
+    stats: { ...baseStats, guildCount: client.guilds.cache.size, memberCount },
+    topCategory,
+    extraDescriptionLines: [
+      'Destek sunucusuna katılarak yeni özelliklerden haberdar olabilir ve önerilerinizi paylaşabilirsiniz.',
+      'Yardım menüsündeki butonlar, Furmin Merkez deneyimini destekleyecek şekilde güncellendi.'
+    ]
+  });
+}
+
 function createNavigationRow(currentIndex, totalPages) {
   const first = new ButtonBuilder().setCustomId('yardim_ilk').setEmoji('⏮️').setStyle(ButtonStyle.Secondary);
   const prev = new ButtonBuilder().setCustomId('yardim_onceki').setEmoji('⬅️').setStyle(ButtonStyle.Secondary);
@@ -318,10 +260,15 @@ function createCategoryMenu(categories, currentIndex) {
     .setMaxValues(1)
     .addOptions(
       new StringSelectMenuOptionBuilder()
+        .setLabel('Furmin Merkez')
+        .setValue('__hub__')
+        .setEmoji('🌌')
+        .setDescription(currentIndex === 0 ? 'Aktif sayfa' : 'Global durum ve bağlantılar'),
+      new StringSelectMenuOptionBuilder()
         .setLabel('Genel Bakış')
         .setValue('__overview__')
         .setEmoji('🗂️')
-        .setDescription(currentIndex === 0 ? 'Aktif sayfa' : 'Tüm kategorilere göz at')
+        .setDescription(currentIndex === 1 ? 'Aktif sayfa' : 'Tüm kategorilere göz at')
     );
 
   categories.forEach(([categoryName, commands], index) => {
@@ -331,7 +278,7 @@ function createCategoryMenu(categories, currentIndex) {
         .setLabel(categoryName)
         .setValue(categoryName)
         .setEmoji(meta.emoji)
-        .setDescription(index + 1 === currentIndex ? 'Aktif sayfa' : `${commands.length} komut`)
+        .setDescription(index + 2 === currentIndex ? 'Aktif sayfa' : `${commands.length} komut`)
     );
   });
 
@@ -339,7 +286,8 @@ function createCategoryMenu(categories, currentIndex) {
 }
 
 const quickJumpConfig = [
-  { id: 'overview', label: 'Genel Bakış', emoji: '🗂️', categories: [] },
+  { id: 'hub', label: 'Merkez', emoji: '🌌', pageIndex: 0 },
+  { id: 'overview', label: 'Genel Bakış', emoji: '🗂️', pageIndex: 1 },
   { id: 'genel', label: 'Genel', emoji: '🧭', categories: ['Genel'] },
   { id: 'moderasyon', label: 'Moderasyon', emoji: '🛡️', categories: ['Moderasyon'] },
   { id: 'sistem', label: 'Sistem', emoji: '⚙️', categories: ['Sistem'] },
@@ -348,6 +296,27 @@ const quickJumpConfig = [
   { id: 'pro', label: 'Pro', emoji: '💎', categories: ['Pro Komutları', 'Extra'] },
   { id: 'sahip', label: 'Sahip', emoji: '⭐', categories: ['Sahip Komutları'] }
 ];
+
+function resolveQuickJumpIndex(id, categories) {
+  const config = quickJumpConfig.find((item) => item.id === id);
+  if (!config) {
+    return null;
+  }
+
+  if (typeof config.pageIndex === 'number') {
+    return config.pageIndex;
+  }
+
+  if (config.categories?.length) {
+    const matchIndex = categories.findIndex(([name]) => config.categories.includes(name));
+    if (matchIndex === -1) {
+      return null;
+    }
+    return matchIndex + 2;
+  }
+
+  return null;
+}
 
 function createQuickJumpRow(categories, currentIndex) {
   const buttons = [];
@@ -361,15 +330,9 @@ function createQuickJumpRow(categories, currentIndex) {
     const config = quickJumpConfig.find((item) => item.id === id);
     if (!config) return;
 
-    let pageIndex = null;
-    if (config.id === 'overview') {
-      pageIndex = 0;
-    } else {
-      const matchIndex = categories.findIndex(([name]) => config.categories.includes(name));
-      if (matchIndex === -1) {
-        return;
-      }
-      pageIndex = matchIndex + 1;
+    const pageIndex = resolveQuickJumpIndex(id, categories);
+    if (pageIndex === null) {
+      return;
     }
 
     const button = new ButtonBuilder()
@@ -394,6 +357,7 @@ function createQuickJumpRow(categories, currentIndex) {
     added.add(id);
   }
 
+  tryAdd('hub');
   tryAdd('overview');
   tryAdd('pro');
   tryAdd('sahip');
@@ -408,25 +372,6 @@ function createQuickJumpRow(categories, currentIndex) {
   }
 
   return new ActionRowBuilder().addComponents(buttons);
-}
-
-function createLinkRow() {
-  const row = new ActionRowBuilder();
-  if (config.supportServerUrl) {
-    row.addComponents(
-      new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Destek Sunucusu').setEmoji('🤝').setURL(config.supportServerUrl)
-    );
-  }
-  if (config.inviteUrl) {
-    row.addComponents(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Davet Et').setEmoji('📨').setURL(config.inviteUrl));
-  }
-  if (config.proInfoUrl) {
-    row.addComponents(
-      new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Pro Üyelik').setEmoji('💎').setURL(config.proInfoUrl)
-    );
-  }
-  const components = row.components ?? [];
-  return components.length ? row : null;
 }
 
 export default {
@@ -451,6 +396,7 @@ export default {
 
     const baseCategories = sortCategories(prepareCategoryEntries(catalogEntries.slice()));
     const categories = sortCategories(prepareCategoryEntries([...catalogEntries, ...extraCategories]));
+    const { stats: baseStats, topCategory } = collectCatalogSummary(interaction.client);
 
     if (!categories.length) {
       await interaction.reply({ content: 'Kayıtlı komut bulunamadı.', ephemeral: true });
@@ -459,9 +405,12 @@ export default {
 
     const { prefix } = await describePrefix(interaction.guildId ?? '');
 
-    const pages = [buildOverviewPage(categories, prefix, baseCategories)];
+    const hubPage = buildHubPage(interaction.client, prefix, baseStats, topCategory);
+    const overviewPage = buildOverviewPage(categories, prefix, baseCategories, baseStats);
+
+    const pages = [hubPage, overviewPage];
     categories.forEach(([categoryName, commands], index) => {
-      pages.push(buildCategoryPage(categoryName, commands, prefix, index + 1, categories.length + 1));
+      pages.push(buildCategoryPage(categoryName, commands, prefix, index + 2, categories.length + 2));
     });
 
     let currentIndex = 0;
@@ -469,7 +418,7 @@ export default {
     const navigationRow = createNavigationRow(currentIndex, pages.length);
     const menuRow = createCategoryMenu(categories, currentIndex);
     const quickRow = createQuickJumpRow(categories, currentIndex);
-    const linkRow = createLinkRow();
+    const linkRow = buildSupportLinkRow();
 
     const components = [navigationRow, menuRow];
     if (quickRow) components.push(quickRow);
@@ -502,7 +451,7 @@ export default {
       const nav = createNavigationRow(currentIndex, pages.length);
       const menu = createCategoryMenu(categories, currentIndex);
       const quick = createQuickJumpRow(categories, currentIndex);
-      const links = createLinkRow();
+      const links = buildSupportLinkRow();
       const rows = [nav, menu];
       if (quick) rows.push(quick);
       if (links) rows.push(links);
@@ -522,16 +471,9 @@ export default {
 
       if (componentInteraction.customId.startsWith('yardim_jump_')) {
         const key = componentInteraction.customId.replace('yardim_jump_', '');
-        if (key === 'overview') {
-          currentIndex = 0;
-        } else {
-          const config = quickJumpConfig.find((item) => item.id === key);
-          if (config) {
-            const targetIndex = categories.findIndex(([name]) => config.categories.includes(name));
-            if (targetIndex >= 0) {
-              currentIndex = targetIndex + 1;
-            }
-          }
+        const targetIndex = resolveQuickJumpIndex(key, categories);
+        if (targetIndex !== null) {
+          currentIndex = targetIndex;
         }
 
         await refresh(componentInteraction);
@@ -553,12 +495,14 @@ export default {
 
     menuCollector.on('collect', async (componentInteraction) => {
       const [selection] = componentInteraction.values;
-      if (selection === '__overview__') {
+      if (selection === '__hub__') {
         currentIndex = 0;
+      } else if (selection === '__overview__') {
+        currentIndex = 1;
       } else {
         const nextIndex = categories.findIndex(([name]) => name === selection);
         if (nextIndex >= 0) {
-          currentIndex = nextIndex + 1;
+          currentIndex = nextIndex + 2;
         }
       }
 
@@ -574,7 +518,7 @@ export default {
       if (quick) {
         quick.components.forEach((button) => button.setDisabled(true));
       }
-      const links = createLinkRow();
+      const links = buildSupportLinkRow();
       const rows = [nav, menu];
       if (quick) rows.push(quick);
       if (links) rows.push(links);
