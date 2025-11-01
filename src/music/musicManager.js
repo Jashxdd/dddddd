@@ -15,8 +15,29 @@ function safeTitle(text) {
 }
 
 async function ensurePlaySession() {
-  if (typeof play.is_expired === 'function' && play.is_expired()) {
-    await play.refreshToken();
+  if (typeof play.is_expired !== 'function') {
+    return;
+  }
+
+  try {
+    const expired = play.is_expired();
+
+    if (!expired) {
+      return;
+    }
+
+    if (typeof play.refreshToken === 'function') {
+      await play.refreshToken();
+    }
+  } catch (error) {
+    const message = error?.message ?? '';
+
+    if (message.toLowerCase().includes('expiry') || message.toLowerCase().includes('token')) {
+      console.warn('Spotify oturum bilgisi bulunamadı; anonim akış kullanılacak.');
+      return;
+    }
+
+    console.warn('Spotify oturum kontrolü sırasında beklenmeyen bir hata oluştu:', error);
   }
 }
 
