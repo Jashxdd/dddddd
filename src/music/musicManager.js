@@ -41,19 +41,85 @@ async function ensurePlaySession() {
   }
 }
 
-async function fetchYoutubeInfo(url) {
-  const info = await play.video_basic_info(url);
+function extractYoutubeId(input) {
+  try {
+    const url = new URL(input);
+    if (url.hostname.includes('youtu.be')) {
+      return url.pathname.replace(/\//g, '').trim() || null;
+    }
 
-  return {
-    title: safeTitle(info?.video_details?.title ?? url),
-    url,
-    durationInSec: Number.parseInt(info?.video_details?.durationInSec ?? '0', 10) || 0,
-    author: info?.video_details?.channel?.name ?? 'Bilinmeyen Kanal'
-  };
+    if (url.searchParams.has('v')) {
+      return url.searchParams.get('v');
+    }
+
+    const shortsMatch = url.pathname.match(/\/shorts\/([^/]+)/);
+    if (shortsMatch) {
+      return shortsMatch[1];
+    }
+
+    const embedMatch = url.pathname.match(/\/embed\/([^/]+)/);
+    if (embedMatch) {
+      return embedMatch[1];
+    }
+  } catch (error) {
+    return null;
+  }
+
+  return null;
+}
+
+async function fetchYoutubeInfo(url, fallbackTitle) {
+  await ensurePlaySession();
+
+  async function loadWithVideoInfo(targetUrl) {
+    const info = await play.video_info(targetUrl);
+    const details = info?.video_details ?? info?.videoDetails ?? {};
+
+    return {
+      title: safeTitle(details.title ?? fallbackTitle ?? targetUrl),
+      url: targetUrl,
+      durationInSec: Number.parseInt(details.durationInSec ?? details.lengthSeconds ?? '0', 10) || 0,
+      author: details?.channel?.name ?? details?.author?.name ?? 'Bilinmeyen Kanal'
+    };
+  }
+
+  try {
+    return await loadWithVideoInfo(url);
+  } catch (primaryError) {
+    try {
+      const basic = await play.video_basic_info(url);
+      const details = basic?.video_details ?? basic?.videoDetails ?? {};
+      return {
+        title: safeTitle(details.title ?? fallbackTitle ?? url),
+        url,
+        durationInSec: Number.parseInt(details.durationInSec ?? details.lengthSeconds ?? '0', 10) || 0,
+        author: details?.channel?.name ?? details?.author?.name ?? 'Bilinmeyen Kanal'
+      };
+    } catch (secondaryError) {
+      const videoId = extractYoutubeId(url);
+      if (videoId) {
+        try {
+          return await loadWithVideoInfo(`https://www.youtube.com/watch?v=${videoId}`);
+        } catch (idError) {
+          console.warn('YouTube verisi video kimliği ile çözümlenemedi:', idError);
+        }
+      }
+
+      console.warn('YouTube verisi alınamadı. Orijinal hata:', primaryError, secondaryError);
+      throw new Error('YouTube verileri alınamadı. Lütfen farklı bir bağlantı veya arama deneyin.');
+    }
+  }
 }
 
 async function resolveSpotifyTrack(url) {
-  const spotifyInfo = await play.spotify(url);
+  let spotifyInfo;
+  try {
+    spotifyInfo = await play.spotify(url);
+  } catch (error) {
+    console.warn('Spotify bağlantısı çözümlenemedi:', error);
+    throw new Error('Spotify bağlantısı çözümlenemedi. Lütfen bağlantıyı kontrol edin veya farklı bir şarkı deneyin.');
+  }
+
   const primaryArtist = spotifyInfo?.artists?.[0]?.name ?? '';
   const searchTerm = [spotifyInfo?.name, primaryArtist].filter(Boolean).join(' ');
 
@@ -71,13 +137,7 @@ async function resolveYoutubeSearch(searchTerm, fallbackTitle) {
   }
 
   const chosen = results[0];
-  const info = await fetchYoutubeInfo(chosen.url);
-
-  if (fallbackTitle && !info.title) {
-    info.title = safeTitle(fallbackTitle);
-  }
-
-  return info;
+  return fetchYoutubeInfo(chosen.url, fallbackTitle);
 }
 
 async function resolveTrack(query) {
@@ -125,8 +185,13 @@ function createQueue(guildId, voiceChannel, textChannel) {
 
 async function createResource(url) {
   await ensurePlaySession();
-  const stream = await play.stream(url, { discordPlayerCompatibility: true });
-  return createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true });
+  try {
+    const stream = await play.stream(url, { discordPlayerCompatibility: true, quality: 2 });
+    return createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true });
+  } catch (error) {
+    console.error('Akış oluşturulurken hata oluştu:', error);
+    throw new Error('Akış başlatılırken beklenmeyen bir hata oluştu.');
+  }
 }
 
 export class MusicManager {
@@ -166,9 +231,10 @@ export class MusicManager {
     let queue = this.queues.get(guild.id);
     if (queue) {
       if (queue.voiceChannelId !== voiceChannel.id) {
-        queue.connection.destroy();
-        queue.player.stop();
+        this.destroyQueue(guild.id);
         queue = null;
+      } else {
+        queue.textChannelId = textChannel.id;
       }
     }
 
@@ -212,6 +278,7 @@ export class MusicManager {
       queue.connection.subscribe(queue.player);
     }
 
+    queue.textChannelId = textChannel.id;
     return queue;
   }
 
@@ -274,7 +341,12 @@ export class MusicManager {
   }
 
   async addTrack({ guild, voiceChannel, textChannel, query, requestedBy }) {
-    const track = await resolveTrack(query);
+    let track;
+    try {
+      track = await resolveTrack(query);
+    } catch (error) {
+      throw new Error(error?.message ?? 'Parça çözümlenemedi.');
+    }
     const queue = await this.ensureQueue(guild, voiceChannel, textChannel);
 
     queue.tracks.push({ ...track, requestedBy });
@@ -314,6 +386,20 @@ export class MusicManager {
     queue.tracks = [];
     queue.player.stop(true);
     this.destroyQueue(guildId);
+  }
+
+  async summon({ guild, voiceChannel, textChannel, requestedBy }) {
+    const existing = this.queues.get(guild.id);
+    const previousChannelId = existing?.voiceChannelId ?? null;
+    const queue = await this.ensureQueue(guild, voiceChannel, textChannel);
+
+    queue.requestedBy = requestedBy ?? null;
+
+    return {
+      channelId: queue.voiceChannelId,
+      moved: Boolean(previousChannelId && previousChannelId !== queue.voiceChannelId),
+      previousChannelId
+    };
   }
 
   getQueueSnapshot(guildId) {

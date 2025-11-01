@@ -13,14 +13,14 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
   ses kanalı hareketleri ve otomatik filtre ihlalleri
 - ✅ Sunucuya katılan üyelere otomatik rol atayabilen otorol sistemi (listeleme, ekleme/kaldırma, sıfırlama)
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
-- ✅ `f!furmin-merkez` komutu ve slash yardım menüsü, Marpel tarzı global panel ile destek bağlantılarını ve istatistikleri tek embed'de sunar
+- ✅ `f!furmin-merkez` komutu ve slash yardım menüsü, Furmin Merkez panelleriyle destek bağlantılarını ve istatistikleri tek embed'de sunar
 - ✅ Müzik komutları yardım menüsünde ayrı kategori olarak listelenir; çift kayıtlar otomatik olarak filtrelenir
 - ✅ Furmin Pro yönetim merkezi: tüm premium analizler `/pro` komutunun alt komutlarında toplanır, önek tarafı aynı raporları ayrı komutlarla sunar
 - ✅ Herkese açık butonlu rol paneli (`/rol-panel` ve `f!rolpanel`) ve Pro üyelik yönetimini tek komutta toplayan `/pro uyelik`
 - ✅ Furmin Müzik sistemi: Parça tamamlandığında birkaç saniye içinde ses kanalından ayrılır, başlatılamayan oturumları nazikçe temizler
-- ✅ Furmin Müzik sistemi: YouTube/Spotify aramasıyla oynatma, sıra yönetimi, duraklat/devam/atla/dur komutları (slash + önek) ve Pro üyeler için `f!muzik-ayril`
+- ✅ Furmin Müzik sistemi: YouTube/Spotify aramasıyla oynatma, sıra yönetimi, duraklat/devam/atla/dur komutları (slash + önek) ve Pro üyeler için `f!muzik-katil` + `f!muzik-ayril`
 - ✅ Bot sahibine özel log kanalı: yeni sunucu katılımları ve kullanıcı geri bildirimleri otomatik olarak embed şeklinde iletilir
-- ✅ Özel ses odaları: `f!ozel-ses` komutu kişisel kanal açar, kilit/limit ayarlarını butonlarla yönetir ve oda boşalınca otomatik temizler
+- ✅ Özel ses odaları: `f!ozel-ses` komutu kişisel kanal açar, kilit/limit/isim ayarlarını butonlarla yönetir, sahiplik devrini destekler ve oda boşalınca otomatik temizler
 - ✅ Otomatik cevap sistemi: `f!otocevap` ile içerik veya tam eşleşme tetikleyicileri tanımlayıp Türkçe yanıtlar verebilirsiniz
 - ✅ Pro jail modülü: `f!pro-jail` komutu Pro üyeler için jail rolünü ayarlar, üyeleri kilitler ve önceki rollerini güvenle geri yükler
 - ✅ Komut senkronizasyon modları (`global`, `test`, `hybrid`) ile çift kayıtları engelleyen REST dağıtımı
@@ -31,7 +31,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 
 ## Furmin Merkez Paneli
 - `f!furmin-merkez` komutu, Furmin'in destek bağlantılarını, global komut istatistiklerini ve öne çıkan sistemlerini tek bir embedde toplar.
-- Slash `/yardim` menüsü bu paneli referans alarak sayfa sayfa gezinme, kategori seçme ve hızlı kısayol düğmeleriyle Marpel tarzı bir deneyim sunar.
+- Slash `/yardim` menüsü bu paneli referans alarak sayfa sayfa gezinme, kategori seçme ve hızlı kısayol düğmeleriyle Furmin Merkez tasarımını sürdürür.
 - Prefix yardım menüsündeki "Furmin Merkez" butonu, panelin özetini kişisel olarak görüntülemenizi sağlar; destek sunucusu ve davet bağlantıları link düğmeleriyle her zaman erişilebilir.
 
 ## Kurulum
@@ -71,11 +71,11 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 `/prefix`,
   `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/premium-komutlar`,
 `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/bakim`, `/sistem-ozeti` ve diğer yönetim araçları.
-- **Özel Ses:** `f!ozel-ses` ile kullanıcıya özel ses odası açılır; paneldeki butonlarla kilit ve üye limiti anlık güncellenir.
+- **Özel Ses:** `f!ozel-ses` ile kullanıcıya özel ses odası açılır; paneldeki butonlarla kilit, üye limiti, isim ve sahiplik anlık yönetilir.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
 - **Müzik:** `/muzik-oynat`, `/muzik-atla`, `/muzik-duraklat`, `/muzik-devam`, `/muzik-dur`, `/muzik-kuyruk`, `/muzik-simdi`.
 - **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
-  `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!muzik-oynat`, `f!muzik-atla`, `f!muzik-duraklat`, `f!muzik-devam`, `f!muzik-dur`, `f!muzik-kuyruk`, `f!muzik-simdi`, `f!muzik-ayril`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!furmin-merkez`, `f!bakim` vb.
+  `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!muzik-katil`, `f!muzik-oynat`, `f!muzik-atla`, `f!muzik-duraklat`, `f!muzik-devam`, `f!muzik-dur`, `f!muzik-kuyruk`, `f!muzik-simdi`, `f!muzik-ayril`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!furmin-merkez`, `f!bakim` vb.
   `f!istek` ile kullanıcılar bot geliştiricisine öneri/istek/sorun iletebilir.
 
 ### Yeni Sistemler ve Güncellemeler

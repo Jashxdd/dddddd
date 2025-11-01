@@ -33,11 +33,11 @@ export function buildPrivateVoiceEmbed({ channel, owner, locked, limit, createdA
   return embed;
 }
 
-export function buildPrivateVoiceButtons(guildId, channelId, { locked }) {
+export function buildPrivateVoiceButtons(guildId, channelId, { locked, allowClaim = true } = {}) {
   const toggleLabel = locked ? 'Kilidi Aç' : 'Kilitle';
   const toggleEmoji = locked ? '🔓' : '🔒';
 
-  const row = new ActionRowBuilder().addComponents(
+  const primaryRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`pvoice:toggle:${guildId}:${channelId}`)
       .setLabel(toggleLabel)
@@ -65,5 +65,19 @@ export function buildPrivateVoiceButtons(guildId, channelId, { locked }) {
       .setStyle(ButtonStyle.Danger)
   );
 
-  return [row];
+  const secondaryRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`pvoice:rename:${guildId}:${channelId}`)
+      .setLabel('İsim Güncelle')
+      .setEmoji('📝')
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId(`pvoice:claim:${guildId}:${channelId}`)
+      .setLabel('Sahipliği Al')
+      .setEmoji('👑')
+      .setStyle(ButtonStyle.Success)
+      .setDisabled(allowClaim === false)
+  );
+
+  return [primaryRow, secondaryRow];
 }

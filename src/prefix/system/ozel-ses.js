@@ -106,15 +106,21 @@ export default {
     }
 
     const data = await getPrivateVoiceByChannel(message.guild.id, channel.id);
+    const ownerMention = data?.ownerId ? `<@${data.ownerId}>` : message.author.toString();
+    const ownerInChannel = channel.members?.has(data?.ownerId ?? message.author.id) ?? false;
+
     const embed = buildPrivateVoiceEmbed({
       channel: channel.toString(),
-      owner: message.author.toString(),
+      owner: ownerMention,
       locked: data?.locked ?? false,
       limit: data?.limit ?? null,
       createdAt: data?.createdAt ?? Date.now()
     });
 
-    const components = buildPrivateVoiceButtons(message.guild.id, channel.id, { locked: data?.locked ?? false });
+    const components = buildPrivateVoiceButtons(message.guild.id, channel.id, {
+      locked: data?.locked ?? false,
+      allowClaim: ownerInChannel ? null : true
+    });
 
     const panelMessage = await message.reply({ embeds: [embed], components });
 

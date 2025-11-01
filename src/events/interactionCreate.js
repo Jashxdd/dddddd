@@ -1,4 +1,12 @@
-import { EmbedBuilder, Events, PermissionFlagsBits } from 'discord.js';
+import {
+  ActionRowBuilder,
+  EmbedBuilder,
+  Events,
+  ModalBuilder,
+  PermissionFlagsBits,
+  TextInputBuilder,
+  TextInputStyle
+} from 'discord.js';
 import { hasAcceptedRules } from '../utils/rulesStorage.js';
 import { isProMember } from '../utils/proMembership.js';
 import { getMaintenanceState } from '../utils/maintenanceStorage.js';
@@ -41,13 +49,14 @@ async function handlePrivateVoiceButton(interaction) {
   const isOwner = interaction.user.id === data.ownerId;
   const hasManageChannels = interaction.member?.permissions?.has(PermissionFlagsBits.ManageChannels);
   const isBotOwner = interaction.user.id === interaction.client.ownerId;
-  if (!isOwner && !hasManageChannels && !isBotOwner) {
+  if (action !== 'claim' && !isOwner && !hasManageChannels && !isBotOwner) {
     await interaction.reply({ content: 'Bu kontrolü kullanmak için oda sahibi olmalısın.', ephemeral: true });
     return true;
   }
 
   let locked = Boolean(data.locked);
   let limit = Number.isFinite(data.limit) ? data.limit : channel.userLimit ?? 0;
+  let ownershipChanged = false;
 
   if (action === 'toggle') {
     locked = !locked;
@@ -83,23 +92,185 @@ async function handlePrivateVoiceButton(interaction) {
     return true;
   } else if (action === 'refresh') {
     // no-op, fall through to update embed
+  } else if (action === 'rename') {
+    const modal = new ModalBuilder()
+      .setCustomId(`pvoice:rename:${guildId}:${channelId}`)
+      .setTitle('Özel Oda Adı')
+      .addComponents(
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('name')
+            .setLabel('Yeni oda adı')
+            .setPlaceholder(channel.name)
+            .setMinLength(1)
+            .setMaxLength(80)
+            .setStyle(TextInputStyle.Short)
+        )
+      );
+
+    await interaction.showModal(modal);
+    return true;
+  } else if (action === 'claim') {
+    if (isOwner) {
+      await interaction.reply({ content: 'Zaten oda sahibisin.', ephemeral: true });
+      return true;
+    }
+
+    const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
+    const isInChannel = member?.voice?.channelId === channelId;
+    const ownerStillInside = data.ownerId ? channel.members.has(data.ownerId) : false;
+
+    if (!hasManageChannels && !isBotOwner && !isInChannel) {
+      await interaction.reply({ content: 'Sahipliği almak için önce odada bulunmalısın.', ephemeral: true });
+      return true;
+    }
+
+    if (ownerStillInside && !hasManageChannels && !isBotOwner) {
+      await interaction.reply({ content: 'Mevcut sahip odadayken devralamazsın.', ephemeral: true });
+      return true;
+    }
+
+    try {
+      await channel.permissionOverwrites.edit(interaction.user.id, {
+        ViewChannel: true,
+        Connect: true,
+        Speak: true,
+        Stream: true,
+        MoveMembers: true,
+        ManageChannels: true
+      });
+
+      if (data.ownerId && data.ownerId !== interaction.user.id) {
+        await channel.permissionOverwrites.delete(data.ownerId).catch(() => {});
+      }
+
+      await updatePrivateVoice(guildId, channelId, { ownerId: interaction.user.id });
+      ownershipChanged = true;
+    } catch (error) {
+      console.error('Özel oda sahipliği güncellenemedi:', error);
+      await interaction.reply({
+        content: 'Sahiplik güncellenirken bir hata oluştu. Lütfen daha sonra tekrar dene.',
+        ephemeral: true
+      });
+      return true;
+    }
   } else {
     return false;
   }
 
   const freshData = await getPrivateVoiceByChannel(guildId, channelId);
+  const ownerId = freshData?.ownerId ?? data.ownerId;
+  const ownerMention = ownerId ? `<@${ownerId}>` : 'Belirlenmedi';
+  const ownerInChannel = ownerId ? channel.members.has(ownerId) : false;
   const embed = buildPrivateVoiceEmbed({
     channel: channel.toString(),
-    owner: `<@${freshData?.ownerId ?? data.ownerId}>`,
+    owner: ownerMention,
     locked: freshData?.locked ?? locked,
-    limit: Number.isFinite(freshData?.limit) ? freshData.limit : channel.userLimit ?? limit,
+    limit: Number.isFinite(freshData?.limit)
+      ? freshData.limit
+      : (channel.userLimit && channel.userLimit > 0 ? channel.userLimit : null),
     createdAt: freshData?.createdAt ?? data.createdAt
   });
   const components = buildPrivateVoiceButtons(guildId, channelId, {
-    locked: freshData?.locked ?? locked
+    locked: freshData?.locked ?? locked,
+    allowClaim: ownerInChannel ? null : true
   });
 
   await interaction.update({ embeds: [embed], components });
+  if (ownershipChanged) {
+    await interaction.followUp({ content: '👑 Odanın sahibi artık sensin.', ephemeral: true }).catch(() => {});
+  }
+  return true;
+}
+
+async function handlePrivateVoiceModal(interaction) {
+  const parts = interaction.customId.split(':');
+  if (parts.length < 4) return false;
+  const [prefix, action, guildId, channelId] = parts;
+  if (prefix !== 'pvoice' || action !== 'rename') {
+    return false;
+  }
+
+  if (guildId !== interaction.guildId) {
+    await interaction.reply({ content: 'Bu panel farklı bir sunucuya ait.', ephemeral: true });
+    return true;
+  }
+
+  const data = await getPrivateVoiceByChannel(guildId, channelId);
+  if (!data) {
+    await interaction.reply({ content: 'Bu özel oda artık geçerli değil.', ephemeral: true });
+    return true;
+  }
+
+  const channel = interaction.guild.channels.cache.get(channelId) ??
+    (await interaction.guild.channels.fetch(channelId).catch(() => null));
+
+  if (!channel) {
+    await removePrivateVoice(guildId, channelId);
+    await interaction.reply({ content: 'Ses kanalı bulunamadı. Panel güncellendi.', ephemeral: true });
+    return true;
+  }
+
+  const isOwner = interaction.user.id === data.ownerId;
+  const hasManageChannels = interaction.member?.permissions?.has(PermissionFlagsBits.ManageChannels);
+  const isBotOwner = interaction.user.id === interaction.client.ownerId;
+
+  if (!isOwner && !hasManageChannels && !isBotOwner) {
+    await interaction.reply({ content: 'Oda adını yalnızca sahibi veya yetkililer güncelleyebilir.', ephemeral: true });
+    return true;
+  }
+
+  const rawName = interaction.fields.getTextInputValue('name') ?? '';
+  const sanitizedName = rawName.trim().replace(/\s+/g, ' ').slice(0, 80);
+
+  if (!sanitizedName.length) {
+    await interaction.reply({ content: 'Oda adı boş olamaz.', ephemeral: true });
+    return true;
+  }
+
+  try {
+    await channel.setName(sanitizedName, 'Özel oda panelinden güncellendi.');
+  } catch (error) {
+    console.error('Özel oda adı güncellenemedi:', error);
+    await interaction.reply({ content: 'Oda adı güncellenirken bir hata oluştu.', ephemeral: true });
+    return true;
+  }
+
+  await updatePrivateVoice(guildId, channelId, { lastRenamedAt: Date.now() });
+
+  const freshData = await getPrivateVoiceByChannel(guildId, channelId);
+  const ownerId = freshData?.ownerId ?? data.ownerId;
+  const ownerMention = ownerId ? `<@${ownerId}>` : 'Belirlenmedi';
+  const ownerInChannel = ownerId ? channel.members.has(ownerId) : false;
+
+  const embed = buildPrivateVoiceEmbed({
+    channel: channel.toString(),
+    owner: ownerMention,
+    locked: freshData?.locked ?? false,
+    limit: Number.isFinite(freshData?.limit)
+      ? freshData.limit
+      : (channel.userLimit && channel.userLimit > 0 ? channel.userLimit : null),
+    createdAt: freshData?.createdAt ?? data.createdAt
+  });
+
+  const components = buildPrivateVoiceButtons(guildId, channelId, {
+    locked: freshData?.locked ?? false,
+    allowClaim: ownerInChannel ? null : true
+  });
+
+  if (freshData?.panelChannelId && freshData?.panelMessageId) {
+    const panelChannel = interaction.guild.channels.cache.get(freshData.panelChannelId) ??
+      (await interaction.guild.channels.fetch(freshData.panelChannelId).catch(() => null));
+    const panelMessage = panelChannel?.isTextBased()
+      ? await panelChannel.messages.fetch(freshData.panelMessageId).catch(() => null)
+      : null;
+
+    if (panelMessage) {
+      await panelMessage.edit({ embeds: [embed], components }).catch(() => {});
+    }
+  }
+
+  await interaction.reply({ content: `📝 Oda adı **${sanitizedName}** olarak güncellendi.`, ephemeral: true });
   return true;
 }
 
@@ -108,6 +279,13 @@ const bypassCommands = new Set(['kurallar', 'kurallari-kabul']);
 export default {
   name: Events.InteractionCreate,
   async execute(interaction, client) {
+    if (interaction.isModalSubmit()) {
+      const handled = await handlePrivateVoiceModal(interaction);
+      if (handled) {
+        return;
+      }
+    }
+
     if (interaction.isButton()) {
       if (!interaction.inGuild()) return;
       const handled = await handlePrivateVoiceButton(interaction);

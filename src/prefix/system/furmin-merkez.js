@@ -27,7 +27,7 @@ export default {
       stats: { ...stats, guildCount, memberCount },
       topCategory,
       extraDescriptionLines: [
-        'Bu kart, Furmin\'in Marpel tarzı modern kontrol merkezini sunar. Destek bağlantıları ve sistem özetleri tek mesajda birleşir.',
+        'Bu kart, Furmin\'in modern kontrol merkezini sunar. Destek bağlantıları ve sistem özetleri tek mesajda birleşir.',
         'Komut menülerine hızlıca ulaşmak için `/yardim` veya `f!yardim` komutlarını kullanabilirsin.'
       ]
     });

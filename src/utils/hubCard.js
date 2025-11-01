@@ -41,7 +41,7 @@ export function buildFurminHubEmbed({ client, prefix, stats = {}, topCategory = 
 
   const description = [
     'Furmin, moderasyon, otomasyon ve eğlenceyi tek çatı altında toplayan Türkçe asistanınızdır.',
-    'Marpel tarzı modern kontrol merkezi, tüm sistemlere tek mesajdan ulaşmanızı sağlar.',
+    'Furmin Merkez tasarımı, tüm sistemlere tek mesajdan ulaşmanızı sağlar.',
     `> Slash menüsü: \`/yardim\` • Prefix menüsü: \`${prefix}yardim\``,
     `> Global panel: \`${prefix}furmin-merkez\``,
     ...extraDescriptionLines
