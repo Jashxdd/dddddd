@@ -79,7 +79,8 @@ async function fetchYoutubeInfo(url, fallbackTitle) {
       title: safeTitle(details.title ?? fallbackTitle ?? targetUrl),
       url: targetUrl,
       durationInSec: Number.parseInt(details.durationInSec ?? details.lengthSeconds ?? '0', 10) || 0,
-      author: details?.channel?.name ?? details?.author?.name ?? 'Bilinmeyen Kanal'
+      author: details?.channel?.name ?? details?.author?.name ?? 'Bilinmeyen Kanal',
+      rawInfo: info
     };
   }
 
@@ -93,7 +94,8 @@ async function fetchYoutubeInfo(url, fallbackTitle) {
         title: safeTitle(details.title ?? fallbackTitle ?? url),
         url,
         durationInSec: Number.parseInt(details.durationInSec ?? details.lengthSeconds ?? '0', 10) || 0,
-        author: details?.channel?.name ?? details?.author?.name ?? 'Bilinmeyen Kanal'
+        author: details?.channel?.name ?? details?.author?.name ?? 'Bilinmeyen Kanal',
+        rawInfo: basic
       };
     } catch (secondaryError) {
       const videoId = extractYoutubeId(url);
@@ -127,17 +129,33 @@ async function resolveSpotifyTrack(url) {
     throw new Error('Spotify parçası çözümlenemedi.');
   }
 
-  return resolveYoutubeSearch(searchTerm, spotifyInfo?.name ?? searchTerm);
+  const resolved = await resolveYoutubeSearch(searchTerm, spotifyInfo?.name ?? searchTerm);
+  return {
+    ...resolved,
+    source: 'spotify',
+    fallbackSearchTerm: searchTerm
+  };
 }
 
 async function resolveYoutubeSearch(searchTerm, fallbackTitle) {
-  const results = await play.search(searchTerm, { limit: 1, source: { youtube: 'video' } });
+  let results;
+  try {
+    results = await play.search(searchTerm, { limit: 1, source: { youtube: 'video' } });
+  } catch (error) {
+    console.warn('YouTube araması başarısız oldu:', error);
+    throw new Error('YouTube araması başarısız oldu. Lütfen farklı bir sorgu deneyin.');
+  }
   if (!results.length) {
     throw new Error('Parça bulunamadı. Farklı bir arama deneyin.');
   }
 
   const chosen = results[0];
-  return fetchYoutubeInfo(chosen.url, fallbackTitle);
+  const info = await fetchYoutubeInfo(chosen.url, fallbackTitle);
+  return {
+    ...info,
+    source: 'youtube-search',
+    fallbackSearchTerm: searchTerm
+  };
 }
 
 async function resolveTrack(query) {
@@ -146,14 +164,28 @@ async function resolveTrack(query) {
   const validation = typeof play.validate === 'function' ? play.validate(query) : play.yt_validate(query);
 
   if (validation === 'yt_video' || validation === 'video') {
-    return fetchYoutubeInfo(query);
+    const info = await fetchYoutubeInfo(query);
+    return {
+      ...info,
+      source: 'youtube',
+      fallbackSearchTerm: info.title,
+      originalQuery: query
+    };
   }
 
   if (validation === 'sp_track') {
-    return resolveSpotifyTrack(query);
+    const track = await resolveSpotifyTrack(query);
+    return {
+      ...track,
+      originalQuery: query
+    };
   }
 
-  return resolveYoutubeSearch(query, query);
+  const resolved = await resolveYoutubeSearch(query, query);
+  return {
+    ...resolved,
+    originalQuery: query
+  };
 }
 
 function createQueue(guildId, voiceChannel, textChannel) {
@@ -221,14 +253,64 @@ async function waitForConnectionReady(queue) {
   throw lastError ?? new Error('Ses kanalına bağlanırken sorun yaşandı.');
 }
 
-async function createResource(url) {
+async function createResourceFromUrl(url) {
   await ensurePlaySession();
+  const stream = await play.stream(url, { discordPlayerCompatibility: true, quality: 2 });
+  return createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true });
+}
+
+async function createResourceFromInfo(info) {
+  await ensurePlaySession();
+  if (typeof play.stream_from_info !== 'function') {
+    const targetUrl = info?.video_details?.url ?? info?.videoDetails?.url ?? info?.url ?? null;
+    if (!targetUrl) {
+      throw new Error('Video bilgisi akış oluşturmak için yeterli değil.');
+    }
+    return createResourceFromUrl(targetUrl);
+  }
+
+  const stream = await play.stream_from_info(info, { discordPlayerCompatibility: true, quality: 2 });
+  return createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true });
+}
+
+async function createResource(track, depth = 0) {
   try {
-    const stream = await play.stream(url, { discordPlayerCompatibility: true, quality: 2 });
-    return createAudioResource(stream.stream, { inputType: stream.type, inlineVolume: true });
-  } catch (error) {
-    console.error('Akış oluşturulurken hata oluştu:', error);
-    throw new Error('Akış başlatılırken beklenmeyen bir hata oluştu.');
+    const resource = await createResourceFromUrl(track.url);
+    return { resource, track };
+  } catch (primaryError) {
+    console.warn('Doğrudan akış başlatılamadı, ayrıntılı bilgi deneniyor...', primaryError);
+
+    try {
+      const info = track.rawInfo ?? (await play.video_info(track.url));
+      const resource = await createResourceFromInfo(info);
+      const details = info?.video_details ?? info?.videoDetails ?? {};
+      const enrichedTrack = {
+        ...track,
+        title: safeTitle(details.title ?? track.title),
+        durationInSec:
+          Number.parseInt(details.durationInSec ?? details.lengthSeconds ?? `${track.durationInSec ?? 0}`, 10) ||
+          track.durationInSec ||
+          0,
+        author: details?.channel?.name ?? details?.author?.name ?? track.author ?? 'Bilinmeyen Kanal',
+        rawInfo: info
+      };
+      return { resource, track: enrichedTrack };
+    } catch (infoError) {
+      console.warn('Video bilgisi üzerinden akış oluşturulamadı.', infoError);
+
+      if (!track._fallbackTried && track.fallbackSearchTerm && depth === 0) {
+        console.warn('Alternatif arama sonucu deneniyor:', track.fallbackSearchTerm);
+        const fallback = await resolveYoutubeSearch(track.fallbackSearchTerm, track.title ?? track.fallbackSearchTerm);
+        return createResource({
+          ...track,
+          ...fallback,
+          _fallbackTried: true
+        }, depth + 1);
+      }
+
+      const message = infoError?.message ?? primaryError?.message ?? 'Akış başlatılırken beklenmeyen bir hata oluştu.';
+      throw new Error(message);
+    }
   }
 }
 
@@ -342,9 +424,9 @@ export class MusicManager {
       throw new Error('Ses kanalına bağlanırken sorun yaşandı. Lütfen birkaç saniye sonra tekrar deneyin.');
     }
 
-    let resource;
+    let resourceResult;
     try {
-      resource = await createResource(track.url);
+      resourceResult = await createResource(track);
     } catch (error) {
       console.error('Parça kaynağı oluşturulurken hata oluştu:', error);
       queue.tracks.shift();
@@ -359,10 +441,12 @@ export class MusicManager {
     }
 
     this.clearAutoDisconnect(queue);
-    queue.player.play(resource);
-    queue.current = track;
-    queue.requestedBy = track.requestedBy;
-    return track;
+    queue.player.play(resourceResult.resource);
+    const resolvedTrack = resourceResult.track;
+    queue.tracks[0] = resolvedTrack;
+    queue.current = resolvedTrack;
+    queue.requestedBy = resolvedTrack.requestedBy;
+    return resolvedTrack;
   }
 
   destroyQueue(guildId) {
