@@ -1,12 +1,18 @@
 import { PermissionFlagsBits, EmbedBuilder } from 'discord.js';
 
-function ensureVoice(message) {
-  const channel = message.member?.voice?.channel;
+async function ensureVoice(message) {
+  const cachedMember = message.member ?? message.guild.members.cache.get(message.author.id);
+  const member = cachedMember ?? (await message.guild.members.fetch(message.author.id).catch(() => null));
+
+  const cachedVoice = message.guild.voiceStates?.cache?.get(message.author.id);
+  const resolvedVoice = cachedVoice ?? (await message.guild.voiceStates?.fetch?.(message.author.id).catch(() => null));
+  const channel = member?.voice?.channel ?? resolvedVoice?.channel ?? null;
+
   if (!channel) {
     throw new Error('Önce bir ses kanalına katılmalısın.');
   }
 
-  const me = message.guild.members.me;
+  const me = message.guild.members.me ?? (await message.guild.members.fetchMe().catch(() => null));
   if (!me) throw new Error('Bot üye bilgisi alınamadı.');
   const permissions = channel.permissionsFor(me);
   if (!permissions?.has(PermissionFlagsBits.Connect) || !permissions.has(PermissionFlagsBits.Speak)) {
@@ -47,7 +53,7 @@ export default {
     }
 
     try {
-      const voiceChannel = ensureVoice(message);
+      const voiceChannel = await ensureVoice(message);
       const result = await message.client.music.addTrack({
         guild: message.guild,
         voiceChannel,

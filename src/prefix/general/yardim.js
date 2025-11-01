@@ -3,6 +3,8 @@ import { describePrefix } from '../../utils/prefixStorage.js';
 import { config } from '../../config.js';
 import { splitLinesIntoFieldChunks } from '../../utils/embedChunks.js';
 
+const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları', 'Slash & Prefix']);
+
 const categoryMetadata = {
   Genel: { emoji: '🧭', description: 'Bilgi ve kullanıcı araçları', color: 0x1abc9c, order: 1 },
   Moderasyon: { emoji: '🛡️', description: 'Ceza ve yönetim komutları', color: 0xe74c3c, order: 2 },
@@ -74,10 +76,23 @@ function sortCategoryEntries(entries) {
     });
 }
 
+function normaliseGroupName(name, command) {
+  if (!name) return 'Komutlar';
+  if (!GENERIC_GROUPS.has(name)) {
+    return name;
+  }
+
+  if (command?.slash && command?.prefix) {
+    return 'Slash & Prefix';
+  }
+
+  return name;
+}
+
 function splitByGroup(commands) {
   const map = new Map();
   for (const command of commands) {
-    const group = command.menuGroup ?? 'Komutlar';
+    const group = normaliseGroupName(command.menuGroup ?? 'Komutlar', command);
     if (!map.has(group)) {
       map.set(group, new Map());
     }

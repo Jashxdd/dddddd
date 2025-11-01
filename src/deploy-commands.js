@@ -39,6 +39,13 @@ async function deployCommands() {
       console.warn('⚠️ Test modu icin hedef sunucu belirtilmedi. Guild komutlari atlandi.');
     }
 
+    if (syncMode === 'global' && guildTargets.size) {
+      for (const guildId of guildTargets) {
+        await rest.put(Routes.applicationGuildCommands(config.clientId, guildId), { body: [] });
+        console.log(`🧹 ${guildId} icin yerel komutlar temizlendi (global senkronizasyon).`);
+      }
+    }
+
     if (syncMode === 'global' || syncMode === 'hybrid' || !guildTargets.size) {
       await rest.put(Routes.applicationCommands(config.clientId), { body });
       console.log('✅ Global komutlar basariyla guncellendi.');

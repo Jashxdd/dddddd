@@ -98,10 +98,38 @@ async function syncApplicationCommands(client) {
     });
   };
 
+  const clearGuilds = async (guildIds) => {
+    if (!guildIds.length) return;
+
+    const results = await Promise.allSettled(
+      guildIds.map(async (guildId) => {
+        const guild = await client.guilds.fetch(guildId).catch(() => client.guilds.cache.get(guildId) ?? null);
+        await client.rest.put(Routes.applicationGuildCommands(applicationId, guildId), { body: [] });
+        return { guildId, guildName: guild?.name ?? null };
+      })
+    );
+
+    results.forEach((result, index) => {
+      const targetId = guildIds[index];
+      const fallbackGuild = client.guilds.cache.get(targetId);
+      if (result.status === 'fulfilled') {
+        const { guildId, guildName } = result.value;
+        console.log(`🧹 ${guildName ?? fallbackGuild?.name ?? guildId} (${guildId}) için yerel slash komutları temizlendi.`);
+      } else {
+        const guildName = fallbackGuild?.name ?? 'Bilinmeyen Sunucu';
+        console.error(`❌ ${guildName} (${targetId}) için yerel komutlar temizlenemedi:`, result.reason);
+      }
+    });
+  };
+
   if ((syncMode === 'test' || syncMode === 'hybrid') && guildTargets.size) {
     await registerGuilds([...guildTargets]);
   } else if (syncMode === 'test' && !guildTargets.size) {
     console.warn('⚠️ Komut senkronizasyon modu "test" olarak ayarlandı ancak hedef sunucu belirtilmedi.');
+  }
+
+  if (syncMode === 'global' && guildTargets.size) {
+    await clearGuilds([...guildTargets]);
   }
 
   if (syncMode === 'global' || syncMode === 'hybrid') {

@@ -20,7 +20,8 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildModeration,
-    GatewayIntentBits.GuildPresences
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.GuildVoiceStates
   ],
   partials: [Partials.Message, Partials.Channel, Partials.GuildMember]
 });
@@ -29,7 +30,8 @@ client.commands = new Collection();
 client.prefixCommands = new Collection();
 client.prefixAliases = new Collection();
 client.commandCatalog = new Collection();
-const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları']);
+const COMBINED_GROUP_LABEL = 'Slash & Prefix';
+const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları', COMBINED_GROUP_LABEL]);
 client.ownerId = config.ownerId;
 client.afkStatuses = new Map();
 client.music = new MusicManager(client);
@@ -65,6 +67,16 @@ function registerCatalogEntry(category, entry) {
   const key = normaliseCatalogKey(entry);
   const bucket = ensureCatalogBucket(category, key, entry);
 
+  const updateGroupLabel = () => {
+    if (bucket.slash && bucket.prefix) {
+      bucket.menuGroup = COMBINED_GROUP_LABEL;
+    } else if (bucket.slash && !bucket.prefix && GENERIC_GROUPS.has(bucket.menuGroup)) {
+      bucket.menuGroup = 'Slash Komutları';
+    } else if (bucket.prefix && !bucket.slash && GENERIC_GROUPS.has(bucket.menuGroup)) {
+      bucket.menuGroup = 'Prefix Komutları';
+    }
+  };
+
   if (entry.description) {
     bucket.description = entry.description;
   }
@@ -89,6 +101,7 @@ function registerCatalogEntry(category, entry) {
         bucket.menuGroup = entry.group;
       }
     }
+    updateGroupLabel();
   } else if (entry.type === 'prefix') {
     bucket.prefix = {
       name: entry.name,
@@ -100,7 +113,8 @@ function registerCatalogEntry(category, entry) {
         bucket.menuGroup = entry.group;
       }
     }
-}
+    updateGroupLabel();
+  }
 }
 
 async function registerCommands() {

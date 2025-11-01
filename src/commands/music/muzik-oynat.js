@@ -6,10 +6,16 @@ async function ensureVoice(interaction) {
   }
 
   const guild = interaction.guild;
-  const member =
-    guild.members.cache.get(interaction.user.id) ?? (await guild.members.fetch(interaction.user.id).catch(() => null));
+  const cachedMember = interaction.member ?? guild.members.cache.get(interaction.user.id);
+  const member = cachedMember ?? (await guild.members.fetch(interaction.user.id).catch(() => null));
 
-  if (!member?.voice?.channel) {
+  const cachedVoice = guild.voiceStates?.cache?.get(interaction.user.id);
+  const resolvedVoiceState =
+    cachedVoice ?? (await guild.voiceStates?.fetch?.(interaction.user.id).catch(() => null));
+
+  const voiceChannel = member?.voice?.channel ?? resolvedVoiceState?.channel ?? null;
+
+  if (!voiceChannel) {
     throw new Error('Bir ses kanalına bağlı değilsin. Lütfen önce bir kanala katıl.');
   }
 
@@ -18,12 +24,12 @@ async function ensureVoice(interaction) {
     throw new Error('Bot bilgileri alınamadı.');
   }
 
-  const permissions = member.voice.channel.permissionsFor(me);
+  const permissions = voiceChannel.permissionsFor(me);
   if (!permissions?.has(PermissionFlagsBits.Connect) || !permissions.has(PermissionFlagsBits.Speak)) {
     throw new Error('Bu ses kanalına bağlanmak için izinlerim eksik.');
   }
 
-  return member.voice.channel;
+  return voiceChannel;
 }
 
 function createResponseEmbed({ track, queued, position }) {
