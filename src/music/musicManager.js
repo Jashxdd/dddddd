@@ -97,7 +97,8 @@ function createQueue(guildId, voiceChannel, textChannel) {
     player,
     tracks: [],
     current: null,
-    requestedBy: null
+    requestedBy: null,
+    disconnectTimer: null
   };
 }
 
@@ -111,6 +112,29 @@ export class MusicManager {
   constructor(client) {
     this.client = client;
     this.queues = new Map();
+  }
+
+  clearAutoDisconnect(queue) {
+    if (queue.disconnectTimer) {
+      clearTimeout(queue.disconnectTimer);
+      queue.disconnectTimer = null;
+    }
+  }
+
+  scheduleAutoDisconnect(queue) {
+    this.clearAutoDisconnect(queue);
+    queue.disconnectTimer = setTimeout(() => {
+      const current = this.queues.get(queue.guildId);
+      if (!current) return;
+      if (current.current || current.tracks.length) {
+        return;
+      }
+      this.destroyQueue(queue.guildId);
+    }, 2_000);
+
+    if (typeof queue.disconnectTimer.unref === 'function') {
+      queue.disconnectTimer.unref();
+    }
   }
 
   getQueue(guildId) {
@@ -130,6 +154,13 @@ export class MusicManager {
     if (!queue) {
       queue = createQueue(guild.id, voiceChannel, textChannel);
       this.queues.set(guild.id, queue);
+
+      try {
+        await entersState(queue.connection, VoiceConnectionStatus.Ready, 10_000);
+      } catch (error) {
+        this.destroyQueue(guild.id);
+        throw new Error('Ses kanalına bağlanırken sorun yaşandı.');
+      }
 
       queue.connection.on(VoiceConnectionStatus.Disconnected, async () => {
         try {
@@ -171,16 +202,28 @@ export class MusicManager {
       queue.current = null;
       queue.requestedBy = null;
       queue.player.stop(true);
-      setTimeout(() => {
-        if (!queue.tracks.length) {
-          this.destroyQueue(guildId);
-        }
-      }, 30_000);
+      this.scheduleAutoDisconnect(queue);
       return null;
     }
 
     const track = queue.tracks[0];
-    const resource = await createResource(track.url);
+    let resource;
+    try {
+      resource = await createResource(track.url);
+    } catch (error) {
+      console.error('Parça kaynağı oluşturulurken hata oluştu:', error);
+      queue.tracks.shift();
+      if (!queue.tracks.length) {
+        queue.current = null;
+        queue.requestedBy = null;
+        this.scheduleAutoDisconnect(queue);
+        throw new Error('Parça başlatılırken bir sorun yaşandı. Lütfen farklı bir şarkı deneyin.');
+      }
+
+      return this.playNext(guildId);
+    }
+
+    this.clearAutoDisconnect(queue);
     queue.player.play(resource);
     queue.current = track;
     queue.requestedBy = track.requestedBy;
@@ -190,6 +233,7 @@ export class MusicManager {
   destroyQueue(guildId) {
     const queue = this.queues.get(guildId);
     if (!queue) return;
+    this.clearAutoDisconnect(queue);
     queue.player.stop(true);
     try {
       queue.connection.destroy();
@@ -197,6 +241,15 @@ export class MusicManager {
       console.warn('Ses bağlantısı kapatılırken hata oluştu:', error);
     }
     this.queues.delete(guildId);
+  }
+
+  leave(guildId) {
+    const queue = this.queues.get(guildId);
+    if (!queue) {
+      throw new Error('Bot şu anda herhangi bir ses kanalında değil.');
+    }
+
+    this.destroyQueue(guildId);
   }
 
   async addTrack({ guild, voiceChannel, textChannel, query, requestedBy }) {
