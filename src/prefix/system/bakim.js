@@ -11,7 +11,7 @@ const usage =
 
 export default {
   name: 'bakim',
-  aliases: ['bakım'],
+  aliases: ['bakım', 'komut-bakim', 'komutbakim'],
   category: 'Sistem',
   menuGroup: 'Sistemler',
   ownerOnly: true,

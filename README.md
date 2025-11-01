@@ -89,8 +89,8 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - `f!pro-jail` komutu, Pro yetkililere jail rolü ataması, listeleme ve kaldırma akışını tek merkezde toplar.
 
 ## Bakım Modu
-- `/bakim ac [mesaj]` veya `f!bakim ac [mesaj]` ile tüm komutları geçici olarak kilitleyebilir, üyelere gösterilecek kısa bir not paylaşabilirsiniz.
-- `/bakim kapat` / `f!bakim kapat` ile bakım modunu sonlandırıp erişimi anında açabilirsiniz.
+- `/bakim ac [mesaj]` veya `f!bakim ac [mesaj]` *(isteğe göre `f!komut-bakim` takma adıyla)* tüm komutları geçici olarak kilitleyebilir, üyelere gösterilecek kısa bir not paylaşabilirsiniz.
+- `/bakim kapat` / `f!bakim kapat` *(`f!komut-bakim kapat` dahil)* ile bakım modunu sonlandırıp erişimi anında açabilirsiniz.
 - Kullanıcılar bakımdayken herhangi bir komutu denediklerinde “Bakımdayız” uyarısı alır; bot sahibi kontrol komutlarını (bakım dahil) çalıştırmaya devam edebilir.
 
 ## Moderasyon Logu
