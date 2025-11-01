@@ -183,6 +183,44 @@ function createQueue(guildId, voiceChannel, textChannel) {
   };
 }
 
+async function waitForConnectionReady(queue) {
+  const { connection, voiceChannelId } = queue;
+  if (!connection) {
+    throw new Error('Ses bağlantısı oluşturulamadı.');
+  }
+
+  const timeouts = [12_000, 18_000];
+  let lastError = null;
+
+  for (const timeout of timeouts) {
+    try {
+      await entersState(connection, VoiceConnectionStatus.Ready, timeout);
+      return;
+    } catch (error) {
+      lastError = error;
+
+      if (connection.state.status === VoiceConnectionStatus.Destroyed) {
+        break;
+      }
+
+      if (typeof connection.rejoin === 'function') {
+        try {
+          connection.rejoin({
+            channelId: voiceChannelId,
+            selfDeaf: true,
+            selfMute: false
+          });
+        } catch (rejoinError) {
+          lastError = rejoinError;
+          break;
+        }
+      }
+    }
+  }
+
+  throw lastError ?? new Error('Ses kanalına bağlanırken sorun yaşandı.');
+}
+
 async function createResource(url) {
   await ensurePlaySession();
   try {
@@ -243,10 +281,10 @@ export class MusicManager {
       this.queues.set(guild.id, queue);
 
       try {
-        await entersState(queue.connection, VoiceConnectionStatus.Ready, 10_000);
+        await waitForConnectionReady(queue);
       } catch (error) {
         this.destroyQueue(guild.id);
-        throw new Error('Ses kanalına bağlanırken sorun yaşandı.');
+        throw new Error(error?.message ?? 'Ses kanalına bağlanırken sorun yaşandı.');
       }
 
       queue.connection.on(VoiceConnectionStatus.Disconnected, async () => {
@@ -295,6 +333,15 @@ export class MusicManager {
     }
 
     const track = queue.tracks[0];
+
+    try {
+      await waitForConnectionReady(queue);
+    } catch (error) {
+      console.error('Ses bağlantısı hazır hale getirilemedi:', error);
+      this.destroyQueue(guildId);
+      throw new Error('Ses kanalına bağlanırken sorun yaşandı. Lütfen birkaç saniye sonra tekrar deneyin.');
+    }
+
     let resource;
     try {
       resource = await createResource(track.url);
