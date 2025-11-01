@@ -128,13 +128,15 @@ function parseStringArray(value) {
   return [];
 }
 
-const allowedSyncModes = new Set(['global', 'hybrid', 'test']);
-
 function parseSyncMode(value) {
   const candidate = normalise(value)?.toLowerCase();
-  if (allowedSyncModes.has(candidate)) {
-    return candidate;
+  if (candidate && candidate !== 'global') {
+    console.warn(
+      '⚠️ COMMAND_SYNC_MODE değeri "global" dışına ayarlandı ancak Furmin artık tüm slash komutlarını global olarak senkronize eder. ' +
+        'Global mod zorunlu olduğundan değer yok sayıldı.'
+    );
   }
+
   return 'global';
 }
 

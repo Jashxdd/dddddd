@@ -121,7 +121,7 @@ Ardından botu başlatmak için:
 ```bash
 npm start
 ```
-Konsolda yapılandırma kaynağı, yüklenen komut sayısı ve seçilen senkronizasyon moduna göre ( `commandSyncMode` / `COMMAND_SYNC_MODE` → `global`, `test`, `hybrid`) yapılan REST dağıtımının özeti görüntülenir. `test` modu yalnızca `commandTestGuilds` listesine, `hybrid` modu ise hem belirlenen sunuculara hem globale kayıt yaparak çift komut görünümünü engeller. Durum rotasyonu, `config.json` / `.env` ayarlarınıza göre Furmin adını ve etkinliklerini Türkçe olarak gösterir.
+Konsolda yapılandırma kaynağı, yüklenen komut sayısı ve global senkronizasyonun özeti görüntülenir. Furmin tüm slash komutlarını zorunlu olarak globale kaydeder; `commandSyncMode` / `COMMAND_SYNC_MODE` ayarını `global` dışına taşırsanız başlangıçta uyarı alır ve değer otomatik olarak `global`e çekilir. `commandTestGuilds` listesine eklediğiniz sunucular varsa, global senkron öncesinde bu sunucuların yerel komutları temizlenerek çift kayıt sorunu engellenir. Durum rotasyonu, `config.json` / `.env` ayarlarınıza göre Furmin adını ve etkinliklerini Türkçe olarak gösterir.
 
 ## Testler
 Furmin’deki tüm JavaScript dosyalarının sözdizimini doğrulamak için aşağıdaki komutu kullanabilirsiniz:
