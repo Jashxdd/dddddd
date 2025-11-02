@@ -12,7 +12,7 @@ export const hubHighlights = [
   {
     emoji: '🎵',
     title: 'Müzik & Eğlence',
-    description: 'YouTube & Spotify destekli müzik kuyruğu ve mini oyunlarla topluluğu canlı tut.'
+    description: 'YouTube tabanlı müzik kuyruğu, otomatik temizlik ve mini oyunlarla topluluğu canlı tut.'
   },
   {
     emoji: '💎',

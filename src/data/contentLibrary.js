@@ -98,7 +98,7 @@ export const channelIdeas = [
   '📚 kaynak-kütüphanesi — yararlı belgeleri arşivle.',
   '🆘 destek-masası — yardım taleplerini topla.',
   '🚀 proje-gelişmeleri — ilerleme raporlarını paylaş.',
-  '🎧 müzik-salonu — radyo ve Spotify paylaşımları.',
+  '🎧 müzik-salonu — radyo ve YouTube paylaşımları.',
   '📣 geri-bildirim — topluluk yorumlarını takip et.'
 ];
 

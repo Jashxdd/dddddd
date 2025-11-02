@@ -7,7 +7,12 @@ import {
   PermissionsBitField,
   time
 } from 'discord.js';
-import { findBannedWordInContent, isAutomodEnabled, isInviteBlockEnabled } from '../utils/automodConfig.js';
+import {
+  findBannedWordInContent,
+  getAdvertisementBanThreshold,
+  isAutomodEnabled,
+  isInviteBlockEnabled
+} from '../utils/automodConfig.js';
 import { formatUserMention, sendModerationLog } from '../utils/modLog.js';
 import { getPrefix } from '../utils/prefixStorage.js';
 import { isProMember } from '../utils/proMembership.js';
@@ -15,6 +20,11 @@ import { getMaintenanceState } from '../utils/maintenanceStorage.js';
 import { config } from '../config.js';
 import { findAutoReplyMatch } from '../utils/autoReplyStorage.js';
 import { detectAdvertisement, formatAdvertisementReason } from '../utils/advertisementDetector.js';
+import {
+  incrementAdvertisementStrike,
+  resetAdvertisementStrikes
+} from '../utils/advertisementStrikeStorage.js';
+import { sendBotLog } from '../utils/botLog.js';
 
 function createMaintenanceEmbed(client, note) {
   const embed = new EmbedBuilder()
@@ -292,9 +302,20 @@ export default {
           .permissionsFor(message.client.user)
           ?.has(PermissionsBitField.Flags.SendMessages);
 
+        const advertisementBanThreshold = await getAdvertisementBanThreshold(message.guild.id);
+        let strikeInfo = null;
+
+        if (advertisementBanThreshold) {
+          strikeInfo = await incrementAdvertisementStrike(message.guild.id, message.author.id);
+        }
+
+        const strikeSuffix = advertisementBanThreshold
+          ? ` (Uyarı ${strikeInfo?.count ?? 1}/${advertisementBanThreshold})`
+          : '';
+
         if (canSend) {
           await message.channel.send({
-            content: `🚫 ${message.author}, reklam bağlantıları bu sunucuda yasaktır. Mesajın silindi.`
+            content: `🚫 ${message.author}, reklam bağlantıları bu sunucuda yasaktır. Mesajın silindi.${strikeSuffix}`
           });
         }
 
@@ -308,9 +329,120 @@ export default {
           color: 0xe91e63,
           extraFields: [
             { name: 'Kanal', value: message.channel.toString(), inline: true },
-            { name: 'Mesaj İçeriği', value: snippet || 'Mesaj boş' }
+            { name: 'Mesaj İçeriği', value: snippet || 'Mesaj boş' },
+            advertisementBanThreshold
+              ? {
+                  name: 'Reklam Sayacı',
+                  value: `${strikeInfo?.count ?? 1}/${advertisementBanThreshold}`,
+                  inline: true
+                }
+              : null
           ]
+            .filter(Boolean)
         });
+
+        const detectionEmbed = new EmbedBuilder()
+          .setColor(0xe91e63)
+          .setTitle('Reklam Mesajı Engellendi')
+          .setDescription('Otomatik sistem bir reklam girişimini engelledi.')
+          .addFields(
+            { name: 'Sunucu', value: message.guild?.name ?? 'Bilinmiyor', inline: true },
+            { name: 'Kanal', value: message.channel.toString(), inline: true },
+            { name: 'Kullanıcı', value: `${message.author.tag} (${message.author.id})`, inline: false },
+            { name: 'Gerekçe', value: formatAdvertisementReason(match), inline: false }
+          )
+          .setTimestamp();
+
+        if (snippet) {
+          detectionEmbed.addFields({ name: 'Mesaj', value: snippet });
+        }
+
+        if (advertisementBanThreshold) {
+          detectionEmbed.addFields({
+            name: 'Reklam Sayacı',
+            value: `${strikeInfo?.count ?? 1}/${advertisementBanThreshold}`,
+            inline: true
+          });
+        }
+
+        await sendBotLog(message.client, { embeds: [detectionEmbed] });
+
+        let banOutcome = 'none';
+        let banError = null;
+
+        if (advertisementBanThreshold && (strikeInfo?.count ?? 0) >= advertisementBanThreshold) {
+          const reason = 'Otomatik sistem: 3 reklam girişimi';
+          let member = message.member;
+          if (!member) {
+            member = await message.guild.members.fetch(message.author.id).catch(() => null);
+          }
+
+          const canBan = member?.bannable || message.guild.members.me?.permissions?.has(PermissionsBitField.Flags.BanMembers);
+
+          if (canBan) {
+            try {
+              await message.guild.members.ban(message.author, { deleteMessageSeconds: 0, reason });
+              banOutcome = 'success';
+              await resetAdvertisementStrikes(message.guild.id, message.author.id);
+
+              await sendModerationLog(message.client, message.guild.id, {
+                action: 'Otomatik Yasaklama',
+                moderator: 'Furmin Otomatik Sistem',
+                target: formatUserMention(message.author),
+                reason: 'Reklam paylaşımı nedeniyle 3 ihlal sınırı aşıldı.',
+                color: 0xc0392b,
+                extraFields: [
+                  { name: 'Reklam Sayacı', value: `${advertisementBanThreshold}/${advertisementBanThreshold}`, inline: true }
+                ]
+              });
+
+              const banEmbed = new EmbedBuilder()
+                .setColor(0xc0392b)
+                .setTitle('Otomatik Reklam Yasağı')
+                .setDescription('Bir üye reklam nedeniyle otomatik olarak yasaklandı.')
+                .addFields(
+                  { name: 'Sunucu', value: message.guild?.name ?? 'Bilinmiyor', inline: true },
+                  { name: 'Kullanıcı', value: `${message.author.tag} (${message.author.id})`, inline: true },
+                  { name: 'İhlal Sayısı', value: `${advertisementBanThreshold}`, inline: true }
+                )
+                .setTimestamp();
+
+              await sendBotLog(message.client, { embeds: [banEmbed] });
+
+              if (canSend) {
+                await message.channel
+                  .send({
+                    content: `⛔ ${message.author.tag} reklam kurallarını üç kez ihlal ettiği için otomatik olarak yasaklandı.`
+                  })
+                  .catch(() => {});
+              }
+            } catch (error) {
+              banOutcome = 'failed';
+              banError = error;
+            }
+          } else {
+            banOutcome = 'missing_perms';
+          }
+        }
+
+        if (banOutcome === 'failed' || banOutcome === 'missing_perms') {
+          const failEmbed = new EmbedBuilder()
+            .setColor(0xf1c40f)
+            .setTitle('Otomatik Yasaklama Gerçekleşmedi')
+            .setDescription('Reklam cezası sınırı aşılmasına rağmen otomatik yasak uygulanamadı.')
+            .addFields(
+              { name: 'Sunucu', value: message.guild?.name ?? 'Bilinmiyor', inline: true },
+              { name: 'Kullanıcı', value: `${message.author.tag} (${message.author.id})`, inline: true },
+              { name: 'Durum', value: banOutcome === 'missing_perms' ? 'Yetersiz yetki' : 'Ban isteği başarısız oldu', inline: true }
+            )
+            .setTimestamp();
+
+          if (banError) {
+            failEmbed.addFields({ name: 'Hata', value: `${banError}`.slice(0, 1024) });
+          }
+
+          await sendBotLog(message.client, { embeds: [failEmbed] });
+        }
       }
     }
   }

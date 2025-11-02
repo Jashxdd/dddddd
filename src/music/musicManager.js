@@ -30,14 +30,7 @@ async function ensurePlaySession() {
       await play.refreshToken();
     }
   } catch (error) {
-    const message = error?.message ?? '';
-
-    if (message.toLowerCase().includes('expiry') || message.toLowerCase().includes('token')) {
-      console.warn('Spotify oturum bilgisi bulunamadı; anonim akış kullanılacak.');
-      return;
-    }
-
-    console.warn('Spotify oturum kontrolü sırasında beklenmeyen bir hata oluştu:', error);
+    console.warn('Akış oturumu yenilenirken beklenmeyen bir durum oluştu:', error);
   }
 }
 
@@ -111,76 +104,6 @@ async function fetchYoutubeInfo(url, fallbackTitle) {
       throw new Error('YouTube verileri alınamadı. Lütfen farklı bir bağlantı veya arama deneyin.');
     }
   }
-}
-
-async function resolveSpotifyTrack(url) {
-  let spotifyInfo;
-  try {
-    spotifyInfo = await play.spotify(url);
-  } catch (error) {
-    console.warn('Spotify bağlantısı çözümlenemedi:', error);
-    throw new Error('Spotify bağlantısı çözümlenemedi. Lütfen bağlantıyı kontrol edin veya farklı bir şarkı deneyin.');
-  }
-
-  const primaryArtist = spotifyInfo?.artists?.[0]?.name ?? '';
-  const searchTerm = [spotifyInfo?.name, primaryArtist].filter(Boolean).join(' ');
-
-  if (!searchTerm) {
-    throw new Error('Spotify parçası çözümlenemedi.');
-  }
-
-  const resolved = await resolveYoutubeSearch(searchTerm, spotifyInfo?.name ?? searchTerm);
-  return {
-    ...resolved,
-    source: 'spotify',
-    fallbackSearchTerm: searchTerm
-  };
-}
-
-async function resolveSpotifyPlaylist(url) {
-  let playlist;
-  try {
-    playlist = await play.spotify(url);
-  } catch (error) {
-    console.warn('Spotify çalma listesi çözümlenemedi:', error);
-    throw new Error('Spotify çalma listesi çözümlenemedi. Lütfen bağlantıyı kontrol edin.');
-  }
-
-  const tracks = Array.isArray(playlist?.tracks) ? playlist.tracks : [];
-  let firstTrack = tracks[0];
-
-  if (!firstTrack && typeof playlist?.fetch === 'function') {
-    try {
-      const data = await playlist.fetch();
-      const fetchedTracks = Array.isArray(data?.tracks) ? data.tracks : [];
-      firstTrack = fetchedTracks[0] ?? null;
-    } catch (error) {
-      console.warn('Spotify çalma listesi ayrıntıları alınamadı:', error);
-    }
-  }
-
-  if (!firstTrack) {
-    throw new Error('Spotify çalma listesinde oynatılabilir parça bulunamadı.');
-  }
-
-  const primaryArtist = firstTrack?.artists?.[0]?.name ?? '';
-  const searchTerm = [firstTrack?.name, primaryArtist].filter(Boolean).join(' ');
-
-  if (!searchTerm) {
-    throw new Error('Spotify çalma listesi parçası çözümlenemedi.');
-  }
-
-  const resolved = await resolveYoutubeSearch(searchTerm, firstTrack?.name ?? searchTerm);
-  return {
-    ...resolved,
-    source: 'spotify-playlist',
-    playlist: {
-      name: playlist?.name ?? 'Spotify Çalma Listesi',
-      url
-    },
-    fallbackSearchTerm: searchTerm,
-    originalQuery: url
-  };
 }
 
 async function resolveYoutubeSearch(searchTerm, fallbackTitle) {
@@ -268,16 +191,8 @@ async function resolveTrack(query) {
     return resolveYoutubePlaylist(query);
   }
 
-  if (validation === 'sp_track') {
-    const track = await resolveSpotifyTrack(query);
-    return {
-      ...track,
-      originalQuery: query
-    };
-  }
-
-  if (validation === 'sp_playlist') {
-    return resolveSpotifyPlaylist(query);
+  if (validation === 'sp_track' || validation === 'sp_playlist' || validation === 'sp_album') {
+    throw new Error('Spotify bağlantıları desteklenmiyor. Lütfen YouTube bağlantısı gir ya da şarkı adını yaz.');
   }
 
   const resolved = await resolveYoutubeSearch(query, query);

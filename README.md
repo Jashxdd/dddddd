@@ -19,7 +19,8 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Furmin Pro yönetim merkezi: tüm premium analizler `/pro` komutunun alt komutlarında toplanır, önek tarafı aynı raporları ayrı komutlarla sunar
 - ✅ Herkese açık butonlu rol paneli (`/rol-panel` ve `f!rolpanel`) ve Pro üyelik yönetimini tek komutta toplayan `/pro uyelik`
 - ✅ Furmin Müzik sistemi: Parça tamamlandığında birkaç saniye içinde ses kanalından ayrılır, başlatılamayan oturumları nazikçe temizler
-- ✅ Furmin Müzik sistemi: YouTube/Spotify aramasıyla oynatma, sıra yönetimi, duraklat/devam/atla/dur komutları (slash + önek) ve Pro üyeler için `f!muzik-katil` + `f!muzik-ayril`
+- ✅ Furmin Müzik sistemi: YouTube araması ve bağlantılarıyla oynatma, sıra yönetimi, duraklat/devam/atla/dur komutları (slash + önek) ve Pro üyeler için `f!muzik-katil` + `f!muzik-ayril`
+- ✅ Reklam engeli için isteğe bağlı "3 ihlal -> otomatik ban" seçeneği; ihlal sayacı hem mod-log hem bot loglarında raporlanır
 - ✅ Bot sahibine özel log kanalı: yeni sunucu katılımları ve kullanıcı geri bildirimleri otomatik olarak embed şeklinde iletilir
 - ✅ Özel ses odaları: `f!ozel-ses` komutu kişisel kanal açar, kilit/limit/isim ayarlarını butonlarla yönetir, sahiplik devrini destekler ve oda boşalınca otomatik temizler
 - ✅ Otomatik cevap sistemi: `f!otocevap` ile içerik veya tam eşleşme tetikleyicileri tanımlayıp Türkçe yanıtlar verebilirsiniz
@@ -83,6 +84,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - Slash tarafındaki tüm Pro araçları artık tek `/pro` komutunda toplanır; önek tarafında aynı raporlar bireysel komutlar olarak çalışmaya devam eder.
 - `/rol-panel` ve `f!rolpanel`, seçilen rolleri butonlarla dağıtan modern bir rol seçimi paneli oluşturur.
 - Furmin Müzik modülü YouTube’dan akış alır, sırayı yönetir ve hem slash hem önek komutlarıyla oynatma/atlama/duraklatma işlemlerini destekler.
+- Reklam engeli isteğe bağlı olarak üçüncü ihlalde otomatik ban uygular; uyarı sayacı sıfırlanır ve süreç bot loglarına ayrıntılı şekilde işlenir.
 - Her komut, slash veya önek üzerinden çalıştırılmadan önce `/kurallari-kabul` ile kuralları onaylamayı zorunlu kılar; yardım menüsü 💎 simgesiyle Pro/sahip komutlarını ayırt eder.
 - Kullanıcılar kuralları bir kez onayladığında kayıt global olarak saklanır; başka bir sunucuda Furmin komutlarını kullanırken yeniden onay istenmez. Sunucu yöneticileri gerekli durumlarda `kurallar-yonet` ile belirli üyeleri tekrar onaya davet edebilir.
 - `f!ozel-ses` ile açılan özel ses odaları, butonlarla kilit/limit kontrolü sunar ve oda boş kaldığında otomatik olarak kaldırılır.
@@ -103,9 +105,10 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - Ses kanalı giriş/çıkışları, taşınmalar, yetkili susturma/sağırlaştırma değişimleri ve yayın başlangıç/bitişleri
 
 ## Bot Geri Bildirim Günlükleri
-- `config.json` / `.env` içerisinde `botLogChannelId` belirlediğinizde Furmin, yeni sunuculara katıldığında bu kanala otomatik olarak log bırakır.
+- `config.json` / `.env` içerisinde `botLogChannelId` belirlediğinizde Furmin, yeni sunuculara katıldığında ve sunucudan çıkarıldığında bu kanala otomatik olarak log bırakır.
 - Kullanıcılar `f!istek <mesaj>` komutuyla öneri/istek/sorun bildirimi gönderebilir; bot mesajı log kanalına modern embed olarak iletir ve kullanıcıyı bilgilendirir.
 - Log kanalı ayarlanmadığında kullanıcıya nazik bir uyarı gönderilir.
+- Reklam engeli tetiklendiğinde ve otomatik ban gerçekleştiğinde ayrıntılı embed logları gönderilir; yetki eksikliği yaşanırsa hata raporu da aynı kanalda paylaşılır.
 
 ## Premium ve Önek Sistemi
 - Varsayılan önek `f!` olup `/prefix` veya `f!prefix` ile sunucuya özel olarak değiştirilebilir.

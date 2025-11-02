@@ -1,14 +1,17 @@
-import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import {
   addBannedWord,
   getBannedWords,
+  getAdvertisementBanThreshold,
   isAutomodEnabled,
   isInviteBlockEnabled,
   removeBannedWord,
   setAutomodEnabled,
+  setAdvertisementBanThreshold,
   setInviteBlockEnabled
 } from '../../utils/automodConfig.js';
 import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
+import { sendBotLog } from '../../utils/botLog.js';
 
 export default {
   category: 'Moderasyon',
@@ -65,6 +68,21 @@ export default {
             .addChoices(
               { name: 'Aç', value: 'ac' },
               { name: 'Kapat', value: 'kapat' }
+            )
+        )
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('reklam-cezasi')
+        .setDescription('Reklam yakalandığında uygulanacak yaptırımı belirler.')
+        .addStringOption((option) =>
+          option
+            .setName('secim')
+            .setDescription('Reklam engeli sonrasında uygulanacak ceza')
+            .setRequired(true)
+            .addChoices(
+              { name: 'Sadece uyar', value: 'uyari' },
+              { name: '3 kez reklam yapanı yasakla', value: 'ban-3' }
             )
         )
     )
@@ -183,18 +201,65 @@ export default {
       return;
     }
 
+    if (subcommand === 'reklam-cezasi') {
+      const choice = interaction.options.getString('secim');
+      const threshold = choice === 'ban-3' ? 3 : null;
+      await setAdvertisementBanThreshold(guildId, threshold);
+
+      const reply = threshold
+        ? '🚨 Reklam paylaşan üyeler 3 ihlalde otomatik olarak yasaklanacak.'
+        : 'ℹ️ Reklam engeli artık yalnızca uyarı verecek. Otomatik yasak devre dışı.';
+
+      await interaction.reply({ content: reply, ephemeral: true });
+
+      const logFields = [
+        { name: 'Yeni Ceza', value: threshold ? '3 reklam -> Ban' : 'Sadece uyarı', inline: true }
+      ];
+
+      await sendModerationLog(interaction.client, interaction.guildId, {
+        action: 'Yerel Automod',
+        moderator: formatUserMention(interaction.user),
+        reason: threshold
+          ? 'Reklam ihlallerinde otomatik yasaklama etkinleştirildi.'
+          : 'Reklam ihlallerinde otomatik yasaklama kapatıldı.',
+        color: threshold ? 0xc0392b : 0xf1c40f,
+        extraFields: logFields
+      });
+
+      const embed = new EmbedBuilder()
+        .setColor(threshold ? 0xc0392b : 0xf1c40f)
+        .setTitle('Reklam Cezası Güncellendi')
+        .setDescription('Automod reklam ihlali cezası güncellendi.')
+        .addFields(
+          { name: 'Sunucu', value: interaction.guild?.name ?? 'Bilinmiyor', inline: true },
+          { name: 'Sunucu ID', value: interaction.guildId ?? 'Bilinmiyor', inline: true },
+          { name: 'Yeni Ceza', value: threshold ? '3 reklam -> Ban' : 'Sadece uyarı', inline: true },
+          { name: 'Yetkili', value: formatUserMention(interaction.user), inline: true }
+        )
+        .setTimestamp();
+
+      await sendBotLog(interaction.client, { embeds: [embed] });
+      return;
+    }
+
     if (subcommand === 'liste') {
       const bannedWords = await getBannedWords(guildId);
       const enabled = await isAutomodEnabled(guildId);
       const inviteBlock = await isInviteBlockEnabled(guildId);
+      const advertisementBan = await getAdvertisementBanThreshold(guildId);
 
-      await interaction.reply({
-        content:
-          bannedWords.length > 0
-            ? `📋 Automod ${enabled ? 'acik' : 'kapali'} durumda. Yasakli kelimeler:\n• ${bannedWords.join('\n• ')}\n\nReklam engeli: **${inviteBlock ? 'Açık' : 'Kapalı'}**\nDiscord\'un yerlesik otomatik moderasyonunu ayarlamak icin \`/discord-otomod\` komutunu kullanabilirsin.`
-            : `📋 Automod ${enabled ? 'acik' : 'kapali'} durumda. Henuz yasakli kelime bulunmuyor. Reklam engeli: **${inviteBlock ? 'Açık' : 'Kapalı'}**. Yerlesik sistem icin \`/discord-otomod\` komutunu deneyebilirsin.`,
-        ephemeral: true
-      });
+      const penaltyText = advertisementBan
+        ? 'Reklam cezası: **3 ihlal -> yasaklama**'
+        : 'Reklam cezası: **Sadece uyarı**';
+
+      const header = `📋 Automod ${enabled ? 'acik' : 'kapali'} durumda.`;
+      const footer = `Reklam engeli: **${inviteBlock ? 'Açık' : 'Kapalı'}**. ${penaltyText}`;
+
+      const listText = bannedWords.length
+        ? `${header}\n• ${bannedWords.join('\n• ')}\n\n${footer}\nDiscord\'un yerlesik otomatik moderasyonunu ayarlamak icin \`/discord-otomod\` komutunu kullanabilirsin.`
+        : `${header} Henuz yasakli kelime bulunmuyor. ${footer}. Yerlesik sistem icin \`/discord-otomod\` komutunu deneyebilirsin.`;
+
+      await interaction.reply({ content: listText, ephemeral: true });
     }
   }
 };

@@ -46,7 +46,12 @@ async function persist() {
 
 function ensureGuild(guildId) {
   if (!cache[guildId]) {
-    cache[guildId] = { enabled: false, bannedWords: [], blockInvites: true };
+    cache[guildId] = {
+      enabled: false,
+      bannedWords: [],
+      blockInvites: true,
+      advertisementBanThreshold: null
+    };
     return;
   }
 
@@ -56,6 +61,13 @@ function ensureGuild(guildId) {
 
   if (typeof cache[guildId].blockInvites !== 'boolean') {
     cache[guildId].blockInvites = true;
+  }
+
+  if (
+    cache[guildId].advertisementBanThreshold !== null &&
+    Number.isFinite(cache[guildId].advertisementBanThreshold) === false
+  ) {
+    cache[guildId].advertisementBanThreshold = null;
   }
 }
 
@@ -106,6 +118,36 @@ export async function setInviteBlockEnabled(guildId, enabled) {
   cache[guildId].blockInvites = Boolean(enabled);
   await persist();
   return cache[guildId].blockInvites;
+}
+
+export async function getAdvertisementBanThreshold(guildId) {
+  if (!guildId) return null;
+
+  await ensureLoaded();
+  ensureGuild(guildId);
+
+  const value = cache[guildId].advertisementBanThreshold;
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+
+  return null;
+}
+
+export async function setAdvertisementBanThreshold(guildId, threshold) {
+  if (!guildId) return null;
+
+  await ensureLoaded();
+  ensureGuild(guildId);
+
+  if (typeof threshold === 'number' && Number.isFinite(threshold) && threshold > 0) {
+    cache[guildId].advertisementBanThreshold = Math.floor(threshold);
+  } else {
+    cache[guildId].advertisementBanThreshold = null;
+  }
+
+  await persist();
+  return cache[guildId].advertisementBanThreshold;
 }
 
 export async function addBannedWord(guildId, word) {
