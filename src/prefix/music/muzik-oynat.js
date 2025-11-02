@@ -31,6 +31,13 @@ function buildEmbed(result) {
     .setDescription(result.queued ? `Sıraya eklendi. Konum: **${(result.position ?? 0) + 1}**` : 'Şimdi çalınıyor.')
     .setFooter({ text: 'Furmin Müzik Sistemi' })
     .setTimestamp();
+
+  if (result.track.playlist?.name) {
+    const playlistUrl = result.track.playlist.url ?? result.track.originalQuery ?? result.track.url;
+    const label = playlistUrl ? `[${result.track.playlist.name}](${playlistUrl})` : result.track.playlist.name;
+    embed.addFields({ name: 'Çalma Listesi', value: label, inline: true });
+  }
+
   return embed;
 }
 

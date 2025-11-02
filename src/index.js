@@ -1,3 +1,4 @@
+import './utils/fetchPolyfill.js';
 import { Client, Collection, GatewayIntentBits, Partials } from 'discord.js';
 import { readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';

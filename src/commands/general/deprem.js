@@ -37,6 +37,9 @@ const EARTHQUAKE_SOURCES = [
   }
 ];
 
+const CACHE_TTL = 30 * 60 * 1000; // 30 dakika
+let lastSuccessfulFetch = null;
+
 function normaliseTimestamp(value) {
   if (!value) return null;
   const numeric = Number(value);
@@ -62,15 +65,32 @@ async function requestJson(url, timeout = 8000) {
 
   try {
     const response = await fetch(url, {
-      headers: { 'User-Agent': 'FurminBot/1.0' },
+      headers: {
+        'User-Agent': 'FurminBot/1.0',
+        Accept: 'application/json, text/plain;q=0.8, */*;q=0.5'
+      },
       signal: controller.signal
     });
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
+    const contentType = response.headers.get('content-type') ?? '';
+    if (contentType.includes('application/json')) {
+      return response.json();
+    }
 
-    return response.json();
+    const text = await response.text();
+    try {
+      return JSON.parse(text);
+    } catch (error) {
+      throw new Error('Geçersiz JSON yanıtı alındı.');
+    }
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Zaman aşımı');
+    }
+    throw error;
   } finally {
     clearTimeout(timer);
   }
@@ -84,7 +104,13 @@ async function fetchEarthquakes(limit = 5) {
       const payload = await source.fetch(limit);
       const mapped = source.map(payload).filter((entry) => entry.location);
       if (mapped.length) {
-        return { records: mapped.slice(0, limit), source: source.name };
+        const sliced = mapped.slice(0, limit);
+        lastSuccessfulFetch = {
+          timestamp: Date.now(),
+          records: sliced,
+          source: source.name
+        };
+        return { records: sliced, source: source.name, cached: false };
       }
       errors.push(`${source.name}: veri bulunamadı`);
     } catch (error) {
@@ -92,15 +118,29 @@ async function fetchEarthquakes(limit = 5) {
     }
   }
 
+  if (lastSuccessfulFetch && Date.now() - lastSuccessfulFetch.timestamp < CACHE_TTL) {
+    console.warn('Deprem verisi canlı kaynaklardan alınamadı, önbelleğe düşülüyor:', errors.join(' • '));
+    return {
+      records: lastSuccessfulFetch.records.slice(0, limit),
+      source: `${lastSuccessfulFetch.source} (önbellek)`,
+      cached: true
+    };
+  }
+
   throw new Error(errors.join(' • '));
 }
 
-function buildEarthquakeEmbed(records, sourceName) {
+function buildEarthquakeEmbed(records, sourceName, options = {}) {
   const embed = new EmbedBuilder()
     .setColor(0xe74c3c)
     .setTitle('🌍 Türkiye Son Depremler')
-    .setFooter({ text: `Veri kaynağı: ${sourceName}` })
     .setTimestamp();
+
+  const footerParts = [`Veri kaynağı: ${sourceName}`];
+  if (options.cached) {
+    footerParts.push('Önbellekten gösteriliyor');
+  }
+  embed.setFooter({ text: footerParts.join(' • ') });
 
   if (!records.length) {
     embed.setDescription('Son saatlerde bildirilen deprem bulunamadı.');
@@ -141,8 +181,8 @@ export default {
     await interaction.deferReply({ ephemeral: true });
 
     try {
-      const { records, source } = await fetchEarthquakes(5);
-      const embed = buildEarthquakeEmbed(records, source);
+      const { records, source, cached } = await fetchEarthquakes(5);
+      const embed = buildEarthquakeEmbed(records, source, { cached });
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error('Deprem verisi alınamadı:', error);

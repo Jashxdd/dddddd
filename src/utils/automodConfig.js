@@ -46,7 +46,16 @@ async function persist() {
 
 function ensureGuild(guildId) {
   if (!cache[guildId]) {
-    cache[guildId] = { enabled: false, bannedWords: [] };
+    cache[guildId] = { enabled: false, bannedWords: [], blockInvites: true };
+    return;
+  }
+
+  if (!Array.isArray(cache[guildId].bannedWords)) {
+    cache[guildId].bannedWords = [];
+  }
+
+  if (typeof cache[guildId].blockInvites !== 'boolean') {
+    cache[guildId].blockInvites = true;
   }
 }
 
@@ -77,6 +86,26 @@ export async function getBannedWords(guildId) {
   ensureGuild(guildId);
 
   return [...cache[guildId].bannedWords];
+}
+
+export async function isInviteBlockEnabled(guildId) {
+  if (!guildId) return false;
+
+  await ensureLoaded();
+  ensureGuild(guildId);
+
+  return Boolean(cache[guildId].blockInvites);
+}
+
+export async function setInviteBlockEnabled(guildId, enabled) {
+  if (!guildId) return false;
+
+  await ensureLoaded();
+  ensureGuild(guildId);
+
+  cache[guildId].blockInvites = Boolean(enabled);
+  await persist();
+  return cache[guildId].blockInvites;
 }
 
 export async function addBannedWord(guildId, word) {

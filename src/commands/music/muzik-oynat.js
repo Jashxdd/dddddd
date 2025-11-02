@@ -50,6 +50,12 @@ function createResponseEmbed({ track, queued, position }) {
     embed.addFields({ name: 'Süre', value: `${minutes}:${seconds.toString().padStart(2, '0')}`, inline: true });
   }
 
+  if (track.playlist?.name) {
+    const playlistUrl = track.playlist.url ?? track.originalQuery ?? track.url;
+    const label = playlistUrl ? `[${track.playlist.name}](${playlistUrl})` : track.playlist.name;
+    embed.addFields({ name: 'Çalma Listesi', value: label, inline: true });
+  }
+
   embed.setFooter({ text: 'Furmin Müzik Sistemi' }).setTimestamp();
   return embed;
 }

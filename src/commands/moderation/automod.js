@@ -3,8 +3,10 @@ import {
   addBannedWord,
   getBannedWords,
   isAutomodEnabled,
+  isInviteBlockEnabled,
   removeBannedWord,
-  setAutomodEnabled
+  setAutomodEnabled,
+  setInviteBlockEnabled
 } from '../../utils/automodConfig.js';
 import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
@@ -49,6 +51,21 @@ export default {
             .setName('kelime')
             .setDescription('Silinecek kelime veya ifade')
             .setRequired(true)
+        )
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName('reklam-engel')
+        .setDescription('Discord davetlerini ve reklam bağlantılarını engellemeyi açar/kapatır.')
+        .addStringOption((option) =>
+          option
+            .setName('secim')
+            .setDescription('Reklam engelini aç veya kapat')
+            .setRequired(true)
+            .addChoices(
+              { name: 'Aç', value: 'ac' },
+              { name: 'Kapat', value: 'kapat' }
+            )
         )
     )
     .addSubcommand((sub) => sub.setName('liste').setDescription('Aktif yasakli kelime listesini gösterir.')),
@@ -142,15 +159,40 @@ export default {
       return;
     }
 
+    if (subcommand === 'reklam-engel') {
+      const choice = interaction.options.getString('secim');
+      const enabled = choice === 'ac';
+      await setInviteBlockEnabled(guildId, enabled);
+
+      await interaction.reply({
+        content: enabled
+          ? '🚫 Reklam engeli aktif. Davet bağlantıları otomatik olarak silinecek.'
+          : 'ℹ️ Reklam engeli kapatıldı.',
+        ephemeral: true
+      });
+
+      await sendModerationLog(interaction.client, interaction.guildId, {
+        action: 'Yerel Automod',
+        moderator: formatUserMention(interaction.user),
+        reason: enabled
+          ? 'Reklam engeli açıldı. Davet ve tanıtım bağlantıları engellenecek.'
+          : 'Reklam engeli devre dışı bırakıldı.',
+        color: enabled ? 0xe74c3c : 0xe67e22,
+        extraFields: [{ name: 'Durum', value: enabled ? 'Açık' : 'Kapalı', inline: true }]
+      });
+      return;
+    }
+
     if (subcommand === 'liste') {
       const bannedWords = await getBannedWords(guildId);
       const enabled = await isAutomodEnabled(guildId);
+      const inviteBlock = await isInviteBlockEnabled(guildId);
 
       await interaction.reply({
         content:
           bannedWords.length > 0
-            ? `📋 Automod ${enabled ? 'acik' : 'kapali'} durumda. Yasakli kelimeler:\n• ${bannedWords.join('\n• ')}\n\nDiscord\'un yerlesik otomatik moderasyonunu ayarlamak icin \`/discord-otomod\` komutunu kullanabilirsin.`
-            : `📋 Automod ${enabled ? 'acik' : 'kapali'} durumda. Henuz yasakli kelime bulunmuyor. Yerlesik sistem icin \`/discord-otomod\` komutunu deneyebilirsin.`,
+            ? `📋 Automod ${enabled ? 'acik' : 'kapali'} durumda. Yasakli kelimeler:\n• ${bannedWords.join('\n• ')}\n\nReklam engeli: **${inviteBlock ? 'Açık' : 'Kapalı'}**\nDiscord\'un yerlesik otomatik moderasyonunu ayarlamak icin \`/discord-otomod\` komutunu kullanabilirsin.`
+            : `📋 Automod ${enabled ? 'acik' : 'kapali'} durumda. Henuz yasakli kelime bulunmuyor. Reklam engeli: **${inviteBlock ? 'Açık' : 'Kapalı'}**. Yerlesik sistem icin \`/discord-otomod\` komutunu deneyebilirsin.`,
         ephemeral: true
       });
     }

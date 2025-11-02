@@ -8,6 +8,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Slash ve önek komutlarını tek projede toplayan esnek komut yükleyiciler
 - ✅ Kuralları kabul etmeden komut çalıştırmayı engelleyen Türkçe doğrulama akışı
 - ✅ Furmin Otomatik Sistem kelime filtresi + Discord AutoMod yapılandırma komutları
+- ✅ Aç/kapa yapılabilir reklam engeli: Discord davetleri ve şüpheli tanıtım bağlantıları otomatik silinir, mod-log'a kaydedilir
 - ✅ Ban, kick, timeout, rol verme/çekme, kanal kilitleme, yavaş mod ve uyarı kayıt sistemi
 - ✅ Ayrıntılı mod-log: ban/kick, mesaj silme/düzenleme, toplu silme, üye giriş/çıkış, rol değişimi, kanal/rol oluşturma-silme,
   ses kanalı hareketleri ve otomatik filtre ihlalleri
@@ -62,7 +63,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 
 ## Komut Kategorileri
 > Not: Discord'un slash komut sınırı 100 olduğu için ek yardımcı araçlar prefix üzerinden sunulur (ör. `f!odak-ipuclari`).
-- **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem`, `/doviz`,
+- **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem` (çoklu kaynak + önbellek destekli), `/doviz`,
   `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/gunluk-plan`, `f!odak-ipuclari`,
   `/saglik-molasi`, `f!paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,

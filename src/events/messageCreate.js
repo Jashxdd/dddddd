@@ -7,13 +7,14 @@ import {
   PermissionsBitField,
   time
 } from 'discord.js';
-import { findBannedWordInContent, isAutomodEnabled } from '../utils/automodConfig.js';
+import { findBannedWordInContent, isAutomodEnabled, isInviteBlockEnabled } from '../utils/automodConfig.js';
 import { formatUserMention, sendModerationLog } from '../utils/modLog.js';
 import { getPrefix } from '../utils/prefixStorage.js';
 import { isProMember } from '../utils/proMembership.js';
 import { getMaintenanceState } from '../utils/maintenanceStorage.js';
 import { config } from '../config.js';
 import { findAutoReplyMatch } from '../utils/autoReplyStorage.js';
+import { detectAdvertisement, formatAdvertisementReason } from '../utils/advertisementDetector.js';
 
 function createMaintenanceEmbed(client, note) {
   const embed = new EmbedBuilder()
@@ -232,38 +233,85 @@ export default {
       }
     }
 
-    const enabled = await isAutomodEnabled(message.guild.id);
-    if (!enabled) return;
+    const [automodEnabled, inviteBlockEnabled] = await Promise.all([
+      isAutomodEnabled(message.guild.id),
+      isInviteBlockEnabled(message.guild.id)
+    ]);
 
-    const matchedWord = await findBannedWordInContent(message.guild.id, message.content);
-    if (!matchedWord) return;
-
-    if (message.deletable) {
-      await message.delete().catch(() => {});
+    if (!automodEnabled && !inviteBlockEnabled) {
+      return;
     }
 
-    const canSend = message.channel
-      .permissionsFor(message.client.user)
-      ?.has(PermissionsBitField.Flags.SendMessages);
+    const bypassAdvertisement =
+      message.author.id === message.client.ownerId ||
+      message.member?.permissions?.has(PermissionsBitField.Flags.ManageMessages) ||
+      message.member?.permissions?.has(PermissionsBitField.Flags.ManageGuild);
 
-    if (!canSend) return;
+    if (automodEnabled) {
+      const matchedWord = await findBannedWordInContent(message.guild.id, message.content);
+      if (matchedWord) {
+        if (message.deletable) {
+          await message.delete().catch(() => {});
+        }
 
-    await message.channel.send({
-      content: `⚠️ ${message.author}, yasaklı bir ifade (**${matchedWord}**) kullandığın için mesajın silindi. Lütfen sunucu kurallarına uy.`
-    });
+        const canSend = message.channel
+          .permissionsFor(message.client.user)
+          ?.has(PermissionsBitField.Flags.SendMessages);
 
-    const snippet = message.content.length > 1024 ? `${message.content.slice(0, 1021)}...` : message.content;
+        if (canSend) {
+          await message.channel.send({
+            content: `⚠️ ${message.author}, yasaklı bir ifade (**${matchedWord}**) kullandığın için mesajın silindi. Lütfen sunucu kurallarına uy.`
+          });
+        }
 
-    await sendModerationLog(message.client, message.guild.id, {
-      action: 'Otomatik Moderasyon',
-      moderator: 'Furmin Otomatik Sistem',
-      target: formatUserMention(message.author),
-      reason: `Yasaklı kelime: **${matchedWord}**`,
-      color: 0xe74c3c,
-      extraFields: [
-        { name: 'Kanal', value: message.channel.toString(), inline: true },
-        { name: 'Mesaj İçeriği', value: snippet || 'Mesaj boş' }
-      ]
-    });
+        const snippet = message.content.length > 1024 ? `${message.content.slice(0, 1021)}...` : message.content;
+
+        await sendModerationLog(message.client, message.guild.id, {
+          action: 'Otomatik Moderasyon',
+          moderator: 'Furmin Otomatik Sistem',
+          target: formatUserMention(message.author),
+          reason: `Yasaklı kelime: **${matchedWord}**`,
+          color: 0xe74c3c,
+          extraFields: [
+            { name: 'Kanal', value: message.channel.toString(), inline: true },
+            { name: 'Mesaj İçeriği', value: snippet || 'Mesaj boş' }
+          ]
+        });
+        return;
+      }
+    }
+
+    if (inviteBlockEnabled && !bypassAdvertisement) {
+      const match = detectAdvertisement(message.content);
+      if (match) {
+        if (message.deletable) {
+          await message.delete().catch(() => {});
+        }
+
+        const canSend = message.channel
+          .permissionsFor(message.client.user)
+          ?.has(PermissionsBitField.Flags.SendMessages);
+
+        if (canSend) {
+          await message.channel.send({
+            content: `🚫 ${message.author}, reklam bağlantıları bu sunucuda yasaktır. Mesajın silindi.`
+          });
+        }
+
+        const snippet = message.content.length > 1024 ? `${message.content.slice(0, 1021)}...` : message.content;
+
+        await sendModerationLog(message.client, message.guild.id, {
+          action: 'Reklam Engeli',
+          moderator: 'Furmin Otomatik Sistem',
+          target: formatUserMention(message.author),
+          reason: formatAdvertisementReason(match),
+          color: 0xe91e63,
+          extraFields: [
+            { name: 'Kanal', value: message.channel.toString(), inline: true },
+            { name: 'Mesaj İçeriği', value: snippet || 'Mesaj boş' }
+          ]
+        });
+      }
+    }
   }
 };
