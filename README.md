@@ -19,7 +19,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Furmin Pro yönetim merkezi: tüm premium analizler `/pro` komutunun alt komutlarında toplanır, önek tarafı aynı raporları ayrı komutlarla sunar
 - ✅ Herkese açık butonlu rol paneli (`/rol-panel` ve `f!rolpanel`) ve Pro üyelik yönetimini tek komutta toplayan `/pro uyelik`
 - ✅ Furmin Müzik sistemi: Parça tamamlandığında birkaç saniye içinde ses kanalından ayrılır, başlatılamayan oturumları nazikçe temizler
-- ✅ Furmin Müzik sistemi: YouTube araması ve bağlantılarıyla oynatma, sıra yönetimi, duraklat/devam/atla/dur komutları (slash + önek) ve Pro üyeler için `f!muzik-katil` + `f!muzik-ayril`
+- ✅ Furmin Müzik sistemi: YouTube aramaları ve bağlantılarıyla oynatma, Spotify şarkı linklerini otomatik YouTube sonucuna dönüştürme, `/oynat`, `/atla`, `/duraklat`, `/devam`, `/durdur`, `/kuyruk`, `/np` ve `/ayril` komutlarıyla tam sıra kontrolü
 - ✅ Reklam engeli için isteğe bağlı "3 ihlal -> otomatik ban" seçeneği; ihlal sayacı hem mod-log hem bot loglarında raporlanır
 - ✅ Bot sahibine özel log kanalı: yeni sunucu katılımları ve kullanıcı geri bildirimleri otomatik olarak embed şeklinde iletilir
 - ✅ Özel ses odaları: `f!ozel-ses` komutu kişisel kanal açar, kilit/limit/isim ayarlarını butonlarla yönetir, sahiplik devrini destekler ve oda boşalınca otomatik temizler
@@ -75,15 +75,15 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/bakim`, `/sistem-ozeti` ve diğer yönetim araçları.
 - **Özel Ses:** `f!ozel-ses` ile kullanıcıya özel ses odası açılır; paneldeki butonlarla kilit, üye limiti, isim ve sahiplik anlık yönetilir.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
-- **Müzik:** `/muzik-oynat`, `/muzik-atla`, `/muzik-duraklat`, `/muzik-devam`, `/muzik-dur`, `/muzik-kuyruk`, `/muzik-simdi`.
+- **Müzik:** `/oynat`, `/atla`, `/duraklat`, `/devam`, `/durdur`, `/kuyruk`, `/np`, `/ayril`.
 - **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
-  `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!muzik-katil`, `f!muzik-oynat`, `f!muzik-atla`, `f!muzik-duraklat`, `f!muzik-devam`, `f!muzik-dur`, `f!muzik-kuyruk`, `f!muzik-simdi`, `f!muzik-ayril`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!furmin-merkez`, `f!bakim` vb.
+  `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!furmin-merkez`, `f!bakim` vb.
   `f!istek` ile kullanıcılar bot geliştiricisine öneri/istek/sorun iletebilir.
 
 ### Yeni Sistemler ve Güncellemeler
 - Slash tarafındaki tüm Pro araçları artık tek `/pro` komutunda toplanır; önek tarafında aynı raporlar bireysel komutlar olarak çalışmaya devam eder.
 - `/rol-panel` ve `f!rolpanel`, seçilen rolleri butonlarla dağıtan modern bir rol seçimi paneli oluşturur.
-- Furmin Müzik modülü YouTube’dan akış alır, sırayı yönetir ve hem slash hem önek komutlarıyla oynatma/atlama/duraklatma işlemlerini destekler.
+- Furmin Müzik modülü YouTube’dan akış alır, Spotify şarkı bağlantılarını aramaya dönüştürür ve slash komutlarıyla oynatma/atlama/duraklatma işlemlerini destekler.
 - Reklam engeli isteğe bağlı olarak üçüncü ihlalde otomatik ban uygular; uyarı sayacı sıfırlanır ve süreç bot loglarına ayrıntılı şekilde işlenir.
 - Her komut, slash veya önek üzerinden çalıştırılmadan önce `/kurallari-kabul` ile kuralları onaylamayı zorunlu kılar; yardım menüsü 💎 simgesiyle Pro/sahip komutlarını ayırt eder.
 - Kullanıcılar kuralları bir kez onayladığında kayıt global olarak saklanır; başka bir sunucuda Furmin komutlarını kullanırken yeniden onay istenmez. Sunucu yöneticileri gerekli durumlarda `kurallar-yonet` ile belirli üyeleri tekrar onaya davet edebilir.
