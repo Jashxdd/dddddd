@@ -19,6 +19,14 @@ async function ensurePlaySession() {
     return;
   }
 
+  const auth = play.authorization;
+  const hasSpotifyCredentials =
+    auth && typeof auth === 'object' && (auth.access_token || auth.client_id || auth.refresh_token);
+
+  if (!hasSpotifyCredentials) {
+    return;
+  }
+
   try {
     const expired = play.is_expired();
 
@@ -500,6 +508,15 @@ export class MusicManager {
     }
 
     if (!track?.url) {
+      throw new Error('Parça bağlantısı doğrulanamadı. Lütfen farklı bir şarkı deneyin.');
+    }
+
+    try {
+      // URL'i doğrulayıp play-dl'ye geçersiz değer gitmesini engeller.
+      // new URL, geçerli protokollere sahip olmayan değerlerde hata fırlatır.
+      const validatedUrl = new URL(track.url);
+      track = { ...track, url: validatedUrl.toString() };
+    } catch (error) {
       throw new Error('Parça bağlantısı doğrulanamadı. Lütfen farklı bir şarkı deneyin.');
     }
     const queue = await this.ensureQueue(guild, voiceChannel, textChannel);

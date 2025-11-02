@@ -1,4 +1,4 @@
-import { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
+import { EmbedBuilder, MessageFlags, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 
 async function ensureVoice(interaction) {
   if (!interaction.guild) {
@@ -68,13 +68,16 @@ export default {
     .setDescription('Belirttiğin şarkıyı çalar veya sıraya ekler.')
     .addStringOption((option) =>
       option
-        .setName('parca')
-        .setDescription('Youtube bağlantısı veya arama terimi')
+        .setName('query')
+        .setDescription('YouTube bağlantısı veya arama terimi')
         .setRequired(true)
     ),
   async execute(interaction) {
     if (!interaction.inGuild()) {
-      await interaction.reply({ content: 'Bu komut yalnızca sunucularda kullanılabilir.', ephemeral: true });
+      await interaction.reply({
+        content: 'Bu komut yalnızca sunucularda kullanılabilir.',
+        flags: MessageFlags.Ephemeral
+      });
       return;
     }
 
@@ -82,17 +85,20 @@ export default {
     try {
       voiceChannel = await ensureVoice(interaction);
     } catch (error) {
-      await interaction.reply({ content: `⛔ ${error.message}`, ephemeral: true });
+      await interaction.reply({
+        content: `⛔ ${error.message}`,
+        flags: MessageFlags.Ephemeral
+      });
       return;
     }
 
-    const rawQuery = interaction.options.getString('parca', true);
+    const rawQuery = interaction.options.getString('query', true);
     const query = rawQuery?.trim();
 
     if (!query) {
       await interaction.reply({
         content: 'Lütfen geçerli bir bağlantı veya arama terimi gir.',
-        ephemeral: true
+        flags: MessageFlags.Ephemeral
       });
       return;
     }
