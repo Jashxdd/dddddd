@@ -1,13 +1,10 @@
 import play from 'play-dl';
 
-const YT_SEARCH_OPTIONS = { limit: 1, source: { youtube: 'video' } };
+const YT_VIDEO_SOURCE = { youtube: 'video' };
 
 function isUrl(value) {
-  if (typeof value !== 'string') return false;
   try {
-    // eslint-disable-next-line no-new
-    new URL(value);
-    return true;
+    return Boolean(new URL(value));
   } catch {
     return false;
   }
@@ -22,16 +19,32 @@ function isSpotifyCollection(url) {
 }
 
 function isYoutubeUrl(url) {
-  return /(youtube\.com|youtu\.be)/i.test(url);
+  return /(youtube\.com|youtu\.be)\//i.test(url);
 }
 
-async function searchYoutube(term) {
-  const results = await play.search(term, YT_SEARCH_OPTIONS).catch(() => []);
-  if (!results?.length) return null;
-  const [first] = results;
+async function searchYouTube(query) {
+  const results = await play.search(query, { limit: 1, source: YT_VIDEO_SOURCE });
+  if (!Array.isArray(results) || !results.length) {
+    const error = new Error('YT_NOT_FOUND');
+    error.code = 'YT_NOT_FOUND';
+    throw error;
+  }
+
+  const first = results[0];
   const url = first?.url?.trim();
-  if (!url) return null;
-  return { url, title: first.title ?? first.name ?? term };
+  if (!url) {
+    const error = new Error('YT_NOT_FOUND');
+    error.code = 'YT_NOT_FOUND';
+    throw error;
+  }
+
+  return {
+    url,
+    title: first?.title ?? query,
+    author: first?.channel?.name ?? null,
+    durationInSec: typeof first?.durationInSec === 'number' ? first.durationInSec : null,
+    source: 'youtube'
+  };
 }
 
 async function resolveSpotifyTrack(url) {
@@ -41,24 +54,23 @@ async function resolveSpotifyTrack(url) {
     throw error;
   }
 
-  let meta = null;
-  try {
-    meta = await play.spotify(url).catch(() => null);
-  } catch {
-    meta = null;
-  }
-
-  if (!meta || meta.type !== 'track') {
-    const error = new Error('SPOTIFY_META_FAIL');
-    error.code = 'SPOTIFY_META_FAIL';
+  if (!isSpotifyTrack(url)) {
+    const error = new Error('UNSUPPORTED_URL');
+    error.code = 'UNSUPPORTED_URL';
     throw error;
   }
 
-  const title = meta.name ?? '';
-  const artists = Array.isArray(meta.artists)
-    ? meta.artists.map((artist) => artist.name).filter(Boolean).join(' ')
-    : '';
-  const searchKey = [title, artists].filter(Boolean).join(' ').trim();
+  let spotifyData = null;
+  try {
+    spotifyData = await play.spotify(url);
+  } catch (error) {
+    console.warn('[Furmin][Music] Spotify bilgisi alınamadı:', error);
+  }
+
+  const searchKey = [spotifyData?.name, spotifyData?.artists?.[0]?.name]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
 
   if (!searchKey) {
     const error = new Error('SPOTIFY_META_FAIL');
@@ -66,18 +78,11 @@ async function resolveSpotifyTrack(url) {
     throw error;
   }
 
-  const youtubeMatch = await searchYoutube(searchKey);
-  if (!youtubeMatch) {
-    const error = new Error('YT_NOT_FOUND_FROM_SPOTIFY');
-    error.code = 'YT_NOT_FOUND_FROM_SPOTIFY';
-    throw error;
-  }
-
+  const resolved = await searchYouTube(searchKey);
   return {
-    url: youtubeMatch.url,
-    title: youtubeMatch.title,
-    requestedTitle: title,
-    requestedArtists: artists,
+    ...resolved,
+    requestedTitle: spotifyData?.name ?? resolved.title,
+    requestedArtist: spotifyData?.artists?.[0]?.name ?? null,
     source: 'spotify'
   };
 }
@@ -107,15 +112,12 @@ export async function resolveTrack(query) {
       throw error;
     }
 
-    return { url: trimmed, title: null, source: 'youtube' };
+    return {
+      url: trimmed,
+      title: null,
+      source: 'youtube'
+    };
   }
 
-  const youtubeMatch = await searchYoutube(trimmed);
-  if (!youtubeMatch) {
-    const error = new Error('YT_NOT_FOUND');
-    error.code = 'YT_NOT_FOUND';
-    throw error;
-  }
-
-  return { url: youtubeMatch.url, title: youtubeMatch.title, source: 'youtube' };
+  return searchYouTube(trimmed);
 }

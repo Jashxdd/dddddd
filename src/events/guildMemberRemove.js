@@ -1,5 +1,6 @@
-import { Events, time } from 'discord.js';
+import { EmbedBuilder, Events, time } from 'discord.js';
 import { sendModerationLog } from '../utils/modLog.js';
+import { getGreetingSettings } from '../utils/greetingStorage.js';
 
 export default {
   name: Events.GuildMemberRemove,
@@ -20,5 +21,51 @@ export default {
         { name: 'Sunucuya Katılım', value: joinedAt, inline: true }
       ]
     });
+
+    const greetings = await getGreetingSettings(member.guild.id);
+    if (greetings) {
+      const farewellMessage = formatGreetingMessage(
+        greetings.farewellMessage,
+        member,
+        '{user} aramızdan ayrıldı. Tekrar görüşmek üzere!'
+      );
+
+      if (greetings.farewellChannelId) {
+        const farewellChannel = member.guild.channels.cache.get(greetings.farewellChannelId) ??
+          (await member.guild.channels.fetch(greetings.farewellChannelId).catch(() => null));
+        if (farewellChannel && farewellChannel.isTextBased()) {
+          await farewellChannel
+            .send({ content: farewellMessage })
+            .catch(() => {});
+        }
+      }
+
+      if (greetings.logChannelId) {
+        const logChannel = member.guild.channels.cache.get(greetings.logChannelId) ??
+          (await member.guild.channels.fetch(greetings.logChannelId).catch(() => null));
+        if (logChannel && logChannel.isTextBased()) {
+          const embed = new EmbedBuilder()
+            .setColor(0xe67e22)
+            .setTitle('Üye Ayrılış Kaydı')
+            .setDescription(`${member.user ?? member} sunucudan ayrıldı.`)
+            .addFields(
+              { name: 'Üye', value: member.user ? `${member.user.tag} (${member.id})` : member.id },
+              { name: 'Sunucuda Geçirdiği Süre', value: joinedAt }
+            )
+            .setTimestamp();
+
+          await logChannel.send({ embeds: [embed] }).catch(() => {});
+        }
+      }
+    }
   }
 };
+
+function formatGreetingMessage(template, member, fallback) {
+  const base = template?.trim() || fallback;
+  return base
+    .replaceAll('{user}', member.user ? member.user.toString() : `<@${member.id}>`)
+    .replaceAll('{tag}', member.user?.tag ?? member.displayName ?? member.id)
+    .replaceAll('{guild}', member.guild?.name ?? 'sunucu')
+    .replaceAll('{count}', `${member.guild?.memberCount ?? ''}`);
+}

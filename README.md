@@ -13,13 +13,14 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Ayrıntılı mod-log: ban/kick, mesaj silme/düzenleme, toplu silme, üye giriş/çıkış, rol değişimi, kanal/rol oluşturma-silme,
   ses kanalı hareketleri ve otomatik filtre ihlalleri
 - ✅ Sunucuya katılan üyelere otomatik rol atayabilen otorol sistemi (listeleme, ekleme/kaldırma, sıfırlama)
+- ✅ Karşılama/veda mesajları ve giriş-çıkış logları: tek mesajla tüm sunucularda geçerli olacak global onay, özelleştirilebilir kanal/mesaj yönetimi
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
 - ✅ `f!furmin-merkez` komutu ve slash yardım menüsü, Furmin Merkez panelleriyle destek bağlantılarını ve istatistikleri tek embed'de sunar
 - ✅ Müzik komutları yardım menüsünde ayrı kategori olarak listelenir; çift kayıtlar otomatik olarak filtrelenir
 - ✅ Furmin Pro yönetim merkezi: tüm premium analizler `/pro` komutunun alt komutlarında toplanır, önek tarafı aynı raporları ayrı komutlarla sunar
 - ✅ Herkese açık butonlu rol paneli (`/rol-panel` ve `f!rolpanel`) ve Pro üyelik yönetimini tek komutta toplayan `/pro uyelik`
 - ✅ Furmin Müzik sistemi: Parça tamamlandığında birkaç saniye içinde ses kanalından ayrılır, başlatılamayan oturumları nazikçe temizler
-- ✅ Furmin Müzik sistemi: YouTube aramaları ve bağlantılarıyla oynatma, Spotify şarkı linklerini otomatik YouTube sonucuna dönüştürme, `/oynat`, `/atla`, `/duraklat`, `/devam`, `/durdur`, `/kuyruk`, `/np` ve `/ayril` komutlarıyla tam sıra kontrolü
+- ✅ Furmin Müzik sistemi: Nraphy tabanlı yeni kuyruğu ile YouTube aramaları/bağlantıları ve Spotify şarkı linklerini otomatik YouTube sonucuna dönüştürme, doğrulanmış URL akışı ve `/oynat`, `/atla`, `/duraklat`, `/devam`, `/durdur`, `/kuyruk`, `/np`, `/ayril` komutlarıyla tam sıra kontrolü
 - ✅ Reklam engeli için isteğe bağlı "3 ihlal -> otomatik ban" seçeneği; ihlal sayacı hem mod-log hem bot loglarında raporlanır
 - ✅ Bot sahibine özel log kanalı: yeni sunucu katılımları ve kullanıcı geri bildirimleri otomatik olarak embed şeklinde iletilir
 - ✅ Özel ses odaları: `f!ozel-ses` komutu kişisel kanal açar, kilit/limit/isim ayarlarını butonlarla yönetir, sahiplik devrini destekler ve oda boşalınca otomatik temizler
@@ -30,6 +31,8 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Pro komut kataloğu, uyarı raporu ve sistem özeti ile yöneticilere özel analiz paneli
 - ✅ Hazır yapılandırma yükleyicisi (config.json ya da .env) ve otomatik durum mesajı rotasyonu
 - ✅ `/gunluk-plan` ve `f!gunluk-plan` ile kullanıcıların günlük hedeflerine özel motivasyon kartları
+- ✅ Ticket sistemi: buton + menü paneliyle kategori seçerek özel ticket kanalı açma, log kanalına otomatik kayıt ve destek rolü tanımlama
+- ✅ `f!sunucu-kur` ile önerilen kategori/kanal/rol yapısını tek komutla oluşturma; operasyon bot loglarına da kaydedilir
 
 ## Furmin Merkez Paneli
 - `f!furmin-merkez` komutu, Furmin'in destek bağlantılarını, global komut istatistiklerini ve öne çıkan sistemlerini tek bir embedde toplar.
@@ -68,7 +71,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
   `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/gunluk-plan`, `f!odak-ipuclari`,
   `/saglik-molasi`, `f!paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
-  `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu` ve otomatik moderasyon komutları.
+  `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/uyari-sil`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu` ve otomatik moderasyon komutları.
 - **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog`, `/otorol`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`,
 `/prefix`,
   `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/premium-komutlar`,
@@ -77,7 +80,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
 - **Müzik:** `/oynat`, `/atla`, `/duraklat`, `/devam`, `/durdur`, `/kuyruk`, `/np`, `/ayril`.
 - **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
-  `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!furmin-merkez`, `f!bakim` vb.
+  `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!selamlama`, `f!ticket`, `f!sunucu-kur`, `f!uyari-sil`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!furmin-merkez`, `f!bakim` vb.
   `f!istek` ile kullanıcılar bot geliştiricisine öneri/istek/sorun iletebilir.
 
 ### Yeni Sistemler ve Güncellemeler
@@ -90,6 +93,9 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - `f!ozel-ses` ile açılan özel ses odaları, butonlarla kilit/limit kontrolü sunar ve oda boş kaldığında otomatik olarak kaldırılır.
 - `f!otocevap` komutu, sunucuya özel otomatik yanıtlar tanımlamanıza izin verir; tetikleyiciler içerik veya tam eşleşme modunda çalışır.
 - `f!pro-jail` komutu, Pro yetkililere jail rolü ataması, listeleme ve kaldırma akışını tek merkezde toplar.
+- `f!selamlama` komutu ile karşılama/veda kanalları ve mesajları yönetilir; giriş-çıkış logları için ayrı kanal tanımlanabilir.
+- `f!ticket` komutu, buton ve menülü ticket paneli, destek rolü ve log kanalını ayarlayarak kullanıcıların özel destek kanalı açmasını sağlar.
+- `f!sunucu-kur` önerilen kategori, kanal ve rol şablonunu birkaç saniyede oluşturur; işlem bot loglarına da kaydedilir.
 
 ## Bakım Modu
 - `/bakim ac [mesaj]` veya `f!bakim ac [mesaj]` *(isteğe göre `f!komut-bakim` takma adıyla)* tüm komutları geçici olarak kilitleyebilir, üyelere gösterilecek kısa bir not paylaşabilirsiniz.

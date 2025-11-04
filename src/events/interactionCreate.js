@@ -17,6 +17,7 @@ import {
   removePrivateVoice
 } from '../utils/privateVoiceStorage.js';
 import { buildPrivateVoiceButtons, buildPrivateVoiceEmbed } from '../utils/privateVoicePanel.js';
+import { createTicketChannel, closeTicketChannel } from '../utils/ticketManager.js';
 
 async function handlePrivateVoiceButton(interaction) {
   const parts = interaction.customId.split(':');
@@ -274,6 +275,78 @@ async function handlePrivateVoiceModal(interaction) {
   return true;
 }
 
+async function handleTicketButton(interaction) {
+  const parts = interaction.customId.split(':');
+  if (parts[0] !== 'ticket') {
+    return false;
+  }
+
+  const action = parts[1];
+  const guildId = parts[2];
+  if (guildId !== interaction.guildId) {
+    await interaction.reply({ content: 'Bu ticket bileşeni farklı bir sunucuya ait.', ephemeral: true });
+    return true;
+  }
+
+  if (action === 'open') {
+    await interaction.deferReply({ ephemeral: true });
+    const result = await createTicketChannel(interaction, null);
+    if (result.error) {
+      await interaction.editReply({ content: `⚠️ ${result.error}` });
+      return true;
+    }
+    await interaction.editReply({ content: `✅ Ticket kanalın ${result.channel} olarak açıldı.` });
+    return true;
+  }
+
+  if (action === 'close') {
+    const channelId = parts[3];
+    if (channelId && channelId !== interaction.channelId) {
+      await interaction.reply({ content: 'Bu düğme artık geçerli değil.', ephemeral: true });
+      return true;
+    }
+
+    await interaction.deferReply({ ephemeral: true });
+    const result = await closeTicketChannel(interaction, interaction.channel);
+    if (result.error) {
+      await interaction.editReply({ content: `⚠️ ${result.error}` });
+    } else {
+      await interaction.editReply({ content: '🔒 Ticket kapatma işlemi başlatıldı.' });
+    }
+    return true;
+  }
+
+  return false;
+}
+
+async function handleTicketSelect(interaction) {
+  const parts = interaction.customId.split(':');
+  if (parts[0] !== 'ticket' || parts[1] !== 'topic') {
+    return false;
+  }
+
+  const guildId = parts[2];
+  if (guildId !== interaction.guildId) {
+    await interaction.reply({ content: 'Bu ticket menüsü farklı bir sunucuya ait.', ephemeral: true });
+    return true;
+  }
+
+  const value = interaction.values?.[0];
+  if (!value) {
+    await interaction.reply({ content: '⚠️ Bir konu seçmelisin.', ephemeral: true });
+    return true;
+  }
+
+  await interaction.deferReply({ ephemeral: true });
+  const result = await createTicketChannel(interaction, value);
+  if (result.error) {
+    await interaction.editReply({ content: `⚠️ ${result.error}` });
+  } else {
+    await interaction.editReply({ content: `✅ Ticket kanalın ${result.channel} olarak açıldı.` });
+  }
+  return true;
+}
+
 const bypassCommands = new Set(['kurallar', 'kurallari-kabul']);
 
 export default {
@@ -288,6 +361,10 @@ export default {
 
     if (interaction.isButton()) {
       if (!interaction.inGuild()) return;
+      const ticketHandled = await handleTicketButton(interaction);
+      if (ticketHandled) {
+        return;
+      }
       const handled = await handlePrivateVoiceButton(interaction);
       if (handled) {
         return;
@@ -347,6 +424,14 @@ export default {
       }
 
       return;
+    }
+
+    if (interaction.isStringSelectMenu()) {
+      if (!interaction.inGuild()) return;
+      const handled = await handleTicketSelect(interaction);
+      if (handled) {
+        return;
+      }
     }
 
     if (!interaction.isChatInputCommand()) return;

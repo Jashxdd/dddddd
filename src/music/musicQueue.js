@@ -1,18 +1,20 @@
 import {
   AudioPlayerStatus,
   NoSubscriberBehavior,
+  VoiceConnectionDisconnectReason,
   VoiceConnectionStatus,
   createAudioPlayer,
   createAudioResource,
   entersState,
   joinVoiceChannel
 } from '@discordjs/voice';
+import { Collection } from 'discord.js';
 import play from 'play-dl';
 
-const CONNECTION_READY_TIMEOUT = 15_000;
-const IDLE_LEAVE_TIMEOUT = 30_000;
+const CONNECTION_TIMEOUT = 15_000;
+const LEAVE_AFTER_IDLE = 30_000;
 
-export class MusicQueue {
+export class GuildMusicQueue {
   constructor({ client, guildId, manager }) {
     this.client = client;
     this.guildId = guildId;
@@ -20,39 +22,35 @@ export class MusicQueue {
 
     this.connection = null;
     this.player = createAudioPlayer({
-      behaviors: {
-        noSubscriber: NoSubscriberBehavior.Stop
-      }
+      behaviors: { noSubscriber: NoSubscriberBehavior.Stop }
     });
+
     this.tracks = [];
-    this.isPlaying = false;
+    this.nowPlaying = null;
     this.textChannelId = null;
     this.voiceChannelId = null;
-    this.currentTrack = null;
-    this.lastAnnouncedTrack = null;
-    this.idleTimer = null;
     this.destroyed = false;
+    this.announcements = new Collection();
+    this.idleTimer = null;
 
     this.player.on(AudioPlayerStatus.Playing, () => {
       if (this.destroyed) return;
-      this.isPlaying = true;
       this.clearIdleTimer();
-      if (!this.currentTrack || this.lastAnnouncedTrack === this.currentTrack) {
-        return;
-      }
-      this.lastAnnouncedTrack = this.currentTrack;
+      if (!this.nowPlaying) return;
+      if (this.announcements.has(this.nowPlaying.url)) return;
+      this.announcements.set(this.nowPlaying.url, Date.now());
       this.sendNowPlaying().catch((error) => {
-        console.warn('[Furmin][MusicQueue] Şimdi çalan mesajı gönderilemedi:', error);
+        console.warn('[Furmin][MusicQueue] Şimdi çalan bildirimi başarısız oldu:', error);
       });
     });
 
     this.player.on(AudioPlayerStatus.Idle, () => {
       if (this.destroyed) return;
-      this.isPlaying = false;
-      this.currentTrack = null;
-      if (this.tracks.length > 0) {
+      this.nowPlaying = null;
+      if (this.tracks.length) {
         this.playNext().catch((error) => {
-          console.error('[Furmin][MusicQueue] Sıradaki şarkı başlatılamadı:', error);
+          console.error('[Furmin][MusicQueue] Sıradaki şarkı yüklenemedi:', error);
+          this.playNext().catch(() => {});
         });
       } else {
         this.startIdleTimer();
@@ -62,15 +60,10 @@ export class MusicQueue {
     this.player.on('error', (error) => {
       if (this.destroyed) return;
       console.error('[Furmin][MusicQueue] Oynatıcı hatası:', error);
-      this.isPlaying = false;
-      this.currentTrack = null;
-      if (this.tracks.length > 0) {
-        this.playNext().catch((innerError) => {
-          console.error('[Furmin][MusicQueue] Hata sonrası sonraki şarkı başlatılamadı:', innerError);
-        });
-      } else {
+      this.nowPlaying = null;
+      this.playNext().catch(() => {
         this.startIdleTimer();
-      }
+      });
     });
   }
 
@@ -78,19 +71,71 @@ export class MusicQueue {
     return this.tracks.length;
   }
 
-  get nowPlaying() {
-    return this.currentTrack;
+  get isIdle() {
+    return !this.nowPlaying && this.tracks.length === 0;
   }
 
   snapshot() {
     return {
-      nowPlaying: this.currentTrack ?? null,
-      upcoming: [...this.tracks]
+      nowPlaying: this.nowPlaying ? { ...this.nowPlaying } : null,
+      upcoming: this.tracks.map((track) => ({ ...track }))
     };
   }
 
+  async ensureConnection(voiceChannel) {
+    if (!voiceChannel) {
+      const error = new Error('VOICE_CHANNEL_MISSING');
+      error.code = 'VOICE_CHANNEL_MISSING';
+      throw error;
+    }
+
+    if (
+      this.connection &&
+      this.voiceChannelId === voiceChannel.id &&
+      [VoiceConnectionStatus.Ready, VoiceConnectionStatus.Connecting].includes(this.connection.state.status)
+    ) {
+      return;
+    }
+
+    this.voiceChannelId = voiceChannel.id;
+
+    if (this.connection) {
+      try {
+        this.connection.destroy();
+      } catch (error) {
+        console.warn('[Furmin][MusicQueue] Eski bağlantı kapatılamadı:', error);
+      }
+    }
+
+    this.connection = joinVoiceChannel({
+      channelId: voiceChannel.id,
+      guildId: voiceChannel.guild.id,
+      adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+      selfDeaf: true
+    });
+
+    this.connection.on('stateChange', async (_, newState) => {
+      if (newState.status === VoiceConnectionStatus.Disconnected) {
+        if (newState.reason === VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
+          try {
+            await entersState(this.connection, VoiceConnectionStatus.Connecting, 5_000);
+          } catch {
+            this.leave();
+          }
+        } else if (this.connection.rejoinAttempts < 5) {
+          await this.connection.rejoin();
+        } else {
+          this.leave();
+        }
+      }
+    });
+
+    await entersState(this.connection, VoiceConnectionStatus.Ready, CONNECTION_TIMEOUT);
+    this.connection.subscribe(this.player);
+  }
+
   async enqueue(track, { voiceChannel, textChannel }) {
-    if (!track?.url?.trim()) {
+    if (!track?.url) {
       const error = new Error('TRACK_URL_EMPTY');
       error.code = 'TRACK_URL_EMPTY';
       throw error;
@@ -102,15 +147,11 @@ export class MusicQueue {
       throw error;
     }
 
-    this.textChannelId = textChannel?.id ?? this.textChannelId;
-    this.voiceChannelId = voiceChannel.id;
-    this.destroyed = false;
-
     await this.ensureConnection(voiceChannel);
+    this.textChannelId = textChannel?.id ?? this.textChannelId;
 
     this.tracks.push(track);
-
-    if (!this.isPlaying && !this.currentTrack) {
+    if (!this.nowPlaying) {
       await this.playNext();
       return { started: true, track };
     }
@@ -118,69 +159,23 @@ export class MusicQueue {
     return { started: false, track };
   }
 
-  async ensureConnection(voiceChannel) {
-    const connectionStatus = this.connection?.state?.status;
-    if (
-      this.connection &&
-      this.voiceChannelId === voiceChannel.id &&
-      (connectionStatus === VoiceConnectionStatus.Ready ||
-        connectionStatus === VoiceConnectionStatus.Connecting)
-    ) {
-      return;
-    }
-
-    if (this.connection) {
-      try {
-        this.connection.destroy();
-      } catch (error) {
-        console.warn('[Furmin][MusicQueue] Eski bağlantı kapatılamadı:', error);
-      }
-      this.connection = null;
-    }
-
-    this.connection = joinVoiceChannel({
-      channelId: voiceChannel.id,
-      guildId: voiceChannel.guild.id,
-      adapterCreator: voiceChannel.guild.voiceAdapterCreator,
-      selfDeaf: true
-    });
-
-    this.connection.on(VoiceConnectionStatus.Disconnected, async () => {
-      try {
-        await Promise.race([
-          entersState(this.connection, VoiceConnectionStatus.Signalling, 5_000),
-          entersState(this.connection, VoiceConnectionStatus.Connecting, 5_000)
-        ]);
-      } catch {
-        this.leave();
-      }
-    });
-
-    await entersState(this.connection, VoiceConnectionStatus.Ready, CONNECTION_READY_TIMEOUT);
-    this.connection.subscribe(this.player);
-  }
-
   async playNext() {
     if (!this.connection) {
-      this.isPlaying = false;
-      this.currentTrack = null;
       this.startIdleTimer();
       return;
     }
 
-    const next = this.tracks.shift();
-    if (!next) {
-      this.isPlaying = false;
-      this.currentTrack = null;
+    const nextTrack = this.tracks.shift();
+    if (!nextTrack) {
+      this.nowPlaying = null;
       this.startIdleTimer();
       return;
     }
 
-    this.currentTrack = next;
-    this.lastAnnouncedTrack = null;
+    this.nowPlaying = nextTrack;
 
     try {
-      const stream = await play.stream(next.url, { discordPlayerCompatibility: true });
+      const stream = await play.stream(nextTrack.url, { discordPlayerCompatibility: true });
       const resource = createAudioResource(stream.stream, {
         inputType: stream.type,
         inlineVolume: true
@@ -189,85 +184,79 @@ export class MusicQueue {
         resource.volume.setVolume(1);
       }
       this.player.play(resource);
-      this.isPlaying = true;
       this.clearIdleTimer();
     } catch (error) {
-      console.error('[Furmin][MusicQueue] Parça oynatılamadı:', error);
-      this.isPlaying = false;
-      this.currentTrack = null;
-      await this.notifyChannel('🎵 Akış başlatılamadı, lütfen geçerli bir bağlantı veya şarkı adı dene.');
-      if (this.tracks.length > 0) {
-        await this.playNext();
-      } else {
-        this.startIdleTimer();
-      }
+      console.error('[Furmin][MusicQueue] Akış başlatılamadı:', error);
+      this.nowPlaying = null;
+      await this.notifyChannel('🎶 Akış başlatılamadı. Lütfen geçerli bir şarkı adı veya bağlantı dene.');
+      await this.playNext();
     }
   }
 
-  skip() {
-    if (!this.connection) {
-      const error = new Error('VOICE_CONNECTION_MISSING');
-      error.code = 'VOICE_CONNECTION_MISSING';
-      throw error;
+  async skip() {
+    if (!this.player) return false;
+    if (this.tracks.length === 0) {
+      this.stop();
+      return false;
     }
-
-    if (!this.currentTrack && this.tracks.length === 0) {
-      const error = new Error('NO_TRACK_TO_SKIP');
-      error.code = 'NO_TRACK_TO_SKIP';
-      throw error;
-    }
-
     this.player.stop(true);
+    return true;
+  }
+
+  pause() {
+    if (!this.player) return false;
+    return this.player.pause(true);
+  }
+
+  resume() {
+    if (!this.player) return false;
+    return this.player.unpause();
   }
 
   stop() {
     this.tracks = [];
-    this.currentTrack = null;
-    this.isPlaying = false;
-    this.player.stop(true);
+    this.player?.stop(true);
+    this.nowPlaying = null;
     this.startIdleTimer();
-  }
-
-  pause() {
-    const paused = this.player.pause(true);
-    if (!paused) {
-      const error = new Error('PAUSE_FAILED');
-      error.code = 'PAUSE_FAILED';
-      throw error;
-    }
-  }
-
-  resume() {
-    const resumed = this.player.unpause();
-    if (!resumed) {
-      const error = new Error('RESUME_FAILED');
-      error.code = 'RESUME_FAILED';
-      throw error;
-    }
   }
 
   leave() {
     this.stop();
-    this.clearIdleTimer();
-
+    this.destroyed = true;
     if (this.connection) {
       try {
         this.connection.destroy();
       } catch (error) {
-        console.warn('[Furmin][MusicQueue] Bağlantı sonlandırılamadı:', error);
+        console.warn('[Furmin][MusicQueue] Ses bağlantısı kapatılamadı:', error);
       }
     }
-
     this.connection = null;
     this.voiceChannelId = null;
-    this.destroy();
+    this.manager.deleteQueue(this.guildId);
   }
 
-  destroy() {
-    if (this.destroyed) return;
-    this.destroyed = true;
+  handleVoiceStateUpdate(oldState, newState) {
+    const guild = oldState?.guild ?? newState?.guild;
+    if (!guild) return;
+    if (!this.voiceChannelId) return;
+    const channel = guild.channels.cache.get(this.voiceChannelId);
+    if (!channel) {
+      this.leave();
+      return;
+    }
+
+    const nonBotMembers = channel.members.filter((member) => !member.user.bot);
+    if (nonBotMembers.size === 0) {
+      this.startIdleTimer();
+    }
+  }
+
+  startIdleTimer() {
     this.clearIdleTimer();
-    this.manager.deleteQueue(this.guildId);
+    if (this.idleTimer) return;
+    this.idleTimer = setTimeout(() => {
+      this.leave();
+    }, LEAVE_AFTER_IDLE).unref();
   }
 
   clearIdleTimer() {
@@ -277,29 +266,22 @@ export class MusicQueue {
     }
   }
 
-  startIdleTimer() {
-    this.clearIdleTimer();
-    this.idleTimer = setTimeout(() => {
-      this.leave();
-    }, IDLE_LEAVE_TIMEOUT);
-    if (typeof this.idleTimer.unref === 'function') {
-      this.idleTimer.unref();
-    }
-  }
-
-  async notifyChannel(message) {
+  async notifyChannel(content) {
     if (!this.textChannelId) return;
-    const channel = this.client.channels.cache.get(this.textChannelId);
-    if (!channel || !channel.isTextBased()) return;
-    await channel.send({ content: message }).catch(() => {});
+    const channel = this.client.channels.cache.get(this.textChannelId) ??
+      (await this.client.channels.fetch(this.textChannelId).catch(() => null));
+    if (!channel) return;
+    await channel.send({ content }).catch(() => {});
   }
 
   async sendNowPlaying() {
-    if (!this.currentTrack) return;
-    const title = this.currentTrack.title ?? this.currentTrack.requestedTitle ?? this.currentTrack.url;
-    const requestedBy = this.currentTrack.requestedBy
-      ? ` • İsteyen: ${this.currentTrack.requestedBy}`
-      : '';
-    await this.notifyChannel(`🎶 Şu anda çalan: **${title}**${requestedBy}`);
+    if (!this.textChannelId || !this.nowPlaying) return;
+    const channel = this.client.channels.cache.get(this.textChannelId) ??
+      (await this.client.channels.fetch(this.textChannelId).catch(() => null));
+    if (!channel) return;
+
+    const title = this.nowPlaying.title ?? this.nowPlaying.requestedTitle ?? this.nowPlaying.url;
+    const requested = this.nowPlaying.requestedBy ? ` • İsteyen: ${this.nowPlaying.requestedBy}` : '';
+    await channel.send({ content: `🎧 Şu anda çalan: **${title}**${requested}` }).catch(() => {});
   }
 }

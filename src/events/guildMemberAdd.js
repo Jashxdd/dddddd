@@ -1,6 +1,7 @@
-import { Events, PermissionFlagsBits, time } from 'discord.js';
+import { EmbedBuilder, Events, PermissionFlagsBits, time } from 'discord.js';
 import { sendModerationLog } from '../utils/modLog.js';
 import { getAutoRoles } from '../utils/autoRoleStorage.js';
+import { getGreetingSettings } from '../utils/greetingStorage.js';
 
 export default {
   name: Events.GuildMemberAdd,
@@ -73,5 +74,58 @@ export default {
         { name: 'Otomatik Roller', value: autoroleSummary }
       ]
     });
+
+    const greetings = await getGreetingSettings(member.guild.id);
+    if (greetings) {
+      const formattedWelcome = formatGreetingMessage(
+        greetings.welcomeMessage,
+        member,
+        'Furmin ailesine hoş geldin {user}! {guild} sunucusunda seni görmek harika.'
+      );
+
+      if (greetings.welcomeChannelId) {
+        const welcomeChannel = member.guild.channels.cache.get(greetings.welcomeChannelId) ??
+          (await member.guild.channels.fetch(greetings.welcomeChannelId).catch(() => null));
+        if (welcomeChannel && welcomeChannel.isTextBased()) {
+          await welcomeChannel
+            .send({ content: formattedWelcome })
+            .catch((error) => console.warn('Karşılama mesajı gönderilemedi:', error));
+        }
+      }
+
+      if (greetings.logChannelId) {
+        const logChannel = member.guild.channels.cache.get(greetings.logChannelId) ??
+          (await member.guild.channels.fetch(greetings.logChannelId).catch(() => null));
+        if (logChannel && logChannel.isTextBased()) {
+          const embed = new EmbedBuilder()
+            .setColor(0x2ecc71)
+            .setTitle('Yeni Üye Kaydı')
+            .setDescription(`${member.user} sunucuya katıldı.`)
+            .addFields(
+              { name: 'Üye', value: `${member.user.tag} (${member.id})` },
+              {
+                name: 'Hesap Oluşturma',
+                value: member.user?.createdAt
+                  ? time(Math.floor(member.user.createdAt.getTime() / 1000), 'R')
+                  : 'Bilinmiyor',
+                inline: true
+              },
+              { name: 'Sunucu Üye Sayısı', value: `${member.guild.memberCount}`, inline: true }
+            )
+            .setTimestamp();
+
+          await logChannel.send({ embeds: [embed] }).catch(() => {});
+        }
+      }
+    }
   }
 };
+
+function formatGreetingMessage(template, member, fallback) {
+  const base = template?.trim() || fallback;
+  return base
+    .replaceAll('{user}', member.toString())
+    .replaceAll('{tag}', member.user?.tag ?? member.displayName ?? member.id)
+    .replaceAll('{guild}', member.guild?.name ?? 'sunucu')
+    .replaceAll('{count}', `${member.guild?.memberCount ?? ''}`);
+}
