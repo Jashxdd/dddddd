@@ -12,6 +12,8 @@
   "presenceInterval": 75,
   "commandSyncMode": "global",
   "commandTestGuilds": ["TEST_SUNUCUSU_ID"],
+  "disabledSlashCommands": ["ornekkomut"],
+  "disabledPrefixCommands": ["ornekprefix"],
   "activities": [
     { "name": "sunucunuzu izliyor", "type": "Watching" },
     { "name": "/yardim ile komutları anlatıyor", "type": "Playing" }

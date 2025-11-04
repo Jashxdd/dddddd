@@ -1,6 +1,7 @@
 import { readdir } from 'node:fs/promises';
 import { join, extname, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { config } from '../config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,10 +27,13 @@ async function walkDirectory(directory) {
   return files.flat();
 }
 
+const disabledSlashCommands = new Set(config.disabledSlashCommands ?? []);
+
 export async function loadCommands() {
   const commandFiles = await walkDirectory(commandsDirectory);
   const commands = [];
   const seenNames = new Set();
+  let skippedForDisable = 0;
 
   for (const filePath of commandFiles) {
     const fileUrl = pathToFileURL(filePath).href;
@@ -74,8 +78,18 @@ export async function loadCommands() {
       continue;
     }
 
+    if (disabledSlashCommands.has(commandName)) {
+      console.log(`ℹ️  ${commandName} komutu yapılandırma tarafından devre dışı bırakıldığı için yüklenmedi.`);
+      skippedForDisable += 1;
+      continue;
+    }
+
     seenNames.add(commandName);
     commands.push(command);
+  }
+
+  if (skippedForDisable > 0) {
+    console.log(`🔧 Yapılandırma ${skippedForDisable} slash komutunu devre dışı bıraktı.`);
   }
 
   return commands;

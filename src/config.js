@@ -128,6 +128,12 @@ function parseStringArray(value) {
   return [];
 }
 
+function parseCommandToggleList(value) {
+  return parseStringArray(value)
+    .map((name) => name.toLowerCase())
+    .filter(Boolean);
+}
+
 function parseSyncMode(value) {
   const candidate = normalise(value)?.toLowerCase();
   if (candidate && candidate !== 'global') {
@@ -158,7 +164,13 @@ export const config = {
   ),
   activities: parseActivities(fileConfig.activities ?? process.env.PRESENCE_ACTIVITIES),
   commandSyncMode: parseSyncMode(pick(fileConfig.commandSyncMode, process.env.COMMAND_SYNC_MODE)),
-  commandTestGuilds: parseStringArray(fileConfig.commandTestGuilds ?? process.env.COMMAND_TEST_GUILDS)
+  commandTestGuilds: parseStringArray(fileConfig.commandTestGuilds ?? process.env.COMMAND_TEST_GUILDS),
+  disabledSlashCommands: parseCommandToggleList(
+    fileConfig.disabledSlashCommands ?? process.env.DISABLED_SLASH_COMMANDS
+  ),
+  disabledPrefixCommands: parseCommandToggleList(
+    fileConfig.disabledPrefixCommands ?? process.env.DISABLED_PREFIX_COMMANDS
+  )
 };
 
 export function describeConfigSource() {

@@ -6,6 +6,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 
 ## Öne Çıkan Özellikler
 - ✅ Slash ve önek komutlarını tek projede toplayan esnek komut yükleyiciler
+- ✅ Yapılandırmadan tek tek devre dışı bırakılabilen global slash ve önek komutları
 - ✅ Kuralları kabul etmeden komut çalıştırmayı engelleyen Türkçe doğrulama akışı
 - ✅ Furmin Otomatik Sistem kelime filtresi + Discord AutoMod yapılandırma komutları
 - ✅ Aç/kapa yapılabilir reklam engeli: Discord davetleri ve şüpheli tanıtım bağlantıları otomatik silinir, mod-log'a kaydedilir
@@ -60,10 +61,15 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
    | `defaultPrefix` | Sunucu öneğinin varsayılan değeri (varsayılan `f!`) |
   | `supportServerUrl` / `inviteUrl` / `proInfoUrl` | Butonlarda gösterilecek bağlantılar |
   | `botLogChannelId` | Botun kendi loglarını göndereceği kanalın ID'si (opsiyonel) |
+  | `disabledSlashCommands` / `disabledPrefixCommands` | Virgülle ayrılmış liste veya dizi olarak belirttiğiniz komut adları devre dışı bırakılır |
    | `presenceStatus`, `presenceInterval`, `activities` | Durum rotasyonu için isteğe bağlı ayarlar |
 
-   > Furmin yapılandırma yükleyicisi hem proje kökünde hem de `config/` klasöründe `config.json` arar ve yer tutucu değerleri
-   > otomatik olarak yok sayar. Dosya bulunamazsa `.env` değişkenleri kullanılmaya devam edilir.
+> Furmin yapılandırma yükleyicisi hem proje kökünde hem de `config/` klasöründe `config.json` arar ve yer tutucu değerleri
+> otomatik olarak yok sayar. Dosya bulunamazsa `.env` değişkenleri kullanılmaya devam edilir.
+
+Komutları devre dışı bırakmak için adları küçük harflerle yazmanız yeterlidir. Örneğin `disabledSlashCommands: ["muzik-oynat", "ticket"]`
+ayarlandığında bu komutlar global kayıttan ve yardım menüsünden kaldırılır. Aynı liste `.env` tarafında `DISABLED_SLASH_COMMANDS=muzik-oynat,ticket`
+şeklinde de tanımlanabilir.
 
 ## Komut Kategorileri
 > Not: Discord'un slash komut sınırı 100 olduğu için ek yardımcı araçlar prefix üzerinden sunulur (ör. `f!odak-ipuclari`).
