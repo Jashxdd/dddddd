@@ -8,17 +8,16 @@ export default {
 
     const queue = interaction.client.music.getQueue(interaction.guildId);
     if (!queue || (!queue.nowPlaying && queue.size === 0)) {
-      await interaction.editReply({ content: '⏹️ Durdurulacak bir şarkı yok.' });
+      await interaction.editReply({ content: '⏹️ Durdurulacak bir şarkı bulunmuyor.' });
       return;
     }
 
-    const memberChannel = interaction.member?.voice?.channel;
-    if (!memberChannel || queue.voiceChannelId !== memberChannel.id) {
-      await interaction.editReply({ content: '🎧 Müzik ile aynı ses kanalında olmalısın.' });
-      return;
+    try {
+      queue.stop();
+      await interaction.editReply({ content: '⏹️ Tüm şarkılar durduruldu ve kuyruk temizlendi.' });
+    } catch (error) {
+      console.error('[Furmin][Music] Kuyruk durdurulamadı:', error);
+      await interaction.editReply({ content: '❌ Müzik durdurulurken bir sorun oluştu.' });
     }
-
-    queue.stop();
-    await interaction.editReply({ content: '⏹️ Kuyruk temizlendi ve müzik durdu.' });
   }
 };

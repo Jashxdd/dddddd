@@ -8,22 +8,16 @@ export default {
 
     const queue = interaction.client.music.getQueue(interaction.guildId);
     if (!queue || !queue.nowPlaying) {
-      await interaction.editReply({ content: '▶️ Devam edecek bir şarkı yok.' });
-      return;
-    }
-
-    const memberChannel = interaction.member?.voice?.channel;
-    if (!memberChannel || queue.voiceChannelId !== memberChannel.id) {
-      await interaction.editReply({ content: '🎧 Müzik ile aynı ses kanalında olmalısın.' });
+      await interaction.editReply({ content: '▶️ Devam ettirilecek bir şarkı bulunmuyor.' });
       return;
     }
 
     try {
       queue.resume();
-      await interaction.editReply({ content: `▶️ **${queue.nowPlaying.title ?? 'Şarkı'}** devam ediyor.` });
+      await interaction.editReply({ content: '▶️ Şarkı kaldığı yerden devam ediyor.' });
     } catch (error) {
-      console.error('[Furmin][Music] Devam ettirme hatası:', error);
-      await interaction.editReply({ content: '❌ Şarkı devam ettirilirken bir hata oluştu.' });
+      console.error('[Furmin][Music] Şarkı devam ettirilemedi:', error);
+      await interaction.editReply({ content: '❌ Şarkı devam ettirilirken bir sorun oluştu.' });
     }
   }
 };

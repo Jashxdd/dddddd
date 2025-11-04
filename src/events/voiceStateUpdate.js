@@ -10,6 +10,15 @@ function formatChannel(channel) {
 export default {
   name: Events.VoiceStateUpdate,
   async execute(oldState, newState) {
+    const client = oldState?.client ?? newState?.client;
+    if (client?.music?.handleVoiceStateUpdate) {
+      try {
+        client.music.handleVoiceStateUpdate(oldState, newState);
+      } catch (error) {
+        console.error('[Furmin][Music] Ses durumu izlenirken hata:', error);
+      }
+    }
+
     if (!oldState?.guild || !newState?.guild) return;
     if (newState.member?.user?.bot) return;
 

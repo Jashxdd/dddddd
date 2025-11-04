@@ -1,5 +1,5 @@
 import { SlashCommandBuilder, MessageFlags } from 'discord.js';
-import { resolveTrack, TrackResolutionError } from '../../music/trackResolver.js';
+import { resolveTrack } from '../../music/resolveTrack.js';
 
 function formatTrackTitle(track) {
   if (!track) return 'Bilinmeyen şarkı';
@@ -22,11 +22,29 @@ function ensureVoiceChannel(interaction, queue) {
   return { ok: true, channel: memberChannel };
 }
 
+function mapResolveError(code) {
+  switch (code) {
+    case 'QUERY_EMPTY':
+      return '🎵 Geçerli bir şarkı ismi veya bağlantısı gir.';
+    case 'SPOTIFY_LIST_UNSUPPORTED':
+      return '🎵 Yalnızca Spotify şarkı bağlantıları destekleniyor.';
+    case 'SPOTIFY_META_FAIL':
+      return '🎵 Spotify şarkı bilgisi alınamadı. Lütfen farklı bir bağlantı dene.';
+    case 'YT_NOT_FOUND_FROM_SPOTIFY':
+    case 'YT_NOT_FOUND':
+      return '🔍 Hiç sonuç bulunamadı, farklı bir arama yapmayı dene.';
+    case 'UNSUPPORTED_URL':
+      return '🌐 Yalnızca YouTube bağlantıları veya Spotify şarkıları destekleniyor.';
+    default:
+      return '❌ Şarkı aranırken beklenmeyen bir hata oluştu.';
+  }
+}
+
 export default {
   category: 'Müzik',
   data: new SlashCommandBuilder()
     .setName('oynat')
-    .setDescription('Bir şarkıyı sıraya ekleyip çalmaya başlatır.')
+    .setDescription('Bir şarkıyı sıraya ekler ve gerekiyorsa çalmaya başlatır.')
     .addStringOption((option) =>
       option
         .setName('query')
@@ -36,6 +54,13 @@ export default {
   async execute(interaction) {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+    const queue = interaction.client.music.getQueue(interaction.guildId);
+    const voiceCheck = ensureVoiceChannel(interaction, queue);
+    if (!voiceCheck.ok) {
+      await interaction.editReply({ content: voiceCheck.message });
+      return;
+    }
+
     const rawQuery = interaction.options.getString('query', true);
     const query = rawQuery.trim();
     if (!query) {
@@ -43,29 +68,21 @@ export default {
       return;
     }
 
-    const existingQueue = interaction.client.music.getQueue(interaction.guildId);
-    const voiceCheck = ensureVoiceChannel(interaction, existingQueue);
-    if (!voiceCheck.ok) {
-      await interaction.editReply({ content: voiceCheck.message });
-      return;
-    }
-
     let track;
     try {
       track = await resolveTrack(query);
     } catch (error) {
-      if (error instanceof TrackResolutionError) {
-        await interaction.editReply({ content: `⚠️ ${error.message}` });
-        return;
+      const message = mapResolveError(error?.code);
+      if (message) {
+        await interaction.editReply({ content: message });
+      } else {
+        console.error('[Furmin][Music] Parça çözümlenemedi:', error);
+        await interaction.editReply({ content: '❌ Şarkı aranırken beklenmeyen bir hata oluştu.' });
       }
-
-      console.error('[Furmin][Music] Parça çözümlenemedi:', error);
-      await interaction.editReply({ content: '❌ Şarkı aranırken beklenmeyen bir hata oluştu.' });
       return;
     }
 
-    const queue = interaction.client.music.ensureQueue(interaction.guildId);
-
+    const musicQueue = interaction.client.music.ensureQueue(interaction.guildId);
     const trackData = {
       ...track,
       requestedBy: interaction.user.tag,
@@ -75,7 +92,7 @@ export default {
     };
 
     try {
-      const result = await queue.enqueue(trackData, {
+      const result = await musicQueue.enqueue(trackData, {
         voiceChannel: voiceCheck.channel,
         textChannel: interaction.channel
       });
@@ -86,12 +103,12 @@ export default {
         });
       } else {
         await interaction.editReply({
-          content: `✅ **${formatTrackTitle(trackData)}** sıraya eklendi. Şu anda ${queue.size} şarkı bekliyor.`
+          content: `✅ **${formatTrackTitle(trackData)}** sıraya eklendi. Sırada ${musicQueue.size} şarkı var.`
         });
       }
     } catch (error) {
       console.error('[Furmin][Music] Parça kuyruğa eklenemedi:', error);
-      await interaction.editReply({ content: '❌ Şarkı sıraya eklenirken hata oluştu.' });
+      await interaction.editReply({ content: '❌ Şarkı sıraya eklenirken bir sorun oluştu.' });
     }
   }
 };

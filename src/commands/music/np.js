@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, EmbedBuilder, MessageFlags } from 'discord.js';
+import { SlashCommandBuilder, MessageFlags } from 'discord.js';
 
 export default {
   category: 'Müzik',
@@ -8,17 +8,14 @@ export default {
 
     const queue = interaction.client.music.getQueue(interaction.guildId);
     if (!queue || !queue.nowPlaying) {
-      await interaction.editReply({ content: '🎵 Şu anda çalan bir şarkı yok.' });
+      await interaction.editReply({ content: '▶️ Şu anda çalan bir şarkı bulunmuyor.' });
       return;
     }
 
     const track = queue.nowPlaying;
-    const embed = new EmbedBuilder()
-      .setColor(0x1abc9c)
-      .setTitle('🎶 Şimdi Çalan')
-      .setDescription(`**${track.title ?? 'Bilinmeyen şarkı'}**`)
-      .setFooter({ text: track.requestedBy ? `İsteyen: ${track.requestedBy}` : 'Furmin Müzik Sistemi' });
+    const title = track.title ?? track.requestedTitle ?? track.url;
+    const requester = track.requestedBy ? ` • İsteyen: ${track.requestedBy}` : '';
 
-    await interaction.editReply({ embeds: [embed] });
+    await interaction.editReply({ content: `🎶 Şu anda çalan: **${title}**${requester}` });
   }
 };

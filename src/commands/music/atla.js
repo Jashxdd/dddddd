@@ -6,18 +6,14 @@ function ensureVoiceChannel(interaction, queue) {
     return { ok: false, message: '🎧 Önce bir ses kanalına katılmalısın.' };
   }
 
-  if (!queue || !queue.voiceChannelId) {
-    return { ok: true, channel: memberChannel };
-  }
-
-  if (queue.voiceChannelId !== memberChannel.id) {
+  if (queue?.voiceChannelId && queue.voiceChannelId !== memberChannel.id) {
     return {
       ok: false,
-      message: '🎶 Müzik şu anda başka bir kanalda çalıyor. Aynı kanala katılmadan atlayamazsın.'
+      message: '🎶 Müzik başka bir kanalda çalıyor. Lütfen aynı kanala katıl.'
     };
   }
 
-  return { ok: true, channel: memberChannel };
+  return { ok: true };
 }
 
 export default {
@@ -28,7 +24,7 @@ export default {
 
     const queue = interaction.client.music.getQueue(interaction.guildId);
     if (!queue || !queue.nowPlaying) {
-      await interaction.editReply({ content: '⏸️ Şu anda çalan bir şarkı yok.' });
+      await interaction.editReply({ content: '⏸️ Şu anda çalan bir şarkı bulunmuyor.' });
       return;
     }
 
@@ -40,11 +36,20 @@ export default {
 
     const current = queue.nowPlaying;
     const upcoming = queue.snapshot().upcoming;
-    queue.skip();
+
+    try {
+      queue.skip();
+    } catch (error) {
+      console.error('[Furmin][Music] Şarkı atlanamadı:', error);
+      await interaction.editReply({ content: '❌ Şarkı atlanırken bir sorun oluştu.' });
+      return;
+    }
 
     if (upcoming.length > 0) {
       await interaction.editReply({
-        content: `⏭️ **${current.title ?? 'Mevcut şarkı'}** atlandı. Sıradaki: **${upcoming[0].title ?? 'Bilinmeyen şarkı'}**.`
+        content: `⏭️ **${current.title ?? 'Mevcut şarkı'}** atlandı. Sıradaki: **${
+          upcoming[0].title ?? 'Bilinmeyen şarkı'
+        }**.`
       });
     } else {
       await interaction.editReply({

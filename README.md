@@ -83,7 +83,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 ### Yeni Sistemler ve Güncellemeler
 - Slash tarafındaki tüm Pro araçları artık tek `/pro` komutunda toplanır; önek tarafında aynı raporlar bireysel komutlar olarak çalışmaya devam eder.
 - `/rol-panel` ve `f!rolpanel`, seçilen rolleri butonlarla dağıtan modern bir rol seçimi paneli oluşturur.
-- Furmin Müzik modülü YouTube’dan akış alır, Spotify şarkı bağlantılarını aramaya dönüştürür ve slash komutlarıyla oynatma/atlama/duraklatma işlemlerini destekler.
+- Furmin Müzik modülü YouTube’dan akış alır, yalnızca Spotify şarkı bağlantılarını aramaya dönüştürür (playlist/album reddedilir) ve slash komutlarıyla oynatma/atlama/duraklatma işlemlerini destekler.
 - Reklam engeli isteğe bağlı olarak üçüncü ihlalde otomatik ban uygular; uyarı sayacı sıfırlanır ve süreç bot loglarına ayrıntılı şekilde işlenir.
 - Her komut, slash veya önek üzerinden çalıştırılmadan önce `/kurallari-kabul` ile kuralları onaylamayı zorunlu kılar; yardım menüsü 💎 simgesiyle Pro/sahip komutlarını ayırt eder.
 - Kullanıcılar kuralları bir kez onayladığında kayıt global olarak saklanır; başka bir sunucuda Furmin komutlarını kullanırken yeniden onay istenmez. Sunucu yöneticileri gerekli durumlarda `kurallar-yonet` ile belirli üyeleri tekrar onaya davet edebilir.

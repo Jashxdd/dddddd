@@ -8,22 +8,16 @@ export default {
 
     const queue = interaction.client.music.getQueue(interaction.guildId);
     if (!queue || !queue.nowPlaying) {
-      await interaction.editReply({ content: '⏸️ Duraklatılacak bir şarkı yok.' });
-      return;
-    }
-
-    const memberChannel = interaction.member?.voice?.channel;
-    if (!memberChannel || queue.voiceChannelId !== memberChannel.id) {
-      await interaction.editReply({ content: '🎧 Müzik ile aynı ses kanalında olmalısın.' });
+      await interaction.editReply({ content: '⏸️ Şu anda duraklatılacak bir şarkı yok.' });
       return;
     }
 
     try {
       queue.pause();
-      await interaction.editReply({ content: `⏸️ **${queue.nowPlaying.title ?? 'Şarkı'}** duraklatıldı.` });
+      await interaction.editReply({ content: '⏸️ Şarkı duraklatıldı.' });
     } catch (error) {
-      console.error('[Furmin][Music] Duraklatma hatası:', error);
-      await interaction.editReply({ content: '❌ Şarkı duraklatılırken bir hata oluştu.' });
+      console.error('[Furmin][Music] Şarkı duraklatılamadı:', error);
+      await interaction.editReply({ content: '❌ Şarkı duraklatılırken bir sorun oluştu.' });
     }
   }
 };
