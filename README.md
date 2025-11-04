@@ -74,7 +74,7 @@ ayarlandığında bu komutlar global kayıttan ve yardım menüsünden kaldırı
 ## Komut Kategorileri
 > Not: Discord'un slash komut sınırı 100 olduğu için ek yardımcı araçlar prefix üzerinden sunulur (ör. `f!odak-ipuclari`).
 - **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem` (çoklu kaynak + önbellek destekli), `/doviz`,
-  `/spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/gunluk-plan`, `f!odak-ipuclari`,
+  `f!spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/gunluk-plan`, `f!odak-ipuclari`,
   `/saglik-molasi`, `f!paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/uyari-sil`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu` ve otomatik moderasyon komutları.
@@ -85,7 +85,7 @@ ayarlandığında bu komutlar global kayıttan ve yardım menüsünden kaldırı
 - **Özel Ses:** `f!ozel-ses` ile kullanıcıya özel ses odası açılır; paneldeki butonlarla kilit, üye limiti, isim ve sahiplik anlık yönetilir.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
 - **Müzik:** `/oynat`, `/atla`, `/duraklat`, `/devam`, `/durdur`, `/kuyruk`, `/np`, `/ayril`.
-- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
+- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
   `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!selamlama`, `f!ticket`, `f!sunucu-kur`, `f!uyari-sil`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!furmin-merkez`, `f!bakim` vb.
   `f!istek` ile kullanıcılar bot geliştiricisine öneri/istek/sorun iletebilir.
 
