@@ -172,6 +172,14 @@ export class GuildMusicQueue {
       return;
     }
 
+    if (!nextTrack.url) {
+      console.error('[Furmin][MusicQueue] Kuyrukta URL bilgisi olmayan bir parça tespit edildi.');
+      await this.notifyChannel('⚠️ Sıradaki şarkı oynatılamadı çünkü geçerli bir bağlantı bulunamadı.');
+      this.nowPlaying = null;
+      await this.playNext();
+      return;
+    }
+
     this.nowPlaying = nextTrack;
 
     try {
