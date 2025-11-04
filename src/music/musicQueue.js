@@ -148,6 +148,10 @@ export class GuildMusicQueue {
   }
 
   async enqueue(track, { voiceChannel, textChannel }) {
+    if (typeof track?.url === 'string') {
+      track.url = track.url.trim();
+    }
+
     if (!isValidUrl(track?.url)) {
       const error = new Error('TRACK_URL_EMPTY');
       error.code = 'TRACK_URL_EMPTY';
@@ -183,6 +187,10 @@ export class GuildMusicQueue {
       this.nowPlaying = null;
       this.startIdleTimer();
       return;
+    }
+
+    if (typeof nextTrack.url === 'string') {
+      nextTrack.url = nextTrack.url.trim();
     }
 
     if (!isValidUrl(nextTrack.url)) {

@@ -23,6 +23,14 @@ function isYoutubeUrl(url) {
   return /(youtube\.com|youtu\.be)\//i.test(url);
 }
 
+function normalizeUrl(url) {
+  try {
+    return new URL(url).toString();
+  } catch {
+    return null;
+  }
+}
+
 async function searchYouTube(query) {
   const results = await play.search(query, { limit: 1, source: YT_VIDEO_SOURCE });
   if (!Array.isArray(results) || !results.length) {
@@ -32,7 +40,7 @@ async function searchYouTube(query) {
   }
 
   const first = results[0];
-  const url = first?.url?.trim();
+  const url = normalizeUrl(first?.url);
   if (!url) {
     const error = new Error('YT_NOT_FOUND');
     error.code = 'YT_NOT_FOUND';
@@ -113,8 +121,15 @@ export async function resolveTrack(query) {
       throw error;
     }
 
+    const normalized = normalizeUrl(trimmed);
+    if (!normalized) {
+      const error = new Error('UNSUPPORTED_URL');
+      error.code = 'UNSUPPORTED_URL';
+      throw error;
+    }
+
     return {
-      url: trimmed,
+      url: normalized,
       title: null,
       source: 'youtube'
     };
