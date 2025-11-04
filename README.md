@@ -31,7 +31,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Pro komut kataloğu, uyarı raporu ve sistem özeti ile yöneticilere özel analiz paneli
 - ✅ Hazır yapılandırma yükleyicisi (config.json ya da .env) ve otomatik durum mesajı rotasyonu
 - ✅ `/gunluk-plan` ve `f!gunluk-plan` ile kullanıcıların günlük hedeflerine özel motivasyon kartları
-- ✅ Ticket sistemi: buton + menü paneliyle kategori seçerek özel ticket kanalı açma, log kanalına otomatik kayıt ve destek rolü tanımlama
+- ✅ Ticket sistemi: buton + menü paneli, log ve transkript kanalı ataması, açılış/kapanış logları ve otomatik metin transkripti
 - ✅ `f!sunucu-kur` ile önerilen kategori/kanal/rol yapısını tek komutla oluşturma; operasyon bot loglarına da kaydedilir
 
 ## Furmin Merkez Paneli
@@ -94,7 +94,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - `f!otocevap` komutu, sunucuya özel otomatik yanıtlar tanımlamanıza izin verir; tetikleyiciler içerik veya tam eşleşme modunda çalışır.
 - `f!pro-jail` komutu, Pro yetkililere jail rolü ataması, listeleme ve kaldırma akışını tek merkezde toplar.
 - `f!selamlama` komutu ile karşılama/veda kanalları ve mesajları yönetilir; giriş-çıkış logları için ayrı kanal tanımlanabilir.
-- `f!ticket` komutu, buton ve menülü ticket paneli, destek rolü ve log kanalını ayarlayarak kullanıcıların özel destek kanalı açmasını sağlar.
+- `f!ticket` komutu, buton ve menülü ticket paneli, destek rolü, log kanalı ve arşiv kanalını (transkript dosyaları) yöneterek kullanıcıların özel destek kanalı açmasını sağlar. `ticket log` ve `ticket arsiv` alt komutları sayesinde log ve transkript kanalları ayrı ayrı güncellenebilir.
 - `f!sunucu-kur` önerilen kategori, kanal ve rol şablonunu birkaç saniyede oluşturur; işlem bot loglarına da kaydedilir.
 
 ## Bakım Modu

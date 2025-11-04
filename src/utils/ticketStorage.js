@@ -50,6 +50,7 @@ function ensureGuild(guildId) {
       supportRoleId: null,
       categoryId: null,
       logChannelId: null,
+      transcriptChannelId: null,
       topics: [
         { id: 'destek', label: 'Genel Destek', description: 'Soru ve yardım talepleri.' },
         { id: 'sikayet', label: 'Şikayet', description: 'Şikayet ve bildirim talepleri.' },
@@ -57,7 +58,17 @@ function ensureGuild(guildId) {
       ]
     };
   }
-  return cache[guildId];
+  const data = cache[guildId];
+  if (!Object.prototype.hasOwnProperty.call(data, 'transcriptChannelId')) {
+    data.transcriptChannelId = null;
+  }
+  if (!Object.prototype.hasOwnProperty.call(data, 'topics')) {
+    data.topics = [
+      { id: 'destek', label: 'Genel Destek', description: 'Soru ve yardım talepleri.' },
+      { id: 'sikayet', label: 'Şikayet', description: 'Şikayet ve bildirim talepleri.' }
+    ];
+  }
+  return data;
 }
 
 export async function getTicketConfig(guildId) {
@@ -120,6 +131,14 @@ export async function describeTicketConfig(guildId, guild) {
       ? `#${config.logChannelId}`
       : 'Ayarlanmamış';
   lines.push(`• Log kanalı: ${logLabel}`);
+
+  const transcriptChannel = guild?.channels?.cache?.get(config.transcriptChannelId);
+  const transcriptLabel = transcriptChannel
+    ? transcriptChannel.toString()
+    : config.transcriptChannelId
+      ? `#${config.transcriptChannelId}`
+      : 'Ayarlanmamış';
+  lines.push(`• Arşiv / transkript kanalı: ${transcriptLabel}`);
 
   const categoryChannel = guild?.channels?.cache?.get(config.categoryId);
   const categoryLabel = categoryChannel

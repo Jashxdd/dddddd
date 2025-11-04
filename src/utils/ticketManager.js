@@ -1,5 +1,6 @@
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
   ChannelType,
@@ -177,17 +178,108 @@ export async function createTicketChannel(interaction, topicId) {
       const logEmbed = new EmbedBuilder()
         .setColor(0x1abc9c)
         .setTitle('Yeni Ticket Açıldı')
+        .setDescription(`${channel} kanalı oluşturuldu.`)
         .addFields(
           { name: 'Kullanıcı', value: `${interaction.user.tag} (${interaction.user.id})` },
-          { name: 'Kanal', value: channel.toString(), inline: true },
-          { name: 'Konu', value: topic.label, inline: true }
+          { name: 'Konu', value: topic.label, inline: true },
+          { name: 'Ticket Sahibi', value: `<@${interaction.user.id}>`, inline: true }
         )
         .setTimestamp();
-      await logChannel.send({ embeds: [logEmbed] }).catch(() => {});
+      await logChannel.send({ embeds: [logEmbed], allowedMentions: { parse: [] } }).catch(() => {});
     }
   }
 
   return { channel, topic };
+}
+
+function parseTicketOwner(topic) {
+  if (!topic) return null;
+  const match = topic.match(/TicketOwner:(\d+)/);
+  return match ? match[1] : null;
+}
+
+function formatDuration(ms) {
+  if (!Number.isFinite(ms) || ms <= 0) return '0 saniye';
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const parts = [];
+  if (days) parts.push(`${days} gün`);
+  if (hours) parts.push(`${hours} saat`);
+  if (minutes) parts.push(`${minutes} dakika`);
+  if (!parts.length && seconds) parts.push(`${seconds} saniye`);
+  return parts.length ? parts.slice(0, 3).join(' ') : '0 saniye';
+}
+
+async function collectTranscript(channel, limit = 400) {
+  const messages = [];
+  let before;
+  while (messages.length < limit) {
+    const remaining = Math.min(100, limit - messages.length);
+    const batch = await channel.messages
+      .fetch({ limit: remaining, before })
+      .catch(() => null);
+    if (!batch?.size) {
+      break;
+    }
+    const sorted = Array.from(batch.values()).sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+    messages.push(...sorted);
+    const oldest = sorted[0];
+    if (!oldest) {
+      break;
+    }
+    before = oldest.id;
+    if (batch.size < remaining) {
+      break;
+    }
+  }
+
+  messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+
+  const header = [
+    `Ticket Kanalı : ${channel.name}`,
+    `Sunucu        : ${channel.guild?.name ?? 'Bilinmiyor'}`,
+    `Oluşturulma   : ${channel.createdAt?.toISOString() ?? 'Bilinmiyor'}`,
+    `Mesaj Sayısı  : ${messages.length}`,
+    ''.padEnd(30, '-')
+  ];
+
+  const lines = [...header];
+  for (const message of messages) {
+    const timestamp = message.createdAt?.toISOString() ?? 'Bilinmiyor';
+    const authorTag = message.author ? `${message.author.tag} (${message.author.id})` : `Bilinmeyen (${message.authorId ?? '??'})`;
+    const baseLine = `[${timestamp}] ${authorTag}`;
+    const content = message.cleanContent?.trim();
+    if (content) {
+      lines.push(`${baseLine}: ${content.replace(/\r?\n/g, '\n  ')}`);
+    } else {
+      lines.push(baseLine);
+    }
+
+    if (message.attachments?.size) {
+      for (const attachment of message.attachments.values()) {
+        lines.push(`  [Ek] ${attachment.name ?? 'dosya'} → ${attachment.url}`);
+      }
+    }
+
+    if (message.embeds?.length) {
+      for (const embed of message.embeds) {
+        const title = embed.title ? `Başlık: ${embed.title}` : 'Başlık yok';
+        lines.push(`  [Embed] ${title}`);
+      }
+    }
+  }
+
+  const payload = lines.join('\n');
+  const buffer = Buffer.from(payload, 'utf8');
+  const attachment = new AttachmentBuilder(buffer, { name: `ticket-${channel.id}.txt` });
+
+  return {
+    attachment,
+    messageCount: messages.length
+  };
 }
 
 export async function closeTicketChannel(interaction, channel) {
@@ -212,19 +304,65 @@ export async function closeTicketChannel(interaction, channel) {
 
   await channel.send('Ticket kapatılıyor. Kanal 5 saniye içinde silinecek.').catch(() => {});
 
+  const ownerId = parseTicketOwner(channel.topic);
+  const lifetime = Date.now() - (channel.createdTimestamp ?? Date.now());
+
+  let transcriptData = null;
+  if (config.logChannelId || config.transcriptChannelId) {
+    transcriptData = await collectTranscript(channel).catch(() => null);
+  }
+
+  const summaryFields = [
+    { name: 'Kapatma Yetkilisi', value: interaction.user.toString(), inline: true },
+    ownerId ? { name: 'Ticket Sahibi', value: `<@${ownerId}>`, inline: true } : null,
+    transcriptData ? { name: 'Mesaj Sayısı', value: String(transcriptData.messageCount), inline: true } : null,
+    { name: 'Toplam Süre', value: formatDuration(lifetime), inline: true }
+  ].filter(Boolean);
+
+  const summaryEmbed = new EmbedBuilder()
+    .setColor(0xe74c3c)
+    .setTitle('Ticket Kapatıldı')
+    .setDescription(`${channel.name} ticket kanalı kapatıldı.`)
+    .addFields(summaryFields)
+    .setTimestamp();
+
+  const logTargets = [];
   if (config.logChannelId) {
     const logChannel = interaction.guild.channels.cache.get(config.logChannelId) ??
       (await interaction.guild.channels.fetch(config.logChannelId).catch(() => null));
-    if (logChannel && logChannel.isTextBased()) {
-      const logEmbed = new EmbedBuilder()
-        .setColor(0xe74c3c)
-        .setTitle('Ticket Kapatıldı')
-        .addFields(
-          { name: 'Kapatılan Kanal', value: channel.name },
-          { name: 'Kapatma Yetkilisi', value: interaction.user.toString() }
-        )
-        .setTimestamp();
-      await logChannel.send({ embeds: [logEmbed] }).catch(() => {});
+    if (logChannel?.isTextBased()) {
+      logTargets.push(logChannel);
+    }
+  }
+
+  const transcriptTargets = [];
+  if (config.transcriptChannelId) {
+    const transcriptChannel = interaction.guild.channels.cache.get(config.transcriptChannelId) ??
+      (await interaction.guild.channels.fetch(config.transcriptChannelId).catch(() => null));
+    if (transcriptChannel?.isTextBased()) {
+      transcriptTargets.push(transcriptChannel);
+    }
+  }
+
+  for (const target of logTargets) {
+    await target
+      .send({
+        embeds: [summaryEmbed],
+        files: transcriptData && !config.transcriptChannelId ? [transcriptData.attachment] : undefined,
+        allowedMentions: { parse: [] }
+      })
+      .catch(() => {});
+  }
+
+  if (transcriptData && transcriptTargets.length) {
+    for (const target of transcriptTargets) {
+      await target
+        .send({
+          content: `📁 ${channel.name} ticket transkripti hazır.`,
+          files: [transcriptData.attachment],
+          allowedMentions: { parse: [] }
+        })
+        .catch(() => {});
     }
   }
 

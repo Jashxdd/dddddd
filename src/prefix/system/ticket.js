@@ -13,7 +13,7 @@ import {
 } from '../../utils/ticketStorage.js';
 
 const usage =
-  'Kullanım: `ticket panel #panelkanalı #ticketkategori #logkanalı Konu1;Konu2`, `ticket destek @Rol`, `ticket konular Destek;Şikayet`, `ticket bilgi`.';
+  'Kullanım: `ticket panel #panelkanalı #ticketkategori #logkanalı [#arsivkanalı] Konu1;Konu2`, `ticket log #kanal`, `ticket arsiv #kanal`, `ticket destek @Rol`, `ticket konular Destek;Şikayet`, `ticket bilgi`.';
 
 function resolveChannelArg(message, raw) {
   if (!raw) return null;
@@ -35,7 +35,7 @@ export default {
   catalogKey: 'ticket',
   category: 'Sistem',
   menuGroup: 'Sistemler',
-  description: 'Ticket panelini, log kanalını ve destek rolünü yönetir.',
+  description: 'Ticket panelini, log / transkript kanallarını ve destek rolünü yönetir.',
   async execute(message, args) {
     if (!message.member?.permissions?.has(PermissionFlagsBits.ManageGuild)) {
       await message.reply({
@@ -66,6 +66,11 @@ export default {
       const panelChannel = resolveChannelArg(message, args.shift());
       const categoryChannel = resolveChannelArg(message, args.shift());
       const logChannel = resolveChannelArg(message, args.shift());
+      const transcriptChannelCandidate = resolveChannelArg(message, args[0] ?? null);
+      const useTranscript = transcriptChannelCandidate && transcriptChannelCandidate.isTextBased();
+      if (useTranscript) {
+        args.shift();
+      }
       const topicsRaw = args.join(' ');
       if (!panelChannel || !panelChannel.isTextBased()) {
         await message.reply({ content: '⚠️ Paneli göndereceğim metin kanalını belirtmelisin.', allowedMentions: { repliedUser: false } });
@@ -87,11 +92,19 @@ export default {
         await setTicketTopics(message.guild.id, topics.map((label) => ({ label }))); // id otomatik üretilecek
       }
 
-      await updateTicketConfig(message.guild.id, {
+      const existingConfig = await getTicketConfig(message.guild.id);
+      const updates = {
         panelChannelId: panelChannel.id,
         categoryId: categoryChannel.id,
         logChannelId: logChannel.id
-      });
+      };
+      if (useTranscript) {
+        updates.transcriptChannelId = transcriptChannelCandidate.id;
+      } else if (!existingConfig?.transcriptChannelId) {
+        updates.transcriptChannelId = null;
+      }
+
+      await updateTicketConfig(message.guild.id, updates);
 
       const config = await getTicketConfig(message.guild.id);
       const embed = buildTicketPanelEmbed(config, message.guild);
@@ -99,8 +112,47 @@ export default {
       const sent = await panelChannel.send({ embeds: [embed], components });
       await recordTicketPanel(message.guild.id, { channelId: panelChannel.id, messageId: sent.id });
 
+      const existingTranscriptChannel = existingConfig?.transcriptChannelId
+        ? message.guild.channels.cache.get(existingConfig.transcriptChannelId)
+        : null;
+      const transcriptSuffix = useTranscript
+        ? ` Log: ${logChannel}, Arşiv: ${transcriptChannelCandidate}.`
+        : existingConfig?.transcriptChannelId
+          ? ` Log: ${logChannel}, Arşiv: ${existingTranscriptChannel ?? `<#${existingConfig.transcriptChannelId}>`}.`
+          : ` Log: ${logChannel}.`;
+      const confirmation = `✅ Ticket paneli ${panelChannel} kanalında yayınlandı.${transcriptSuffix}`;
       await message.reply({
-        content: `✅ Ticket paneli ${panelChannel} kanalında yayınlandı.`,
+        content: confirmation,
+        allowedMentions: { repliedUser: false }
+      });
+      return;
+    }
+
+    if (['log', 'logkanal', 'log-kanal'].includes(action)) {
+      const channel = resolveChannelArg(message, args.shift());
+      if (!channel || !channel.isTextBased()) {
+        await message.reply({ content: '⚠️ Ticket loglarının gönderileceği metin kanalını etiketlemelisin.', allowedMentions: { repliedUser: false } });
+        return;
+      }
+      await updateTicketConfig(message.guild.id, { logChannelId: channel.id });
+      await message.reply({
+        content: `✅ Ticket log kanalı ${channel} olarak ayarlandı.`,
+        allowedMentions: { repliedUser: false }
+      });
+      return;
+    }
+
+    if (['arsiv', 'arşiv', 'transkript', 'transcript'].includes(action)) {
+      const channel = resolveChannelArg(message, args.shift());
+      if (channel && !channel.isTextBased()) {
+        await message.reply({ content: '⚠️ Arşiv için geçerli bir metin kanalı seçmelisin.', allowedMentions: { repliedUser: false } });
+        return;
+      }
+      await updateTicketConfig(message.guild.id, { transcriptChannelId: channel ? channel.id : null });
+      await message.reply({
+        content: channel
+          ? `✅ Ticket transkriptleri ${channel} kanalına gönderilecek.`
+          : 'ℹ️ Ticket transkript kanalı temizlendi. Log kanalı kullanılacak.',
         allowedMentions: { repliedUser: false }
       });
       return;
