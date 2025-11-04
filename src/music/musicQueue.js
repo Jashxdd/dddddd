@@ -14,6 +14,19 @@ import play from 'play-dl';
 const CONNECTION_TIMEOUT = 15_000;
 const LEAVE_AFTER_IDLE = 30_000;
 
+function isValidUrl(value) {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(value.trim());
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export class GuildMusicQueue {
   constructor({ client, guildId, manager }) {
     this.client = client;
@@ -135,7 +148,7 @@ export class GuildMusicQueue {
   }
 
   async enqueue(track, { voiceChannel, textChannel }) {
-    if (!track?.url) {
+    if (!isValidUrl(track?.url)) {
       const error = new Error('TRACK_URL_EMPTY');
       error.code = 'TRACK_URL_EMPTY';
       throw error;
@@ -172,8 +185,8 @@ export class GuildMusicQueue {
       return;
     }
 
-    if (!nextTrack.url) {
-      console.error('[Furmin][MusicQueue] Kuyrukta URL bilgisi olmayan bir parça tespit edildi.');
+    if (!isValidUrl(nextTrack.url)) {
+      console.error('[Furmin][MusicQueue] Kuyrukta URL bilgisi olmayan veya geçersiz bir parça tespit edildi.');
       await this.notifyChannel('⚠️ Sıradaki şarkı oynatılamadı çünkü geçerli bir bağlantı bulunamadı.');
       this.nowPlaying = null;
       await this.playNext();

@@ -4,7 +4,8 @@ const YT_VIDEO_SOURCE = { youtube: 'video' };
 
 function isUrl(value) {
   try {
-    return Boolean(new URL(value));
+    const parsed = new URL(value);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
   } catch {
     return false;
   }
@@ -119,5 +120,11 @@ export async function resolveTrack(query) {
     };
   }
 
-  return searchYouTube(trimmed);
+  const resolved = await searchYouTube(trimmed);
+  if (!isUrl(resolved.url)) {
+    const error = new Error('YT_NOT_FOUND');
+    error.code = 'YT_NOT_FOUND';
+    throw error;
+  }
+  return resolved;
 }
