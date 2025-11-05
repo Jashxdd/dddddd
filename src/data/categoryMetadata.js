@@ -27,12 +27,12 @@ export const categoryMetadata = {
     order: 4,
     group: 'Eğlence'
   },
-  Müzik: {
-    emoji: '🎵',
-    color: 0x3498db,
-    description: 'Furmin müzik kuyruğu ve oynatma kontrolleri.',
+  Ekonomi: {
+    emoji: '💰',
+    color: 0xf39c12,
+    description: 'Furmin ekonomisi: günlük ödüller, maceralar ve market.',
     order: 5,
-    group: 'Müzik Sistemleri'
+    group: 'Ekonomi Sistemleri'
   },
   'Özel Ses': {
     emoji: '🎧',

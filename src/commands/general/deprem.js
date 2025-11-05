@@ -1,27 +1,18 @@
 import { EmbedBuilder, SlashCommandBuilder, time } from 'discord.js';
 
+const START_OF_2025 = '2025-01-01T00:00:00';
+
 const EARTHQUAKE_SOURCES = [
   {
-    name: 'api.orhanaydogdu.com.tr',
+    name: 'deprem.afad.gov.tr (2025)',
     async fetch(limit) {
-      const endpoint = `https://api.orhanaydogdu.com.tr/deprem/live.php?limit=${limit}`;
-      return requestJson(endpoint);
-    },
-    map(data) {
-      if (!Array.isArray(data?.result)) return [];
-      return data.result.map((item) => ({
-        location: item.title ?? item.lokasyon ?? 'Lokasyon bilinmiyor',
-        magnitude: item.mag ?? item.ml ?? item.md ?? null,
-        depth: item.depth ?? null,
-        timestamp: normaliseTimestamp(item.timestamp ?? item.date_gmt ?? item.date),
-        rawDate: item.date ?? null
-      }));
-    }
-  },
-  {
-    name: 'deprem.afad.gov.tr',
-    async fetch(limit) {
-      const endpoint = `https://deprem.afad.gov.tr/apiv2/event/filter?limit=${limit}&orderby=desc`;
+      const safeLimit = Math.max(1, Math.min(Number(limit) || 5, 20));
+      const params = new URLSearchParams({
+        start: START_OF_2025,
+        orderby: 'desc',
+        limit: String(safeLimit)
+      });
+      const endpoint = `https://deprem.afad.gov.tr/apiv2/event/filter?${params.toString()}`;
       return requestJson(endpoint);
     },
     map(data) {
@@ -32,6 +23,29 @@ const EARTHQUAKE_SOURCES = [
         depth: item.depth ?? item.depth_km ?? item.depthKM ?? null,
         timestamp: normaliseTimestamp(item.timestamp ?? item.eventDate ?? item.date),
         rawDate: item.eventDate ?? item.date ?? null
+      }));
+    }
+  },
+  {
+    name: 'api.orhanaydogdu.com.tr (2025)',
+    async fetch(limit) {
+      const safeLimit = Math.max(1, Math.min(Number(limit) || 5, 20));
+      const params = new URLSearchParams({
+        start: START_OF_2025,
+        orderby: 'desc',
+        limit: String(safeLimit)
+      });
+      const endpoint = `https://api.orhanaydogdu.com.tr/deprem/v1/event?${params.toString()}`;
+      return requestJson(endpoint);
+    },
+    map(data) {
+      const list = Array.isArray(data?.result) ? data.result : Array.isArray(data?.data) ? data.data : [];
+      return list.map((item) => ({
+        location: item.lokasyon ?? item.location ?? item.title ?? 'Lokasyon bilinmiyor',
+        magnitude: item.mag ?? item.ml ?? item.md ?? item.magnitude ?? null,
+        depth: item.depth ?? item.derinlik ?? item.depth_km ?? null,
+        timestamp: normaliseTimestamp(item.timestamp ?? item.date ?? item.created_at),
+        rawDate: item.date ?? item.created_at ?? null
       }));
     }
   }
@@ -133,7 +147,7 @@ async function fetchEarthquakes(limit = 5) {
 function buildEarthquakeEmbed(records, sourceName, options = {}) {
   const embed = new EmbedBuilder()
     .setColor(0xe74c3c)
-    .setTitle('🌍 Türkiye Son Depremler')
+    .setTitle('🌍 Türkiye Son Depremler (2025 veri kaynakları)')
     .setTimestamp();
 
   const footerParts = [`Veri kaynağı: ${sourceName}`];

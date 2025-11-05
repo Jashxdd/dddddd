@@ -10,9 +10,9 @@ export const hubHighlights = [
     description: 'Bakım modu, prefix yönetimi, otorol ve rol panelleri bir arada.'
   },
   {
-    emoji: '🎵',
-    title: 'Müzik & Eğlence',
-    description: 'YouTube tabanlı müzik kuyruğu, otomatik temizlik ve mini oyunlarla topluluğu canlı tut.'
+    emoji: '💰',
+    title: 'Ekonomi & Eğlence',
+    description: 'Günlük ödüller, market ve mini oyunlarla topluluğunu canlı tut.'
   },
   {
     emoji: '💎',

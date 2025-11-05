@@ -6,7 +6,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadCommands } from './utils/loadCommands.js';
 import { loadPrefixCommands } from './utils/loadPrefixCommands.js';
 import { assertConfig, config, describeConfigSource } from './config.js';
-import { MusicManager } from './music/musicManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,7 +34,6 @@ const COMBINED_GROUP_LABEL = 'Slash & Prefix';
 const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları', COMBINED_GROUP_LABEL]);
 client.ownerId = config.ownerId;
 client.afkStatuses = new Map();
-client.music = new MusicManager(client);
 
 function normaliseCatalogKey(entry) {
   const rawKey = entry.catalogKey ?? entry.name ?? entry.displayName ?? `${entry.type ?? 'cmd'}:${entry.name}`;

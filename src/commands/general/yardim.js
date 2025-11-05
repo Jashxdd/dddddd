@@ -294,7 +294,7 @@ const quickJumpConfig = [
   { id: 'moderasyon', label: 'Moderasyon', emoji: '🛡️', categories: ['Moderasyon'] },
   { id: 'sistem', label: 'Sistem', emoji: '⚙️', categories: ['Sistem'] },
   { id: 'eglence', label: 'Eğlence', emoji: '🎉', categories: ['Eğlence'] },
-  { id: 'muzik', label: 'Müzik', emoji: '🎵', categories: ['Müzik'] },
+  { id: 'ekonomi', label: 'Ekonomi', emoji: '💰', categories: ['Ekonomi'] },
   { id: 'pro', label: 'Pro', emoji: '💎', categories: ['Pro Komutları', 'Extra'] },
   { id: 'sahip', label: 'Sahip', emoji: '⭐', categories: ['Sahip Komutları'] }
 ];

@@ -17,11 +17,10 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Karşılama/veda mesajları ve giriş-çıkış logları: tek mesajla tüm sunucularda geçerli olacak global onay, özelleştirilebilir kanal/mesaj yönetimi
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
 - ✅ `f!furmin-merkez` komutu ve slash yardım menüsü, Furmin Merkez panelleriyle destek bağlantılarını ve istatistikleri tek embed'de sunar
-- ✅ Müzik komutları yardım menüsünde ayrı kategori olarak listelenir; çift kayıtlar otomatik olarak filtrelenir
+- ✅ Furmin Ekonomi sistemi: günlük ödüller, çalışma ve macera komutları, market/hediyeleşme akışı ve liderlik tablosu hem slash hem önek tarafında desteklenir
 - ✅ Furmin Pro yönetim merkezi: tüm premium analizler `/pro` komutunun alt komutlarında toplanır, önek tarafı aynı raporları ayrı komutlarla sunar
 - ✅ Herkese açık butonlu rol paneli (`/rol-panel` ve `f!rolpanel`) ve Pro üyelik yönetimini tek komutta toplayan `/pro uyelik`
-- ✅ Furmin Müzik sistemi: Parça tamamlandığında birkaç saniye içinde ses kanalından ayrılır, başlatılamayan oturumları nazikçe temizler
-- ✅ Furmin Müzik sistemi: Nraphy tabanlı yeni kuyruğu ile YouTube aramaları/bağlantıları ve Spotify şarkı linklerini otomatik YouTube sonucuna dönüştürme, doğrulanmış URL akışı ve `/oynat`, `/atla`, `/duraklat`, `/devam`, `/durdur`, `/kuyruk`, `/np`, `/ayril` komutlarıyla tam sıra kontrolü
+- ✅ Furmin ekonomi sistemiyle kullanıcılar bakiyelerini görebilir, günlük ödüller toplayabilir, çalışıp maceraya çıkarak FurCoin kazanabilir, marketten alışveriş yapabilir ve liderlik tablosunda yarışabilir
 - ✅ Reklam engeli için isteğe bağlı "3 ihlal -> otomatik ban" seçeneği; ihlal sayacı hem mod-log hem bot loglarında raporlanır
 - ✅ Bot sahibine özel log kanalı: yeni sunucu katılımları ve kullanıcı geri bildirimleri otomatik olarak embed şeklinde iletilir
 - ✅ Özel ses odaları: `f!ozel-ses` komutu kişisel kanal açar, kilit/limit/isim ayarlarını butonlarla yönetir, sahiplik devrini destekler ve oda boşalınca otomatik temizler
@@ -67,13 +66,13 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 > Furmin yapılandırma yükleyicisi hem proje kökünde hem de `config/` klasöründe `config.json` arar ve yer tutucu değerleri
 > otomatik olarak yok sayar. Dosya bulunamazsa `.env` değişkenleri kullanılmaya devam edilir.
 
-Komutları devre dışı bırakmak için adları küçük harflerle yazmanız yeterlidir. Örneğin `disabledSlashCommands: ["muzik-oynat", "ticket"]`
-ayarlandığında bu komutlar global kayıttan ve yardım menüsünden kaldırılır. Aynı liste `.env` tarafında `DISABLED_SLASH_COMMANDS=muzik-oynat,ticket`
+Komutları devre dışı bırakmak için adları küçük harflerle yazmanız yeterlidir. Örneğin `disabledSlashCommands: ["ekonomi", "ticket"]`
+ayarlandığında bu komutlar global kayıttan ve yardım menüsünden kaldırılır. Aynı liste `.env` tarafında `DISABLED_SLASH_COMMANDS=ekonomi,ticket`
 şeklinde de tanımlanabilir.
 
 ## Komut Kategorileri
 > Not: Discord'un slash komut sınırı 100 olduğu için ek yardımcı araçlar prefix üzerinden sunulur (ör. `f!odak-ipuclari`).
-- **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem` (çoklu kaynak + önbellek destekli), `/doviz`,
+- **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem` (2025 kaynaklı çoklu veri + önbellek), `/doviz`,
   `f!spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/gunluk-plan`, `f!odak-ipuclari`,
   `/saglik-molasi`, `f!paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
@@ -84,15 +83,15 @@ ayarlandığında bu komutlar global kayıttan ve yardım menüsünden kaldırı
 `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/bakim`, `/sistem-ozeti` ve diğer yönetim araçları.
 - **Özel Ses:** `f!ozel-ses` ile kullanıcıya özel ses odası açılır; paneldeki butonlarla kilit, üye limiti, isim ve sahiplik anlık yönetilir.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
-- **Müzik:** `/oynat`, `/atla`, `/duraklat`, `/devam`, `/durdur`, `/kuyruk`, `/np`, `/ayril`.
-- **Önek komutları:** `f!yardim`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
+- **Ekonomi:** `/ekonomi bakiye|gunluk|calis|macera|hediye|market|satinal|envanter|liderlik`, `f!ekonomi` ile aynı işlemler (günlük ödül, çalışma, macera, market, hediyeleşme ve liderlik).
+- **Önek komutları:** `f!yardim`, `f!ekonomi`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
   `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!selamlama`, `f!ticket`, `f!sunucu-kur`, `f!uyari-sil`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!furmin-merkez`, `f!bakim` vb.
   `f!istek` ile kullanıcılar bot geliştiricisine öneri/istek/sorun iletebilir.
 
 ### Yeni Sistemler ve Güncellemeler
 - Slash tarafındaki tüm Pro araçları artık tek `/pro` komutunda toplanır; önek tarafında aynı raporlar bireysel komutlar olarak çalışmaya devam eder.
 - `/rol-panel` ve `f!rolpanel`, seçilen rolleri butonlarla dağıtan modern bir rol seçimi paneli oluşturur.
-- Furmin Müzik modülü YouTube’dan akış alır, yalnızca Spotify şarkı bağlantılarını aramaya dönüştürür (playlist/album reddedilir) ve slash komutlarıyla oynatma/atlama/duraklatma işlemlerini destekler.
+- Furmin ekonomi modülü günlük ödül serisi, çalışma ve macera komutları, market alışverişi, hediyeleşme ve liderlik tablosunu tek merkezde toplar.
 - Reklam engeli isteğe bağlı olarak üçüncü ihlalde otomatik ban uygular; uyarı sayacı sıfırlanır ve süreç bot loglarına ayrıntılı şekilde işlenir.
 - Her komut, slash veya önek üzerinden çalıştırılmadan önce `/kurallari-kabul` ile kuralları onaylamayı zorunlu kılar; yardım menüsü 💎 simgesiyle Pro/sahip komutlarını ayırt eder.
 - Kullanıcılar kuralları bir kez onayladığında kayıt global olarak saklanır; başka bir sunucuda Furmin komutlarını kullanırken yeniden onay istenmez. Sunucu yöneticileri gerekli durumlarda `kurallar-yonet` ile belirli üyeleri tekrar onaya davet edebilir.

@@ -21,7 +21,7 @@ async function sendOwnerGreeting(guild) {
         value:
           '• Kuralları düzenlemek için `f!kurallar`\n' +
           '• Bakım ve raporlar için `f!furmin-merkez`\n' +
-          '• Müzik ve eğlence komutlarını keşfetmek için `f!yardim` menüsünü kullanın.'
+          '• Ekonomi ve eğlence komutlarını keşfetmek için `f!yardim` menüsünü kullanın.'
       })
       .setFooter({ text: 'Sorularınız olursa destek ekibimize ulaşabilirsiniz.' })
       .setTimestamp();

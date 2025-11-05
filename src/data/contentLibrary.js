@@ -175,7 +175,7 @@ export const slowmodeSuggestions = [
   '🎟️ Çekiliş kanalı: sonuç açıklanana kadar 15 saniye yavaş mod.',
   '🧩 Bulmaca kanalı: 8 saniye ile mesaj kalabalığını azalt.',
   '🎓 Eğitim kanalı: soru-cevap turunda 7 saniye.',
-  '🎧 Müzik isteği: sıralı talepler için 4 saniye.',
+  '💰 Ekonomi sohbeti: ödül duyurularında 4 saniye yavaş mod.',
   '📊 Anket kanalı: oy açıklamalarında 6 saniye.',
   '🌙 Gece modu kanalı: geceleri 12 saniye ile spam önle.'
 ];
