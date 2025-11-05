@@ -25,6 +25,9 @@ import {
   resetAdvertisementStrikes
 } from '../utils/advertisementStrikeStorage.js';
 import { sendBotLog } from '../utils/botLog.js';
+import { getGuardConfig } from '../utils/guardConfigStorage.js';
+import { sendGuardLog } from '../utils/guardLog.js';
+import { enforceGuardPenalty } from '../utils/guardActions.js';
 
 function createMaintenanceEmbed(client, note) {
   const embed = new EmbedBuilder()
@@ -232,6 +235,57 @@ export default {
       }
 
       return;
+    }
+
+    const guardConfig = await getGuardConfig(message.guild.id);
+    if (
+      guardConfig.protections.massMention &&
+      !message.member?.permissions?.has(PermissionsBitField.Flags.MentionEveryone)
+    ) {
+      const mentionCount = message.mentions.users.size + message.mentions.roles.size;
+      const everyoneMentioned = message.mentions.everyone;
+      const threshold = 5;
+
+      if (everyoneMentioned || mentionCount >= threshold) {
+        if (message.deletable) {
+          await message.delete().catch(() => {});
+        }
+
+        const reason = everyoneMentioned
+          ? '@everyone/@here etiketi kullanıldı.'
+          : `${mentionCount} kullanıcı veya rol etiketlendi.`;
+
+        let penaltyResult = { applied: false, message: 'İşlem uygulanmadı.' };
+        if (guardConfig.penalty !== 'none') {
+          penaltyResult = await enforceGuardPenalty(
+            message.guild,
+            message.author.id,
+            guardConfig.penalty,
+            `Guard: Toplu etiketleme tespit edildi. (${reason})`
+          );
+        }
+
+        await sendGuardLog(message.client, message.guild.id, {
+          title: '🚨 Toplu Etiket Engeli',
+          description: `${formatUserMention(message.author)} toplu etiketleme girişimi yaptı.`,
+          fields: [
+            { name: 'Kanal', value: message.channel.toString(), inline: true },
+            { name: 'Detay', value: reason, inline: true },
+            { name: 'Yaptırım', value: penaltyResult.message, inline: false }
+          ],
+          color: guardConfig.penalty === 'none' ? 0xf1c40f : 0xe74c3c
+        });
+
+        if (mePermissions) {
+          await message.channel
+            .send({
+              content: `⛔ ${message.author}, toplu etiketleme bu sunucuda sınırlandırılmıştır. Lütfen daha dikkatli ol.`
+            })
+            .catch(() => {});
+        }
+
+        return;
+      }
     }
 
     if (!maintenance.enabled) {

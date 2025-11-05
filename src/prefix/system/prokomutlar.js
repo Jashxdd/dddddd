@@ -22,7 +22,7 @@ export default {
     const embed = new EmbedBuilder()
       .setColor(0x9b59b6)
       .setTitle('Furmin Pro Komutları')
-      .setDescription('Slash menüsünde `/premium-komutlar` yazarak etkileşimli listeyi açabilirsin.')
+      .setDescription('Slash menüsünde `/premium` komutunu kullanarak Pro komut listesini görebilirsin.')
       .setFooter({ text: 'Pro üyelik, bot sahibi tarafından verilir.' })
       .setTimestamp();
 

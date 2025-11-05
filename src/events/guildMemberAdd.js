@@ -1,5 +1,6 @@
 import { EmbedBuilder, Events, PermissionFlagsBits, time } from 'discord.js';
 import { sendModerationLog } from '../utils/modLog.js';
+import { sendDetailedLog } from '../utils/detailedLog.js';
 import { getAutoRoles } from '../utils/autoRoleStorage.js';
 import { getGreetingSettings } from '../utils/greetingStorage.js';
 
@@ -72,6 +73,19 @@ export default {
           inline: true
         },
         { name: 'Otomatik Roller', value: autoroleSummary }
+      ]
+    });
+
+    await sendDetailedLog(member.client, member.guild.id, 'member', {
+      title: '👋 Yeni Üye',
+      description: `${member} topluluğa katıldı.`,
+      fields: [
+        { name: 'Üye', value: `${member.user.tag} (${member.id})`, inline: true },
+        {
+          name: 'Hesap Yaşı',
+          value: member.user?.createdAt ? time(Math.floor(member.user.createdAt.getTime() / 1000), 'R') : 'Bilinmiyor',
+          inline: true
+        }
       ]
     });
 

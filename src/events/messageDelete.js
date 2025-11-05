@@ -1,5 +1,6 @@
 import { Events, time } from 'discord.js';
 import { formatUserMention, sendModerationLog } from '../utils/modLog.js';
+import { sendDetailedLog } from '../utils/detailedLog.js';
 
 function formatContent(content) {
   if (!content) return '*Metin bulunamadı*';
@@ -52,6 +53,15 @@ export default {
       targetUser: message.author,
       color: 0xe74c3c,
       extraFields
+    });
+
+    await sendDetailedLog(message.client, message.guild.id, 'message', {
+      title: '🗑️ Mesaj Silindi',
+      description: `${formatUserMention(message.author)} kullanıcısının mesajı silindi.`,
+      fields: [
+        { name: 'Kanal', value: message.channel.toString(), inline: true },
+        { name: 'Metin', value: formatContent(message.content) }
+      ]
     });
   }
 };

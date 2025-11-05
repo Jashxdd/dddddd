@@ -1,5 +1,6 @@
 import { ActivityType, Events, Routes } from 'discord.js';
 import { config } from '../config.js';
+import { startGiveawayScheduler } from '../utils/giveawayManager.js';
 
 const activityTypeMap = {
   playing: ActivityType.Playing,
@@ -183,5 +184,6 @@ export default {
 
     await syncApplicationCommands(client);
     startPresenceRotation(client);
+    startGiveawayScheduler(client);
   }
 };

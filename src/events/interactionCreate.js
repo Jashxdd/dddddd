@@ -18,6 +18,115 @@ import {
 } from '../utils/privateVoiceStorage.js';
 import { buildPrivateVoiceButtons, buildPrivateVoiceEmbed } from '../utils/privateVoicePanel.js';
 import { createTicketChannel, closeTicketChannel } from '../utils/ticketManager.js';
+import { setDetailedLogChannel, clearDetailedLogChannel } from '../utils/detailedLogStorage.js';
+import { setGuardLogChannel, toggleGuardProtection, setGuardPenalty } from '../utils/guardConfigStorage.js';
+import { buildLogGuardPanel } from '../commands/system/modlog.js';
+import { handleGiveawayJoin } from '../utils/giveawayManager.js';
+
+async function handleLogPanelComponent(interaction) {
+  const [key, userId, extra] = interaction.customId.split(':');
+  const relevantKeys = new Set([
+    'log-select',
+    'log-channel',
+    'log-clear',
+    'guard-toggle',
+    'guard-channel',
+    'guard-refresh',
+    'guard-penalty'
+  ]);
+
+  if (!relevantKeys.has(key)) {
+    return false;
+  }
+
+  if (userId !== interaction.user.id) {
+    await interaction.reply({ content: 'Bu panel yalnızca komutu açan kişi tarafından kullanılabilir.', ephemeral: true });
+    return true;
+  }
+
+  if (key === 'log-select') {
+    const selected = interaction.values?.[0];
+    if (!selected) {
+      await interaction.reply({ content: 'Bir kategori seçmelisin.', ephemeral: true });
+      return true;
+    }
+    const response = await buildLogGuardPanel(interaction, { activeCategory: selected });
+    await interaction.update(response);
+    return true;
+  }
+
+  if (key === 'log-channel') {
+    const channelId = interaction.values?.[0];
+    if (!channelId) {
+      await interaction.reply({ content: 'Bir kanal seçmelisin.', ephemeral: true });
+      return true;
+    }
+
+    if (extra === 'guard') {
+      await setGuardLogChannel(interaction.guildId, channelId);
+    } else {
+      await setDetailedLogChannel(interaction.guildId, extra, channelId);
+    }
+
+    const response = await buildLogGuardPanel(interaction);
+    await interaction.update(response);
+    return true;
+  }
+
+  if (key === 'log-clear') {
+    if (extra === 'guard') {
+      await setGuardLogChannel(interaction.guildId, '');
+    } else {
+      await clearDetailedLogChannel(interaction.guildId, extra);
+    }
+    const response = await buildLogGuardPanel(interaction);
+    await interaction.update(response);
+    return true;
+  }
+
+  if (key === 'guard-toggle') {
+    await toggleGuardProtection(interaction.guildId, extra);
+    const response = await buildLogGuardPanel(interaction);
+    await interaction.update(response);
+    return true;
+  }
+
+  if (key === 'guard-channel') {
+    const response = await buildLogGuardPanel(interaction, { guardChannelSelect: true });
+    await interaction.update(response);
+    return true;
+  }
+
+  if (key === 'guard-refresh') {
+    const response = await buildLogGuardPanel(interaction);
+    await interaction.update(response);
+    return true;
+  }
+
+  if (key === 'guard-penalty') {
+    const penalty = interaction.values?.[0];
+    if (!penalty) {
+      await interaction.reply({ content: 'Bir yaptırım seçmelisin.', ephemeral: true });
+      return true;
+    }
+    await setGuardPenalty(interaction.guildId, penalty);
+    const response = await buildLogGuardPanel(interaction);
+    await interaction.update(response);
+    return true;
+  }
+
+  return false;
+}
+
+async function handleGiveawayButton(interaction) {
+  if (!interaction.customId.startsWith('giveaway-join:')) {
+    return false;
+  }
+
+  const [, giveawayId] = interaction.customId.split(':');
+  await handleGiveawayJoin(interaction, giveawayId);
+  return true;
+}
 
 async function handlePrivateVoiceButton(interaction) {
   const parts = interaction.customId.split(':');
@@ -361,6 +470,14 @@ export default {
 
     if (interaction.isButton()) {
       if (!interaction.inGuild()) return;
+      const logHandled = await handleLogPanelComponent(interaction);
+      if (logHandled) {
+        return;
+      }
+      const giveawayHandled = await handleGiveawayButton(interaction);
+      if (giveawayHandled) {
+        return;
+      }
       const ticketHandled = await handleTicketButton(interaction);
       if (ticketHandled) {
         return;
@@ -428,8 +545,20 @@ export default {
 
     if (interaction.isStringSelectMenu()) {
       if (!interaction.inGuild()) return;
+      const logHandled = await handleLogPanelComponent(interaction);
+      if (logHandled) {
+        return;
+      }
       const handled = await handleTicketSelect(interaction);
       if (handled) {
+        return;
+      }
+    }
+
+    if (interaction.isChannelSelectMenu?.()) {
+      if (!interaction.inGuild()) return;
+      const logHandled = await handleLogPanelComponent(interaction);
+      if (logHandled) {
         return;
       }
     }

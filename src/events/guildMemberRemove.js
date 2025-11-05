@@ -1,5 +1,6 @@
 import { EmbedBuilder, Events, time } from 'discord.js';
 import { sendModerationLog } from '../utils/modLog.js';
+import { sendDetailedLog } from '../utils/detailedLog.js';
 import { getGreetingSettings } from '../utils/greetingStorage.js';
 
 export default {
@@ -19,6 +20,15 @@ export default {
       extraFields: [
         { name: 'Üye ID', value: member.id, inline: true },
         { name: 'Sunucuya Katılım', value: joinedAt, inline: true }
+      ]
+    });
+
+    await sendDetailedLog(member.client, member.guild.id, 'member', {
+      title: '🚪 Üye Ayrıldı',
+      description: `${member.user ?? `<@${member.id}>`} sunucudan ayrıldı.`,
+      fields: [
+        { name: 'Üye', value: member.user ? `${member.user.tag} (${member.id})` : member.id, inline: true },
+        { name: 'Sunucuda Geçirdiği Süre', value: joinedAt, inline: true }
       ]
     });
 

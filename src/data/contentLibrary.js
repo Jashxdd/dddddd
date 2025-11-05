@@ -1,3 +1,43 @@
+export const updateNotes = [
+  {
+    version: 'v2025.03',
+    title: 'Detaylı Log ve Koruma Paketi',
+    releasedAt: '2025-03-02',
+    highlights: [
+      'Detaylı log paneli ile üye, mesaj ve ses kayıtlarını ayrı kanallarda topla.',
+      'Guard sistemi kanal ve rol değişikliklerini izleyip isteğe bağlı yaptırım uyguluyor.',
+      'Çekiliş sistemi ve ekonomi görevleri günlük raporlarla güçlendirildi.'
+    ],
+    links: []
+  },
+  {
+    version: 'v2025.02',
+    title: 'Ekonomi Görevleri ve Mod Raporları',
+    releasedAt: '2025-02-21',
+    highlights: [
+      'Günlük ekonomi görevleri ve yatırım simülasyonları eklendi.',
+      'Moderasyon uyarı raporları genişletildi ve yardım menüsü güncellendi.'
+    ],
+    links: []
+  },
+  {
+    version: 'v2025.01',
+    title: 'Furmin Merkez ve Premium Araçlar',
+    releasedAt: '2025-01-30',
+    highlights: [
+      'Furmin Merkez yardım sayfası modern kartlarla yenilendi.',
+      'Premium paneli ve pro raporları yeni istatistiklerle güncellendi.'
+    ],
+    links: []
+  }
+];
+
+export const upcomingHighlights = [
+  '📦 Yedekleme planı ve günlük veri dışa aktarma seçenekleri.',
+  '🧠 Yapay zekâ destekli destek cevabı önerileri.',
+  '🎯 Etkinlik katılım puanları ile ekonomi entegrasyonu.'
+];
+
 export const motivationalQuotes = [
   '"Başarı, hazırlanmış olanla fırsatın buluştuğu andır." — Seneca',
   '"Bugün yapabileceğin en büyük iyilik, yarına bırakmamaktır."',
@@ -105,7 +145,7 @@ export const channelIdeas = [
 export const reminderTemplates = [
   '🔔 `@rol` • `Saat 21:00` • Haftalık toplantı hatırlatması.',
   '📌 `Kanal: #duyurular` • Etkinlik başlığı ve tarih bilgisi ekle.',
-  '📝 Görev teslimini `/proje-akisi` komutu ile takip etmeyi unutma.',
+  '📝 Son gelişmeleri `/guncelleme` komutu ile ekip arkadaşlarınla paylaş.',
   '🗓️ Otomatik tekrar için takvim bağlantısı paylaş.',
   '👥 Katılımcı listesini form veya anketle topla.',
   '✅ Ön hazırlık için ihtiyaç listesini madde madde yaz.',
