@@ -25,6 +25,15 @@ function ensureProfileShape(profile = {}) {
       giftsReceived:
         Number.isFinite(profile?.stats?.giftsReceived) && profile.stats.giftsReceived > 0
           ? Math.floor(profile.stats.giftsReceived)
+          : 0,
+      quests: Number.isFinite(profile?.stats?.quests) && profile.stats.quests > 0 ? Math.floor(profile.stats.quests) : 0,
+      investmentWins:
+        Number.isFinite(profile?.stats?.investmentWins) && profile.stats.investmentWins > 0
+          ? Math.floor(profile.stats.investmentWins)
+          : 0,
+      investmentLosses:
+        Number.isFinite(profile?.stats?.investmentLosses) && profile.stats.investmentLosses > 0
+          ? Math.floor(profile.stats.investmentLosses)
           : 0
     },
     cooldowns: Object.fromEntries(
@@ -223,6 +232,51 @@ export async function getLeaderboard(limit = 10) {
     .slice(0, Math.max(1, Math.min(limit, 25)));
 
   return entries;
+}
+
+export async function getEconomySnapshot(limit = 10) {
+  await ensureLoaded();
+
+  const entries = Object.entries(cache.profiles).map(([userId, profile]) => {
+    const safeProfile = ensureProfileShape(profile);
+    return {
+      userId,
+      balance: safeProfile.balance,
+      streak: safeProfile.streak.count,
+      stats: {
+        work: safeProfile.stats.work,
+        adventure: safeProfile.stats.adventure,
+        giftsSent: safeProfile.stats.giftsSent,
+        giftsReceived: safeProfile.stats.giftsReceived,
+        quests: safeProfile.stats.quests,
+        investmentWins: safeProfile.stats.investmentWins,
+        investmentLosses: safeProfile.stats.investmentLosses
+      }
+    };
+  });
+
+  const totalBalance = entries.reduce((sum, entry) => sum + entry.balance, 0);
+  const participantCount = entries.length;
+  const questCount = entries.reduce((sum, entry) => sum + entry.stats.quests, 0);
+  const investmentWins = entries.reduce((sum, entry) => sum + entry.stats.investmentWins, 0);
+  const investmentLosses = entries.reduce((sum, entry) => sum + entry.stats.investmentLosses, 0);
+  const topStreak = entries.reduce((max, entry) => Math.max(max, entry.streak), 0);
+
+  const topBalances = [...entries]
+    .filter((entry) => entry.balance > 0)
+    .sort((a, b) => b.balance - a.balance)
+    .slice(0, Math.max(1, Math.min(limit, 25)));
+
+  return {
+    participantCount,
+    totalBalance,
+    averageBalance: participantCount ? Math.floor(totalBalance / participantCount) : 0,
+    topBalances,
+    topStreak,
+    questCount,
+    investmentWins,
+    investmentLosses
+  };
 }
 
 export async function waitForWrites() {

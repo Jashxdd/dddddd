@@ -72,7 +72,7 @@ ayarlandığında bu komutlar global kayıttan ve yardım menüsünden kaldırı
 
 ## Komut Kategorileri
 > Not: Discord'un slash komut sınırı 100 olduğu için ek yardımcı araçlar prefix üzerinden sunulur (ör. `f!odak-ipuclari`).
-- **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/deprem` (2025 kaynaklı çoklu veri + önbellek), `/doviz`,
+- **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/doviz`,
   `f!spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/gunluk-plan`, `f!odak-ipuclari`,
   `/saglik-molasi`, `f!paylasim-rehberi`, `/kaynak-arsivi`, `/proje-akisi`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
@@ -83,16 +83,19 @@ ayarlandığında bu komutlar global kayıttan ve yardım menüsünden kaldırı
 `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/bakim`, `/sistem-ozeti` ve diğer yönetim araçları.
 - **Özel Ses:** `f!ozel-ses` ile kullanıcıya özel ses odası açılır; paneldeki butonlarla kilit, üye limiti, isim ve sahiplik anlık yönetilir.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir` ve mini oyunlar.
-- **Ekonomi:** `/ekonomi bakiye|gunluk|calis|macera|hediye|market|satinal|envanter|liderlik`, `f!ekonomi` ile aynı işlemler (günlük ödül, çalışma, macera, market, hediyeleşme ve liderlik).
+- **Ekonomi:** `/ekonomi bakiye|gunluk|calis|macera|gorev|yatirim|hediye|market|satinal|envanter|liderlik`, `f!ekonomi` ile aynı işlemler (günlük ödül, çalışma, macera, görev, yatırım, market, hediyeleşme ve liderlik).
 - **Önek komutları:** `f!yardim`, `f!ekonomi`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!premium`, `f!prokomutlar`,
   `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!selamlama`, `f!ticket`, `f!sunucu-kur`, `f!uyari-sil`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!prefix`, `f!furmin-merkez`, `f!bakim` vb.
   `f!istek` ile kullanıcılar bot geliştiricisine öneri/istek/sorun iletebilir.
 
 ### Yeni Sistemler ve Güncellemeler
 - Slash tarafındaki tüm Pro araçları artık tek `/pro` komutunda toplanır; önek tarafında aynı raporlar bireysel komutlar olarak çalışmaya devam eder.
+- `/pro ekonomi` ve `f!pro-ekonomi`, FurCoin dağılımını, görev tamamlamalarını ve yatırım performansını tek bakışta gösterir.
 - `/rol-panel` ve `f!rolpanel`, seçilen rolleri butonlarla dağıtan modern bir rol seçimi paneli oluşturur.
 - Furmin ekonomi modülü günlük ödül serisi, çalışma ve macera komutları, market alışverişi, hediyeleşme ve liderlik tablosunu tek merkezde toplar.
+- Ekonomi tarafındaki yeni `/ekonomi gorev` ve `/ekonomi yatirim` alt komutları (önek eşleriyle birlikte) üyelerin görev tamamlayıp yatırım şansı denemesini sağlar.
 - Reklam engeli isteğe bağlı olarak üçüncü ihlalde otomatik ban uygular; uyarı sayacı sıfırlanır ve süreç bot loglarına ayrıntılı şekilde işlenir.
+- Moderatörler `/uyari istatistik` ve `f!mod-uyari-ozet` komutlarıyla uyarı dağılımını anında raporlayabilir.
 - Her komut, slash veya önek üzerinden çalıştırılmadan önce `/kurallari-kabul` ile kuralları onaylamayı zorunlu kılar; yardım menüsü 💎 simgesiyle Pro/sahip komutlarını ayırt eder.
 - Kullanıcılar kuralları bir kez onayladığında kayıt global olarak saklanır; başka bir sunucuda Furmin komutlarını kullanırken yeniden onay istenmez. Sunucu yöneticileri gerekli durumlarda `kurallar-yonet` ile belirli üyeleri tekrar onaya davet edebilir.
 - `f!ozel-ses` ile açılan özel ses odaları, butonlarla kilit/limit kontrolü sunar ve oda boş kaldığında otomatik olarak kaldırılır.

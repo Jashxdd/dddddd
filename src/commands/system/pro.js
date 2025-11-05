@@ -6,6 +6,7 @@ import { collectProCommands } from '../../utils/commandCatalog.js';
 import { listProMembers, grantPro, revokePro } from '../../utils/proMembership.js';
 import { pickRandomItems } from '../../utils/random.js';
 import { getGuildWarningEntries } from '../../utils/warnStorage.js';
+import { getEconomySnapshot } from '../../utils/economyStorage.js';
 import {
   proArchiveNotes,
   proContentPlans,
@@ -13,6 +14,11 @@ import {
   proQuickActions,
   proTeamFocus
 } from '../../data/contentLibrary.js';
+
+function formatCoins(amount) {
+  const safe = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
+  return `${safe.toLocaleString('tr-TR')} 💰`;
+}
 
 function createListEmbed({ color, title, footer, items, description }) {
   const embed = new EmbedBuilder().setColor(color).setTitle(title).setTimestamp();
@@ -165,6 +171,40 @@ async function handleAutomation(interaction) {
     )
     .setFooter({ text: 'Furmin Pro otomasyon denetimi' })
     .setTimestamp();
+
+  await interaction.reply({ embeds: [embed], ephemeral: true });
+}
+
+async function handleEconomySummary(interaction) {
+  const snapshot = await getEconomySnapshot(5);
+
+  const embed = new EmbedBuilder()
+    .setColor(0xf1c40f)
+    .setTitle('💰 Pro Ekonomi Özeti')
+    .setDescription('Furmin ekonomi hareketlerinin güncel görünümü.')
+    .addFields(
+      { name: 'Toplam Bakiye', value: formatCoins(snapshot.totalBalance), inline: true },
+      { name: 'Ortalama Bakiye', value: formatCoins(snapshot.averageBalance), inline: true },
+      { name: 'Katılımcı Sayısı', value: `${snapshot.participantCount}`, inline: true },
+      { name: 'Görev Tamamlama', value: `${snapshot.questCount} görev`, inline: true },
+      {
+        name: 'Yatırım Performansı',
+        value: `Kazanç: ${snapshot.investmentWins} • Kayıp: ${snapshot.investmentLosses}`,
+        inline: true
+      },
+      { name: 'En Uzun Seri', value: `${snapshot.topStreak} gün`, inline: true }
+    )
+    .setFooter({ text: 'Furmin ekonomi raporu' })
+    .setTimestamp();
+
+  if (snapshot.topBalances.length) {
+    const lines = snapshot.topBalances
+      .map((entry, index) => `**${index + 1}.** <@${entry.userId}> — ${formatCoins(entry.balance)}`)
+      .join('\n');
+    embed.addFields({ name: 'İlk 5 FurCoin Lideri', value: lines });
+  } else {
+    embed.addFields({ name: 'İlk 5 FurCoin Lideri', value: 'Henüz FurCoin biriktiren bulunmuyor.' });
+  }
 
   await interaction.reply({ embeds: [embed], ephemeral: true });
 }
@@ -337,6 +377,7 @@ export default {
     .addSubcommand((sub) => sub.setName('icerik').setDescription('Pro üyeler için içerik ve görev planı önerileri sağlar.'))
     .addSubcommand((sub) => sub.setName('kanal').setDescription('Sunucudaki kanal türlerinin dağılımını özetler.'))
     .addSubcommand((sub) => sub.setName('otomasyon').setDescription('AutoMod, yasaklı kelime ve otorol durumunu raporlar.'))
+    .addSubcommand((sub) => sub.setName('ekonomi').setDescription('Ekonomi sistemindeki hareketleri özetler.'))
     .addSubcommand((sub) => sub.setName('rapor').setDescription('Pro üyelik verilerini ve komut özetini listeler.'))
     .addSubcommand((sub) => sub.setName('roller').setDescription('En çok üyeye sahip rolleri listeler.'))
     .addSubcommand((sub) => sub.setName('uyari').setDescription('Uyarı kayıtlarını analiz ederek öne çıkan üyeleri gösterir.'))
@@ -390,6 +431,9 @@ export default {
         break;
       case 'otomasyon':
         await handleAutomation(interaction);
+        break;
+      case 'ekonomi':
+        await handleEconomySummary(interaction);
         break;
       case 'rapor':
         await handleReport(interaction);

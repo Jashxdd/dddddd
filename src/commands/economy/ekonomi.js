@@ -17,6 +17,14 @@ import {
   recordActionUsage,
   recordDailyClaim
 } from '../../utils/economyStorage.js';
+import {
+  calculateQuestReward,
+  pickQuestScenario,
+  resolveInvestment,
+  QUEST_COOLDOWN,
+  INVESTMENT_COOLDOWN,
+  INVESTMENT_MINIMUM
+} from '../../utils/economyGameplay.js';
 
 const DAILY_BASE_REWARD = 250;
 const DAILY_STREAK_BONUS = 35;
@@ -65,7 +73,9 @@ function buildProfileEmbed(user, profile) {
         value:
           `• Çalışma: **${profile.stats.work}** kez\n` +
           `• Macera: **${profile.stats.adventure}** kez\n` +
-          `• Hediyeleşme: **${profile.stats.giftsSent}** gönderildi / **${profile.stats.giftsReceived}** alındı`
+          `• Görev: **${profile.stats.quests}** tamamlandı\n` +
+          `• Hediyeleşme: **${profile.stats.giftsSent}** gönderildi / **${profile.stats.giftsReceived}** alındı\n` +
+          `• Yatırım: **${profile.stats.investmentWins}** kazanç / **${profile.stats.investmentLosses}** kayıp`
       }
     )
     .setFooter({ text: 'Furmin Ekonomi — Kazançlarını akıllıca kullan!' })
@@ -153,6 +163,19 @@ const data = new SlashCommandBuilder()
   .addSubcommand((sub) => sub.setName('gunluk').setDescription('Günlük FurCoin ödülünü toplar.'))
   .addSubcommand((sub) => sub.setName('calis').setDescription('Kısa bir mesai yaparak FurCoin kazan.'))
   .addSubcommand((sub) => sub.setName('macera').setDescription('Macera ile sürpriz ödüller kazanmayı dene.'))
+  .addSubcommand((sub) => sub.setName('gorev').setDescription('Günlük bir Furmin görevi tamamla.'))
+  .addSubcommand((sub) =>
+    sub
+      .setName('yatirim')
+      .setDescription('FurCoin bakiyenden yatırım yapıp şansını dene.')
+      .addIntegerOption((option) =>
+        option
+          .setName('miktar')
+          .setDescription('Yatırıma ayıracağın miktar')
+          .setRequired(true)
+          .setMinValue(INVESTMENT_MINIMUM)
+      )
+  )
   .addSubcommand((sub) =>
     sub
       .setName('hediye')
@@ -276,6 +299,99 @@ export default {
             content: `💥 Macera sırasında küçük bir kaza yaşandı. Tamir masrafı olarak **${formatCurrency(penalty)}** kaybettin.`
           });
         }
+        return;
+      }
+
+      if (subcommand === 'gorev') {
+        const availability = await canUseAction(userId, 'quest', QUEST_COOLDOWN);
+        if (!availability.available) {
+          await interaction.editReply({
+            content: `🗒️ Yeni göreve başlamadan önce **${formatDuration(availability.remaining)}** beklemelisin.`
+          });
+          return;
+        }
+
+        const scenario = pickQuestScenario();
+        const reward = calculateQuestReward();
+
+        await recordActionUsage(userId, 'quest');
+        await incrementStat(userId, 'quests', 1);
+        await modifyBalance(userId, reward);
+
+        const embed = new EmbedBuilder()
+          .setColor(0x1abc9c)
+          .setTitle('🗒️ Günlük Görev Tamamlandı')
+          .setDescription(`• Görev: ${scenario.prompt}\n• Sonuç: ${scenario.result}`)
+          .addFields({ name: 'Kazanç', value: formatCurrency(reward) })
+          .setFooter({ text: 'Görevler 6 saat arayla yenilenir.' })
+          .setTimestamp();
+
+        const profile = await getEconomyProfile(userId);
+        embed.addFields({ name: 'Güncel Bakiye', value: formatCurrency(profile.balance), inline: true });
+
+        await interaction.editReply({ embeds: [embed] });
+        return;
+      }
+
+      if (subcommand === 'yatirim') {
+        const amount = interaction.options.getInteger('miktar', true);
+        if (amount < INVESTMENT_MINIMUM) {
+          await interaction.editReply({
+            content: `📉 En az ${formatCurrency(INVESTMENT_MINIMUM)} yatırarak deneme yapabilirsin.`
+          });
+          return;
+        }
+
+        const profile = await getEconomyProfile(userId);
+        if (amount > profile.balance) {
+          await interaction.editReply({
+            content: `💳 Yatırım için **${formatCurrency(amount)}** gerekli, bakiyen ise ${formatCurrency(profile.balance)}.`
+          });
+          return;
+        }
+
+        const availability = await canUseAction(userId, 'investment', INVESTMENT_COOLDOWN);
+        if (!availability.available) {
+          await interaction.editReply({
+            content: `⏳ Yeni bir yatırım yapmadan önce **${formatDuration(availability.remaining)}** beklemelisin.`
+          });
+          return;
+        }
+
+        await recordActionUsage(userId, 'investment');
+        await modifyBalance(userId, -amount);
+
+        const outcome = resolveInvestment(amount);
+        if (outcome.payout > 0) {
+          await modifyBalance(userId, outcome.payout);
+        }
+
+        if (outcome.success) {
+          await incrementStat(userId, 'investmentWins', 1);
+        } else {
+          await incrementStat(userId, 'investmentLosses', 1);
+        }
+
+        const netChange = outcome.payout - amount;
+        const refreshedProfile = await getEconomyProfile(userId);
+
+        const embed = new EmbedBuilder()
+          .setColor(outcome.success ? 0x2ecc71 : 0xe74c3c)
+          .setTitle('📈 Yatırım Sonucu')
+          .setDescription(outcome.message)
+          .addFields(
+            { name: 'Yatırım Miktarı', value: formatCurrency(amount), inline: true },
+            {
+              name: outcome.success ? 'Net Kazanç' : 'Net Kayıp',
+              value: `${netChange >= 0 ? '+' : '-'}${formatCurrency(Math.abs(netChange))}`,
+              inline: true
+            },
+            { name: 'Güncel Bakiye', value: formatCurrency(refreshedProfile.balance), inline: true }
+          )
+          .setFooter({ text: 'Yatırım denemeleri 30 dakikada bir yapılabilir.' })
+          .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
         return;
       }
 

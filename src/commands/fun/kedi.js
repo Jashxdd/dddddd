@@ -1,10 +1,9 @@
 import { EmbedBuilder, SlashCommandBuilder } from 'discord.js';
 
 const fallbackImages = [
-  'https://cdn2.thecatapi.com/images/8pc.jpg',
-  'https://cdn2.thecatapi.com/images/6qi.jpg',
-  'https://cdn2.thecatapi.com/images/2oo.gif',
   'https://cataas.com/cat/says/merhaba?width=400&height=250',
+  'https://cataas.com/cat?width=400&height=250',
+  'https://placekitten.com/400/250',
   'https://cdn2.thecatapi.com/images/MTY3ODIyMQ.jpg',
   'https://cdn2.thecatapi.com/images/4li.jpg',
   'https://cdn2.thecatapi.com/images/9j5.jpg'
@@ -12,7 +11,14 @@ const fallbackImages = [
 
 async function fetchCatImage() {
   try {
-    const response = await fetch('https://api.thecatapi.com/v1/images/search?size=med&mime_types=jpg,png,gif');
+    const headers = {};
+    if (process.env.CAT_API_KEY) {
+      headers['x-api-key'] = process.env.CAT_API_KEY;
+    }
+
+    const response = await fetch('https://api.thecatapi.com/v1/images/search?size=med&mime_types=jpg,png,gif', {
+      headers
+    });
     if (!response.ok) {
       throw new Error(`Geçersiz yanıt: ${response.status}`);
     }
@@ -28,7 +34,9 @@ async function fetchCatImage() {
   } catch (error) {
     console.warn('Kedi görseli alınamadı, yedek liste kullanılacak:', error);
     const index = Math.floor(Math.random() * fallbackImages.length);
-    return fallbackImages[index];
+    const choice = fallbackImages[index] ?? fallbackImages[0];
+    const separator = choice.includes('?') ? '&' : '?';
+    return `${choice}${separator}ref=furmin&t=${Date.now()}`;
   }
 }
 

@@ -1,5 +1,12 @@
-import { SlashCommandBuilder, PermissionFlagsBits, time } from 'discord.js';
-import { addWarning, clearWarnings, listWarnings, removeWarning } from '../../utils/warnStorage.js';
+import { EmbedBuilder, SlashCommandBuilder, PermissionFlagsBits, time } from 'discord.js';
+import {
+  addWarning,
+  clearWarnings,
+  listWarnings,
+  removeWarning,
+  getWarningStats,
+  getGuildWarningEntries
+} from '../../utils/warnStorage.js';
 import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 export default {
@@ -52,7 +59,8 @@ export default {
         .addUserOption((option) =>
           option.setName('kullanici').setDescription('Uyarıları temizlenecek kullanıcı').setRequired(true)
         )
-    ),
+    )
+    .addSubcommand((sub) => sub.setName('istatistik').setDescription('Sunucudaki uyarı dağılımını özetler.')),
   async execute(interaction) {
     if (!interaction.inGuild()) {
       await interaction.reply({ content: 'Bu komut sadece sunucularda kullanılabilir.', ephemeral: true });
@@ -110,6 +118,38 @@ export default {
         content: `📋 ${user} için ${warnings.length} uyarı bulundu:\n${lines.join('\n')}`,
         ephemeral: true
       });
+      return;
+    }
+
+    if (sub === 'istatistik') {
+      const [stats, entries] = await Promise.all([
+        getWarningStats(interaction.guildId),
+        getGuildWarningEntries(interaction.guildId)
+      ]);
+
+      const sorted = entries
+        .map((entry) => ({ userId: entry.userId, count: entry.warnings.length }))
+        .filter((entry) => entry.count > 0)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+      const embed = new EmbedBuilder()
+        .setColor(0xe67e22)
+        .setTitle('⚖️ Uyarı İstatistikleri')
+        .addFields(
+          { name: 'Toplam Uyarı', value: `${stats.totalWarnings}`, inline: true },
+          { name: 'Etkilenen Üye', value: `${stats.totalUsers}`, inline: true }
+        )
+        .setTimestamp();
+
+      if (sorted.length) {
+        const lines = sorted.map((entry, index) => `**${index + 1}.** <@${entry.userId}> — ${entry.count} uyarı`);
+        embed.addFields({ name: 'Öne Çıkan Üyeler', value: lines.join('\n') });
+      } else {
+        embed.addFields({ name: 'Öne Çıkan Üyeler', value: 'Henüz kayıtlı uyarı yok.' });
+      }
+
+      await interaction.reply({ embeds: [embed], ephemeral: true });
       return;
     }
 
