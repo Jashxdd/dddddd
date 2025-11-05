@@ -261,7 +261,8 @@ export default {
             message.guild,
             message.author.id,
             guardConfig.penalty,
-            `Guard: Toplu etiketleme tespit edildi. (${reason})`
+            `Guard: Toplu etiketleme tespit edildi. (${reason})`,
+            { whitelistRoleIds: guardConfig.whitelistRoleIds }
           );
         }
 

@@ -65,7 +65,8 @@ export default {
           channel.guild,
           executor.id,
           guardConfig.penalty,
-          `Guard: ${displayName} kanalı izinsiz silindi.`
+          `Guard: ${displayName} kanalı izinsiz silindi.`,
+          { whitelistRoleIds: guardConfig.whitelistRoleIds }
         );
       }
 

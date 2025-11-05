@@ -9,6 +9,8 @@ import {
   removeParticipant,
   updateGiveaway
 } from './giveawayStorage.js';
+import { sendModerationLog } from './modLog.js';
+import { sendDetailedLog } from './detailedLog.js';
 
 let schedulerActive = false;
 let schedulerInterval = null;
@@ -24,7 +26,7 @@ function pickWinners(participants, winnerCount) {
   return winners;
 }
 
-async function finalizeGiveaway(client, giveaway) {
+async function finalizeGiveaway(client, giveaway, options = {}) {
   const channel = await client.channels.fetch(giveaway.channelId).catch(() => null);
   if (!channel?.isTextBased()) {
     await endGiveaway(giveaway.guildId, giveaway.id, []);
@@ -50,6 +52,28 @@ async function finalizeGiveaway(client, giveaway) {
   await channel
     .send({ content: `🎉 **${giveaway.prize}** çekilişi tamamlandı! Kazananlar: ${mentionWinners}` })
     .catch(() => null);
+
+  const reason = options.reason ?? 'Süre dolduğu için sonuçlandırıldı.';
+
+  await sendModerationLog(client, giveaway.guildId, {
+    action: 'Çekiliş Sonuçlandı',
+    description: `🎉 **${giveaway.prize}** çekilişi tamamlandı. ${reason}`,
+    color: 0x2ecc71,
+    extraFields: [
+      { name: 'Kanal', value: channel.toString(), inline: true },
+      { name: 'Kazananlar', value: mentionWinners, inline: false }
+    ]
+  });
+
+  await sendDetailedLog(client, giveaway.guildId, 'general', {
+    title: '🎉 Çekiliş Tamamlandı',
+    description: `**${giveaway.prize}** ödüllü çekiliş sonuçlandı.`,
+    fields: [
+      { name: 'Kanal', value: channel.toString(), inline: true },
+      { name: 'Kazananlar', value: mentionWinners, inline: false },
+      { name: 'Not', value: reason, inline: false }
+    ]
+  });
 }
 
 async function sweepGiveaways(client) {
@@ -92,7 +116,9 @@ export async function handleGiveawayJoin(interaction, giveawayId) {
   }
 
   if (giveaway.endsAt && giveaway.endsAt <= Date.now()) {
-    await finalizeGiveaway(interaction.client, giveaway);
+    await finalizeGiveaway(interaction.client, giveaway, {
+      reason: 'Süre dolduğu için katılım sırasında sonuçlandırıldı.'
+    });
     await interaction.reply({ content: 'Çekiliş süresi dolduğu için sonuçlandırıldı.', ephemeral: true });
     return;
   }
@@ -154,6 +180,31 @@ export async function createGiveawayMessage(interaction, options) {
     ended: false
   });
 
+  if (giveaway) {
+    const relativeTime = `<t:${Math.floor(giveaway.endsAt / 1000)}:R>`;
+
+    await sendModerationLog(interaction.client, giveaway.guildId, {
+      action: 'Çekiliş Başlatıldı',
+      description: `🎁 **${giveaway.prize}** ödüllü çekiliş ${channel} kanalında başlatıldı.`,
+      color: 0xf1c40f,
+      moderatorUser: interaction.user,
+      extraFields: [
+        { name: 'Bitiş', value: relativeTime, inline: true },
+        { name: 'Kazanan Sayısı', value: `${giveaway.winners}`, inline: true }
+      ]
+    });
+
+    await sendDetailedLog(interaction.client, giveaway.guildId, 'general', {
+      title: '🎁 Yeni Çekiliş',
+      description: `${channel} kanalında **${giveaway.prize}** ödüllü çekiliş başlatıldı.`,
+      fields: [
+        { name: 'Bitiş', value: relativeTime, inline: true },
+        { name: 'Kazanan Sayısı', value: `${giveaway.winners}`, inline: true },
+        { name: 'Başlatan', value: `<@${interaction.user.id}>`, inline: true }
+      ]
+    });
+  }
+
   return giveaway;
 }
 
@@ -165,7 +216,9 @@ export async function rerollGiveaway(client, guildId, giveawayId) {
 
   const winners = pickWinners(giveaway.participants, giveaway.winners ?? 1);
   await endGiveaway(guildId, giveawayId, winners);
-  await finalizeGiveaway(client, { ...giveaway, winners, ended: false });
+  await finalizeGiveaway(client, { ...giveaway, winners, ended: false }, {
+    reason: 'Çekiliş yeniden kazanan belirlemek için güncellendi.'
+  });
   return { giveaway, winners };
 }
 
@@ -175,6 +228,6 @@ export async function stopGiveaway(client, guildId, giveawayId) {
     return null;
   }
 
-  await finalizeGiveaway(client, giveaway);
+  await finalizeGiveaway(client, giveaway, { reason: 'Çekiliş yetkili tarafından elle sonlandırıldı.' });
   return giveaway;
 }

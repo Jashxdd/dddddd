@@ -72,6 +72,19 @@ function buildPanelEmbed(guild, logChannels, guardConfig) {
     inline: false
   });
 
+  const whitelistLines = guardConfig.whitelistRoleIds
+    .map((roleId) => {
+      const role = guild.roles.cache.get(roleId);
+      return role ? role.toString() : `\`${roleId}\``;
+    })
+    .slice(0, 10);
+
+  embedFields.push({
+    name: 'Guard Beyaz Liste Rolleri',
+    value: whitelistLines.length ? whitelistLines.join('\n') : 'Beyaz liste tanımlanmadı.',
+    inline: false
+  });
+
   return {
     color: 0x1abc9c,
     title: `${guild.name} • Log ve Guard Paneli`,
@@ -118,6 +131,11 @@ function buildGuardControlsRow(userId, options = {}) {
       .setStyle(ButtonStyle.Primary)
       .setEmoji('📡')
       .setLabel('Guard Log Kanalı'),
+    new ButtonBuilder()
+      .setCustomId(`guard-whitelist:${userId}`)
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji('🎫')
+      .setLabel('Beyaz Liste'),
     new ButtonBuilder()
       .setCustomId(`guard-refresh:${userId}`)
       .setStyle(ButtonStyle.Secondary)

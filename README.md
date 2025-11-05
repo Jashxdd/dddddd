@@ -92,12 +92,14 @@ ayarlandığında bu komutlar global kayıttan ve yardım menüsünden kaldırı
 - Slash tarafındaki tüm Pro araçları artık tek `/pro` komutunda toplanır; önek tarafında aynı raporlar bireysel komutlar olarak çalışmaya devam eder.
 - `/pro ekonomi` ve `f!pro-ekonomi`, FurCoin dağılımını, görev tamamlamalarını ve yatırım performansını tek bakışta gösterir.
 - `/rol-panel` ve `f!rolpanel`, seçilen rolleri butonlarla dağıtan modern bir rol seçimi paneli oluşturur.
-- `/modlog panel`, detaylı üye/mesaj/ses log kanallarını ve guard korumalarını menülü olarak yönetmenizi sağlar.
+- `/modlog panel`, detaylı üye/mesaj/ses log kanallarını ve guard korumalarını menülü olarak yönetmenizi sağlar. Yeni **Beyaz Liste**
+  düğmesiyle guard yaptırımlarından muaf tutulacak rol listesini doğrudan panelden güncelleyebilirsiniz.
 - Furmin ekonomi modülü günlük ödül serisi, çalışma ve macera komutları, market alışverişi, hediyeleşme ve liderlik tablosunu tek merkezde toplar.
 - Ekonomi tarafındaki yeni `/ekonomi gorev` ve `/ekonomi yatirim` alt komutları (önek eşleriyle birlikte) üyelerin görev tamamlayıp yatırım şansı denemesini sağlar.
 - Reklam engeli isteğe bağlı olarak üçüncü ihlalde otomatik ban uygular; uyarı sayacı sıfırlanır ve süreç bot loglarına ayrıntılı şekilde işlenir.
 - Moderatörler `/uyari istatistik` ve `f!mod-uyari-ozet` komutlarıyla uyarı dağılımını anında raporlayabilir.
 - `/cekilis` ve `f!cekilis` komutları, katılımcı butonlu çekilişleri başlatmanızı, kazananları yeniden seçmenizi ve aktif etkinlikleri listelemenizi sağlar.
+  Başlatma, sonlandırma ve yeniden çekim adımları otomatik olarak mod-log ve detaylı log kanallarında raporlanır.
 - `/guncelleme` ve `f!guncelleme`, Furmin'in son değişikliklerini ve yolda olan başlıkları tek embed'de sunar.
 - Her komut, slash veya önek üzerinden çalıştırılmadan önce `/kurallari-kabul` ile kuralları onaylamayı zorunlu kılar; yardım menüsü 💎 simgesiyle Pro/sahip komutlarını ayırt eder.
 - Kullanıcılar kuralları bir kez onayladığında kayıt global olarak saklanır; başka bir sunucuda Furmin komutlarını kullanırken yeniden onay istenmez. Sunucu yöneticileri gerekli durumlarda `kurallar-yonet` ile belirli üyeleri tekrar onaya davet edebilir.

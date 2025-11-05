@@ -19,7 +19,14 @@ import {
 import { buildPrivateVoiceButtons, buildPrivateVoiceEmbed } from '../utils/privateVoicePanel.js';
 import { createTicketChannel, closeTicketChannel } from '../utils/ticketManager.js';
 import { setDetailedLogChannel, clearDetailedLogChannel } from '../utils/detailedLogStorage.js';
-import { setGuardLogChannel, toggleGuardProtection, setGuardPenalty } from '../utils/guardConfigStorage.js';
+import {
+  setGuardLogChannel,
+  toggleGuardProtection,
+  setGuardPenalty,
+  getGuardConfig,
+  updateGuardWhitelist
+} from '../utils/guardConfigStorage.js';
+import { sendGuardLog } from '../utils/guardLog.js';
 import { buildLogGuardPanel } from '../commands/system/modlog.js';
 import { handleGiveawayJoin } from '../utils/giveawayManager.js';
 
@@ -32,7 +39,8 @@ async function handleLogPanelComponent(interaction) {
     'guard-toggle',
     'guard-channel',
     'guard-refresh',
-    'guard-penalty'
+    'guard-penalty',
+    'guard-whitelist'
   ]);
 
   if (!relevantKeys.has(key)) {
@@ -97,6 +105,31 @@ async function handleLogPanelComponent(interaction) {
     return true;
   }
 
+  if (key === 'guard-whitelist') {
+    const config = await getGuardConfig(interaction.guildId);
+    const preset = (config.whitelistRoleIds ?? [])
+      .map((roleId) => `<@&${roleId}>`)
+      .join(', ');
+
+    const modal = new ModalBuilder()
+      .setCustomId(`guard-whitelist:${interaction.guildId}:${interaction.user.id}`)
+      .setTitle('Guard Beyaz Liste Rolleri')
+      .addComponents(
+        new ActionRowBuilder().addComponents(
+          new TextInputBuilder()
+            .setCustomId('roles')
+            .setLabel('Rol ID veya @etiket (virgül veya satır ile ayır)')
+            .setStyle(TextInputStyle.Paragraph)
+            .setRequired(false)
+            .setPlaceholder('Örnek: 123456789012345678, @Yetkili Rolü')
+            .setValue(preset.slice(0, 4000))
+        )
+      );
+
+    await interaction.showModal(modal);
+    return true;
+  }
+
   if (key === 'guard-refresh') {
     const response = await buildLogGuardPanel(interaction);
     await interaction.update(response);
@@ -116,6 +149,26 @@ async function handleLogPanelComponent(interaction) {
   }
 
   return false;
+}
+
+function extractRoleIdsFromInput(raw) {
+  if (!raw) return [];
+  const tokens = raw
+    .split(/[\s,]+/g)
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  const ids = new Set();
+  for (const token of tokens) {
+    const matches = token.match(/\d{10,}/g);
+    if (matches) {
+      for (const match of matches) {
+        ids.add(match);
+      }
+    }
+  }
+
+  return Array.from(ids);
 }
 
 async function handleGiveawayButton(interaction) {
@@ -456,12 +509,71 @@ async function handleTicketSelect(interaction) {
   return true;
 }
 
+async function handleGuardWhitelistModal(interaction) {
+  const parts = interaction.customId.split(':');
+  if (parts[0] !== 'guard-whitelist') {
+    return false;
+  }
+
+  const guildId = parts[1];
+  const ownerId = parts[2];
+
+  if (guildId !== interaction.guildId) {
+    await interaction.reply({ content: 'Bu beyaz liste formu farklı bir sunucuya ait.', ephemeral: true });
+    return true;
+  }
+
+  if (ownerId !== interaction.user.id) {
+    await interaction.reply({ content: 'Bu beyaz liste formunu yalnızca açan kişi gönderebilir.', ephemeral: true });
+    return true;
+  }
+
+  const rawInput = interaction.fields.getTextInputValue('roles') ?? '';
+  const roleIds = extractRoleIdsFromInput(rawInput);
+
+  await updateGuardWhitelist(interaction.guildId, roleIds);
+
+  const summary = roleIds.length
+    ? `Guard beyaz listesi ${roleIds.length} rol ile güncellendi.`
+    : 'Guard beyaz listesi temizlendi.';
+
+  const panelResponse = await buildLogGuardPanel(interaction);
+  if (interaction.message?.editable) {
+    await interaction.message.edit(panelResponse).catch(() => {});
+  }
+
+  const guild = interaction.guild;
+  const rolePreview = roleIds
+    .slice(0, 10)
+    .map((roleId) => guild?.roles.cache.get(roleId)?.toString() ?? `\`${roleId}\``)
+    .join('\n') || 'Liste boş.';
+
+  await interaction.reply({ content: `✅ ${summary}`, ephemeral: true });
+
+  await sendGuardLog(interaction.client, interaction.guildId, {
+    title: '🛡️ Guard Beyaz Liste Güncellendi',
+    description: `${interaction.user} guard beyaz listesini güncelledi.`,
+    fields: [
+      { name: 'Rol Sayısı', value: `${roleIds.length}`, inline: true },
+      { name: 'Roller', value: rolePreview, inline: false }
+    ],
+    color: 0x3498db
+  });
+
+  return true;
+}
+
 const bypassCommands = new Set(['kurallar', 'kurallari-kabul']);
 
 export default {
   name: Events.InteractionCreate,
   async execute(interaction, client) {
     if (interaction.isModalSubmit()) {
+      const guardHandled = await handleGuardWhitelistModal(interaction);
+      if (guardHandled) {
+        return;
+      }
+
       const handled = await handlePrivateVoiceModal(interaction);
       if (handled) {
         return;

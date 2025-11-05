@@ -1,6 +1,6 @@
 import { PermissionFlagsBits } from 'discord.js';
 
-export async function enforceGuardPenalty(guild, userId, penalty, reason) {
+export async function enforceGuardPenalty(guild, userId, penalty, reason, options = {}) {
   if (!guild || !userId) {
     return { applied: false, message: 'Sunucu veya kullanıcı bulunamadı.' };
   }
@@ -8,6 +8,17 @@ export async function enforceGuardPenalty(guild, userId, penalty, reason) {
   const member = await guild.members.fetch(userId).catch(() => null);
   if (!member) {
     return { applied: false, message: 'Üye bulunamadı.' };
+  }
+
+  const whitelistRoleIds = Array.isArray(options.whitelistRoleIds) ? options.whitelistRoleIds : [];
+  if (whitelistRoleIds.length) {
+    const matchedRole = member.roles.cache.find((role) => whitelistRoleIds.includes(role.id));
+    if (matchedRole) {
+      return {
+        applied: false,
+        message: `${matchedRole.name} rolü guard beyaz listesinde olduğu için işlem uygulanmadı.`
+      };
+    }
   }
 
   if (member.id === guild.client.user.id) {

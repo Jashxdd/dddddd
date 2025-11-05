@@ -33,8 +33,22 @@ export async function sendGuardLog(client, guildId, details) {
     embed.setFooter(details.footer);
   }
 
+  const payload = { embeds: [embed] };
+
+  if (details?.content) {
+    payload.content = details.content;
+  }
+
+  if (Array.isArray(details?.components) && details.components.length) {
+    payload.components = details.components;
+  }
+
+  if (Array.isArray(details?.files) && details.files.length) {
+    payload.files = details.files;
+  }
+
   return channel
-    .send({ embeds: [embed] })
+    .send(payload)
     .then(() => true)
     .catch((error) => {
       console.warn('Guard log mesajı gönderilirken hata oluştu:', error);

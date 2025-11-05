@@ -42,7 +42,8 @@ export default {
           role.guild,
           executor.id,
           guardConfig.penalty,
-          `Guard: ${role.name} rolü izinsiz silindi.`
+          `Guard: ${role.name} rolü izinsiz silindi.`,
+          { whitelistRoleIds: guardConfig.whitelistRoleIds }
         );
       }
 
