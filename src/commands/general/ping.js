@@ -4,7 +4,8 @@ export default {
   category: 'Genel',
   data: new SlashCommandBuilder().setName('ping').setDescription('Botun gecikme degerlerini olcer.'),
   async execute(interaction) {
-    const sent = await interaction.reply({ content: '📡 Gecikme hesaplaniyor...', fetchReply: true });
+    const response = await interaction.reply({ content: '📡 Gecikme hesaplanıyor...', withResponse: true });
+    const sent = await response.fetch();
 
     const latency = sent.createdTimestamp - interaction.createdTimestamp;
     const apiLatency = Math.round(interaction.client.ws.ping);

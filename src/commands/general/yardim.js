@@ -426,12 +426,13 @@ export default {
     if (quickRow) components.push(quickRow);
     if (linkRow) components.push(linkRow);
 
-    const message = await interaction.reply({
+    const response = await interaction.reply({
       embeds: [pages[currentIndex]],
       components,
       ephemeral: true,
-      fetchReply: true
+      withResponse: true
     });
+    const message = await response.fetch();
 
     if (pages.length === 1) {
       return;

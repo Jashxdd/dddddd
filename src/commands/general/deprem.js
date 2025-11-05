@@ -1,19 +1,61 @@
-import { EmbedBuilder, SlashCommandBuilder, time } from 'discord.js';
+import { EmbedBuilder, MessageFlags, SlashCommandBuilder, time } from 'discord.js';
 
 const START_OF_2025 = '2025-01-01T00:00:00';
+
+const AFAD_ENDPOINTS = [
+  (limit) => {
+    const params = new URLSearchParams({
+      start: START_OF_2025,
+      end: new Date().toISOString(),
+      orderby: 'desc',
+      limit: String(limit)
+    });
+    return `https://deprem.afad.gov.tr/apiv2/event/filter?${params.toString()}`;
+  },
+  (limit) => {
+    const params = new URLSearchParams({
+      start: START_OF_2025,
+      orderby: 'desc',
+      minmag: '0',
+      limit: String(limit)
+    });
+    return `https://deprem.afad.gov.tr/apiv2/event/filter?${params.toString()}`;
+  },
+  (limit) => `https://deprem.afad.gov.tr/apiv2/event/recent?limit=${limit}`
+];
+
+const ORHAN_ENDPOINTS = [
+  (limit) => {
+    const params = new URLSearchParams({
+      start: START_OF_2025,
+      orderby: 'desc',
+      limit: String(limit)
+    });
+    return `https://api.orhanaydogdu.com.tr/deprem/v1/event?${params.toString()}`;
+  },
+  (limit) => `https://api.orhanaydogdu.com.tr/deprem/live.php?limit=${limit}`
+];
+
+const COMMUNITY_ENDPOINTS = [
+  (limit) => `https://deprem-api.vercel.app/api?type=all-last&limit=${limit}`,
+  (limit) => `https://deprem-api2.vercel.app/latest?limit=${limit}`
+];
 
 const EARTHQUAKE_SOURCES = [
   {
     name: 'deprem.afad.gov.tr (2025)',
     async fetch(limit) {
       const safeLimit = Math.max(1, Math.min(Number(limit) || 5, 20));
-      const params = new URLSearchParams({
-        start: START_OF_2025,
-        orderby: 'desc',
-        limit: String(safeLimit)
-      });
-      const endpoint = `https://deprem.afad.gov.tr/apiv2/event/filter?${params.toString()}`;
-      return requestJson(endpoint);
+      const errors = [];
+      for (const builder of AFAD_ENDPOINTS) {
+        const endpoint = builder(safeLimit);
+        try {
+          return await requestJson(endpoint);
+        } catch (error) {
+          errors.push(`${new URL(endpoint).hostname}: ${error.message}`);
+        }
+      }
+      throw new Error(errors.join(' • '));
     },
     map(data) {
       if (!Array.isArray(data?.result)) return [];
@@ -30,13 +72,16 @@ const EARTHQUAKE_SOURCES = [
     name: 'api.orhanaydogdu.com.tr (2025)',
     async fetch(limit) {
       const safeLimit = Math.max(1, Math.min(Number(limit) || 5, 20));
-      const params = new URLSearchParams({
-        start: START_OF_2025,
-        orderby: 'desc',
-        limit: String(safeLimit)
-      });
-      const endpoint = `https://api.orhanaydogdu.com.tr/deprem/v1/event?${params.toString()}`;
-      return requestJson(endpoint);
+      const errors = [];
+      for (const builder of ORHAN_ENDPOINTS) {
+        const endpoint = builder(safeLimit);
+        try {
+          return await requestJson(endpoint);
+        } catch (error) {
+          errors.push(`${new URL(endpoint).hostname}: ${error.message}`);
+        }
+      }
+      throw new Error(errors.join(' • '));
     },
     map(data) {
       const list = Array.isArray(data?.result) ? data.result : Array.isArray(data?.data) ? data.data : [];
@@ -46,6 +91,40 @@ const EARTHQUAKE_SOURCES = [
         depth: item.depth ?? item.derinlik ?? item.depth_km ?? null,
         timestamp: normaliseTimestamp(item.timestamp ?? item.date ?? item.created_at),
         rawDate: item.date ?? item.created_at ?? null
+      }));
+    }
+  },
+  {
+    name: 'deprem-api topluluk kaynakları',
+    async fetch(limit) {
+      const safeLimit = Math.max(1, Math.min(Number(limit) || 5, 20));
+      const errors = [];
+      for (const builder of COMMUNITY_ENDPOINTS) {
+        const endpoint = builder(safeLimit);
+        try {
+          return await requestJson(endpoint);
+        } catch (error) {
+          errors.push(`${endpoint}: ${error.message}`);
+        }
+      }
+      throw new Error(errors.join(' • '));
+    },
+    map(data) {
+      const list = Array.isArray(data?.result)
+        ? data.result
+        : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data?.earthquakes)
+        ? data.earthquakes
+        : Array.isArray(data)
+        ? data
+        : [];
+      return list.map((item) => ({
+        location: item.title ?? item.location ?? item.lokasyon ?? 'Lokasyon bilinmiyor',
+        magnitude: item.mag ?? item.ml ?? item.magnitude ?? null,
+        depth: item.depth ?? item.derinlik ?? item.depth_km ?? null,
+        timestamp: normaliseTimestamp(item.timestamp ?? item.date ?? item.time),
+        rawDate: item.date ?? item.time ?? null
       }));
     }
   }
@@ -192,7 +271,7 @@ export default {
   menuGroup: 'Kullanıcı Sistemleri',
   data: new SlashCommandBuilder().setName('deprem').setDescription('Türkiye’deki son depremleri listeler.'),
   async execute(interaction) {
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     try {
       const { records, source, cached } = await fetchEarthquakes(5);
@@ -200,10 +279,9 @@ export default {
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error('Deprem verisi alınamadı:', error);
-      await interaction.editReply({
-        content: '⚠️ Deprem verileri şu anda alınamıyor. Lütfen daha sonra tekrar dene.',
-        embeds: []
-      });
+      const warning =
+        '⚠️ Deprem verileri şu anda kaynaklardan alınamadı. Lütfen daha sonra yeniden dene veya resmi kaynakları kontrol et.';
+      await interaction.editReply({ content: warning, embeds: [] });
     }
   }
 };

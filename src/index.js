@@ -1,5 +1,5 @@
 import './utils/fetchPolyfill.js';
-import { Client, Collection, GatewayIntentBits, Partials } from 'discord.js';
+import { BaseInteraction, Client, Collection, GatewayIntentBits, MessageFlags, Partials } from 'discord.js';
 import { readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -9,6 +9,44 @@ import { assertConfig, config, describeConfigSource } from './config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+function normaliseInteractionOptions(options) {
+  if (!options || typeof options !== 'object') {
+    return options;
+  }
+
+  const clone = { ...options };
+
+  if (Object.prototype.hasOwnProperty.call(clone, 'ephemeral')) {
+    if (clone.ephemeral) {
+      if (typeof clone.flags === 'number') {
+        clone.flags |= MessageFlags.Ephemeral;
+      } else if (Array.isArray(clone.flags)) {
+        const asSet = new Set(clone.flags);
+        asSet.add(MessageFlags.Ephemeral);
+        clone.flags = [...asSet];
+      } else if (clone.flags && typeof clone.flags === 'object' && typeof clone.flags.bitfield === 'number') {
+        clone.flags = clone.flags.bitfield | MessageFlags.Ephemeral;
+      } else {
+        clone.flags = MessageFlags.Ephemeral;
+      }
+    }
+
+    delete clone.ephemeral;
+  }
+
+  return clone;
+}
+
+for (const method of ['reply', 'deferReply', 'followUp', 'editReply', 'deferUpdate', 'update']) {
+  const original = BaseInteraction.prototype[method];
+  if (typeof original !== 'function') continue;
+
+  BaseInteraction.prototype[method] = function patchedInteractionMethod(options, ...args) {
+    const normalised = normaliseInteractionOptions(options);
+    return original.call(this, normalised, ...args);
+  };
+}
 
 assertConfig({ requireClientId: false });
 console.log(`⚙️ Yapılandırma yüklendi (${describeConfigSource()}).`);
