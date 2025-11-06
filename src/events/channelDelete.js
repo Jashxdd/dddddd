@@ -4,6 +4,7 @@ import { removePrivateVoice } from '../utils/privateVoiceStorage.js';
 import { getGuardConfig } from '../utils/guardConfigStorage.js';
 import { sendGuardLog } from '../utils/guardLog.js';
 import { enforceGuardPenalty } from '../utils/guardActions.js';
+import { isFeatureEnabled } from '../utils/featureFlags.js';
 import { sendDetailedLog } from '../utils/detailedLog.js';
 
 function describeChannelType(channel) {
@@ -51,34 +52,36 @@ export default {
       ]
     });
 
-    const guardConfig = await getGuardConfig(channel.guild.id);
-    if (guardConfig.protections.channelDelete) {
-      const audit = await channel.guild
-        .fetchAuditLogs({ type: AuditLogEvent.ChannelDelete, limit: 1 })
-        .catch(() => null);
-      const entry = audit?.entries?.first();
-      const executor = entry?.executor;
+    if (isFeatureEnabled('guard')) {
+      const guardConfig = await getGuardConfig(channel.guild.id);
+      if (guardConfig.protections.channelDelete) {
+        const audit = await channel.guild
+          .fetchAuditLogs({ type: AuditLogEvent.ChannelDelete, limit: 1 })
+          .catch(() => null);
+        const entry = audit?.entries?.first();
+        const executor = entry?.executor;
 
-      let penaltyResult = { applied: false, message: 'İşlem uygulanmadı.' };
-      if (executor?.id && guardConfig.penalty !== 'none') {
-        penaltyResult = await enforceGuardPenalty(
-          channel.guild,
-          executor.id,
-          guardConfig.penalty,
-          `Guard: ${displayName} kanalı izinsiz silindi.`,
-          { whitelistRoleIds: guardConfig.whitelistRoleIds }
-        );
+        let penaltyResult = { applied: false, message: 'İşlem uygulanmadı.' };
+        if (executor?.id && guardConfig.penalty !== 'none') {
+          penaltyResult = await enforceGuardPenalty(
+            channel.guild,
+            executor.id,
+            guardConfig.penalty,
+            `Guard: ${displayName} kanalı izinsiz silindi.`,
+            { whitelistRoleIds: guardConfig.whitelistRoleIds }
+          );
+        }
+
+        await sendGuardLog(channel.client, channel.guild.id, {
+          title: '🚨 Kanal Silme Koruması',
+          description: `${displayName} silindi. Guard kaydı oluşturuldu.`,
+          fields: [
+            { name: 'Yetkili', value: executor ? `${executor.tag} (${executor.id})` : 'Belirlenemedi', inline: true },
+            { name: 'Yaptırım', value: penaltyResult.message, inline: true }
+          ],
+          color: guardConfig.penalty === 'none' ? 0xf1c40f : 0xe74c3c
+        });
       }
-
-      await sendGuardLog(channel.client, channel.guild.id, {
-        title: '🚨 Kanal Silme Koruması',
-        description: `${displayName} silindi. Guard kaydı oluşturuldu.`,
-        fields: [
-          { name: 'Yetkili', value: executor ? `${executor.tag} (${executor.id})` : 'Belirlenemedi', inline: true },
-          { name: 'Yaptırım', value: penaltyResult.message, inline: true }
-        ],
-        color: guardConfig.penalty === 'none' ? 0xf1c40f : 0xe74c3c
-      });
     }
 
     await removePrivateVoice(channel.guild.id, channel.id);

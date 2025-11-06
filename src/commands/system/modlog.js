@@ -223,6 +223,7 @@ const REQUIRED_PERMISSIONS = [
 
 export default {
   category: 'Sistem',
+  featureToggle: 'logs',
   data: new SlashCommandBuilder()
     .setName('modlog')
     .setDescription('Moderasyon log kanalını ayarlar ve test eder.')

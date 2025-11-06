@@ -1,5 +1,6 @@
 import { EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import { clearModLogChannelId, getModLogChannelId } from './modLogStorage.js';
+import { isFeatureEnabled } from './featureFlags.js';
 
 function formatUserLabel(userLike) {
   if (!userLike) {
@@ -18,6 +19,7 @@ function formatUserLabel(userLike) {
 
 export async function sendModerationLog(client, guildId, details) {
   if (!client || !guildId || !details) return false;
+  if (!isFeatureEnabled('logs') || !isFeatureEnabled('moderation')) return false;
 
   const channelId = await getModLogChannelId(guildId);
   if (!channelId) return false;

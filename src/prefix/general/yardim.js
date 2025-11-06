@@ -5,6 +5,7 @@ import { splitLinesIntoFieldChunks } from '../../utils/embedChunks.js';
 import { getCategoryMeta } from '../../data/categoryMetadata.js';
 import { buildFurminHubEmbed, buildSupportLinkRow } from '../../utils/hubCard.js';
 import { collectCatalogSummary } from '../../utils/catalogSummary.js';
+import { formatFeatureSummaryLines } from '../../utils/featureFlags.js';
 
 const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları', 'Slash & Prefix']);
 
@@ -183,6 +184,11 @@ export default {
     categoryChunks.forEach((value, index) => {
       embed.addFields({ name: index === 0 ? 'Kategoriler' : '\u200B', value });
     });
+
+    const featureLines = formatFeatureSummaryLines();
+    if (featureLines.length) {
+      embed.addFields({ name: 'Özellik Durumu', value: featureLines.join('\n') });
+    }
 
     embed.addFields({
       name: 'Furmin Merkez',

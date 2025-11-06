@@ -1,8 +1,10 @@
 import { EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import { getDetailedLogChannel } from './detailedLogStorage.js';
+import { isFeatureEnabled } from './featureFlags.js';
 
 export async function sendDetailedLog(client, guildId, category, details) {
   if (!client || !guildId || !category) return false;
+  if (!isFeatureEnabled('logs')) return false;
 
   const channelId = await getDetailedLogChannel(guildId, category);
   if (!channelId) return false;

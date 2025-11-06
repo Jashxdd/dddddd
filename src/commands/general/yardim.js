@@ -14,6 +14,7 @@ import { splitLinesIntoFieldChunks } from '../../utils/embedChunks.js';
 import { getCategoryMeta } from '../../data/categoryMetadata.js';
 import { buildFurminHubEmbed, buildSupportLinkRow } from '../../utils/hubCard.js';
 import { collectCatalogSummary, computeCatalogStats } from '../../utils/catalogSummary.js';
+import { formatFeatureSummaryLines } from '../../utils/featureFlags.js';
 
 const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları', 'Slash & Prefix']);
 
@@ -197,6 +198,14 @@ function buildOverviewPage(displayCategories, prefix, statsCategories = displayC
       value
     });
   });
+
+  const featureLines = formatFeatureSummaryLines();
+  if (featureLines.length) {
+    embed.addFields({
+      name: 'Özellik Durumu',
+      value: featureLines.join('\n')
+    });
+  }
 
   embed.addFields(
     {

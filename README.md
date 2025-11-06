@@ -61,7 +61,8 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
   | `supportServerUrl` / `inviteUrl` / `proInfoUrl` | Butonlarda gösterilecek bağlantılar |
   | `botLogChannelId` | Botun kendi loglarını göndereceği kanalın ID'si (opsiyonel) |
   | `disabledSlashCommands` / `disabledPrefixCommands` | Virgülle ayrılmış liste veya dizi olarak belirttiğiniz komut adları devre dışı bırakılır |
-   | `presenceStatus`, `presenceInterval`, `activities` | Durum rotasyonu için isteğe bağlı ayarlar |
+  | `featureToggles` | `guard`, `logs`, `moderation`, `economy`, `fun`, `general`, `system` gibi çekirdek özellikleri açıp kapatmak için anahtar/boolean eşlemesi |
+  | `presenceStatus`, `presenceInterval`, `activities` | Durum rotasyonu için isteğe bağlı ayarlar |
 
 > Furmin yapılandırma yükleyicisi hem proje kökünde hem de `config/` klasöründe `config.json` arar ve yer tutucu değerleri
 > otomatik olarak yok sayar. Dosya bulunamazsa `.env` değişkenleri kullanılmaya devam edilir.
@@ -69,6 +70,20 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 Komutları devre dışı bırakmak için adları küçük harflerle yazmanız yeterlidir. Örneğin `disabledSlashCommands: ["ekonomi", "ticket"]`
 ayarlandığında bu komutlar global kayıttan ve yardım menüsünden kaldırılır. Aynı liste `.env` tarafında `DISABLED_SLASH_COMMANDS=ekonomi,ticket`
 şeklinde de tanımlanabilir.
+
+Özellik anahtarları (`featureToggles`) sayesinde guard korumasını, log akışlarını, moderasyon otomasyonunu, ekonomi ve eğlence sistemlerini
+tek yerden açıp kapatabilirsiniz. Örnek:
+
+```json
+"featureToggles": {
+  "guard": false,
+  "logs": true,
+  "economy": true
+}
+```
+
+`.env` tarafında aynı sonucu `FEATURE_TOGGLES={"guard":false}` veya `FEATURE_TOGGLES_GUARD=false` şeklinde elde edebilirsiniz. Yardım
+menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" başlığında özetler.
 
 ## Komut Kategorileri
 > Not: Discord'un slash komut sınırı 100 olduğu için ek yardımcı araçlar prefix üzerinden sunulur (ör. `f!odak-ipuclari`).

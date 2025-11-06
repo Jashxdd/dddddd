@@ -1,5 +1,6 @@
 import { EmbedBuilder } from 'discord.js';
 import { config } from '../config.js';
+import { isFeatureEnabled } from './featureFlags.js';
 
 async function resolveLogChannel(client) {
   if (!config.botLogChannelId) {
@@ -20,6 +21,10 @@ async function resolveLogChannel(client) {
 }
 
 export async function sendBotLog(client, payload) {
+  if (!isFeatureEnabled('logs')) {
+    return false;
+  }
+
   const channel = await resolveLogChannel(client);
   if (!channel) {
     return false;

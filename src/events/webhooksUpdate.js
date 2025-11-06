@@ -4,6 +4,7 @@ import { sendDetailedLog } from '../utils/detailedLog.js';
 import { getGuardConfig } from '../utils/guardConfigStorage.js';
 import { sendGuardLog } from '../utils/guardLog.js';
 import { enforceGuardPenalty } from '../utils/guardActions.js';
+import { isFeatureEnabled } from '../utils/featureFlags.js';
 
 function resolveAuditChannelId(entry) {
   return (
@@ -64,6 +65,10 @@ export default {
         { name: 'Webhook ID', value: target?.id ? `\`${target.id}\`` : 'Belirlenemedi', inline: true }
       ]
     });
+
+    if (!isFeatureEnabled('guard')) {
+      return;
+    }
 
     const guardConfig = await getGuardConfig(channel.guild.id);
     if (!guardConfig.protections.webhookCreate) {

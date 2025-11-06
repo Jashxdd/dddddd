@@ -3,6 +3,7 @@ import { sendModerationLog } from '../utils/modLog.js';
 import { sendDetailedLog } from '../utils/detailedLog.js';
 import { getGuardConfig } from '../utils/guardConfigStorage.js';
 import { sendGuardLog } from '../utils/guardLog.js';
+import { isFeatureEnabled } from '../utils/featureFlags.js';
 
 function describeChannelType(channel) {
   switch (channel.type) {
@@ -48,23 +49,25 @@ export default {
       ]
     });
 
-    const guardConfig = await getGuardConfig(channel.guild.id);
-    if (guardConfig.protections.channelCreate) {
-      const audit = await channel.guild
-        .fetchAuditLogs({ type: AuditLogEvent.ChannelCreate, limit: 1 })
-        .catch(() => null);
-      const entry = audit?.entries?.first();
-      const executor = entry?.executor;
+    if (isFeatureEnabled('guard')) {
+      const guardConfig = await getGuardConfig(channel.guild.id);
+      if (guardConfig.protections.channelCreate) {
+        const audit = await channel.guild
+          .fetchAuditLogs({ type: AuditLogEvent.ChannelCreate, limit: 1 })
+          .catch(() => null);
+        const entry = audit?.entries?.first();
+        const executor = entry?.executor;
 
-      await sendGuardLog(channel.client, channel.guild.id, {
-        title: 'ℹ️ Kanal Oluşturma Kaydı',
-        description: `${channel} kanalı oluşturuldu ve guard tarafından kayıt altına alındı.`,
-        fields: [
-          { name: 'Yetkili', value: executor ? `${executor.tag} (${executor.id})` : 'Belirlenemedi', inline: true },
-          { name: 'Kategori', value: parent, inline: true }
-        ],
-        color: 0x3498db
-      });
+        await sendGuardLog(channel.client, channel.guild.id, {
+          title: 'ℹ️ Kanal Oluşturma Kaydı',
+          description: `${channel} kanalı oluşturuldu ve guard tarafından kayıt altına alındı.`,
+          fields: [
+            { name: 'Yetkili', value: executor ? `${executor.tag} (${executor.id})` : 'Belirlenemedi', inline: true },
+            { name: 'Kategori', value: parent, inline: true }
+          ],
+          color: 0x3498db
+        });
+      }
     }
   }
 };

@@ -2,6 +2,7 @@ import { readdir } from 'node:fs/promises';
 import { join, extname, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { config } from '../config.js';
+import { getFeatureToggleKey, isFeatureEnabled } from './featureFlags.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -81,6 +82,14 @@ export async function loadCommands() {
     if (disabledSlashCommands.has(commandName)) {
       console.log(`ℹ️  ${commandName} komutu yapılandırma tarafından devre dışı bırakıldığı için yüklenmedi.`);
       skippedForDisable += 1;
+      continue;
+    }
+
+    const featureKey = getFeatureToggleKey(command);
+    if (featureKey && !isFeatureEnabled(featureKey)) {
+      console.log(
+        `ℹ️  ${commandName} komutu "${featureKey}" özelliği kapalı olduğu için yüklenmedi.`
+      );
       continue;
     }
 

@@ -1,8 +1,10 @@
 import { EmbedBuilder, PermissionFlagsBits } from 'discord.js';
 import { getGuardConfig } from './guardConfigStorage.js';
+import { isFeatureEnabled } from './featureFlags.js';
 
 export async function sendGuardLog(client, guildId, details) {
   if (!client || !guildId) return false;
+  if (!isFeatureEnabled('guard') || !isFeatureEnabled('logs')) return false;
   const config = await getGuardConfig(guildId);
   if (!config.logChannelId) return false;
 
