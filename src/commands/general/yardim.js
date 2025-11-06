@@ -4,6 +4,7 @@ import {
   ButtonStyle,
   ComponentType,
   EmbedBuilder,
+  MessageFlags,
   SlashCommandBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder
@@ -15,6 +16,7 @@ import { getCategoryMeta } from '../../data/categoryMetadata.js';
 import { buildFurminHubEmbed, buildSupportLinkRow } from '../../utils/hubCard.js';
 import { collectCatalogSummary, computeCatalogStats } from '../../utils/catalogSummary.js';
 import { formatFeatureSummaryLines } from '../../utils/featureFlags.js';
+import { replyWithMessage } from '../../utils/interactionResponse.js';
 
 const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları', 'Slash & Prefix']);
 
@@ -431,17 +433,18 @@ export default {
     const quickRow = createQuickJumpRow(categories, currentIndex);
     const linkRow = buildSupportLinkRow();
 
-    const components = [navigationRow, menuRow];
-    if (quickRow) components.push(quickRow);
-    if (linkRow) components.push(linkRow);
+    const components = [navigationRow, menuRow, quickRow, linkRow].filter(Boolean);
 
-    const response = await interaction.reply({
+    const message = await replyWithMessage(interaction, {
       embeds: [pages[currentIndex]],
       components,
-      ephemeral: true,
-      withResponse: true
+      flags: MessageFlags.Ephemeral
     });
-    const message = await response.fetch();
+
+    if (!message) {
+      console.warn('⚠️ Yardım menüsü yanıt mesajına erişilemedi; etkileşimli bileşenler devre dışı bırakıldı.');
+      return;
+    }
 
     if (pages.length === 1) {
       return;

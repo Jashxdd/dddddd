@@ -1,13 +1,15 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { replyWithMessage } from '../../utils/interactionResponse.js';
 
 export default {
   category: 'Genel',
   data: new SlashCommandBuilder().setName('ping').setDescription('Botun gecikme degerlerini olcer.'),
   async execute(interaction) {
-    const response = await interaction.reply({ content: '📡 Gecikme hesaplanıyor...', withResponse: true });
-    const sent = await response.fetch();
+    const sent = await replyWithMessage(interaction, { content: '📡 Gecikme hesaplanıyor...' });
 
-    const latency = sent.createdTimestamp - interaction.createdTimestamp;
+    const latency = sent?.createdTimestamp
+      ? sent.createdTimestamp - interaction.createdTimestamp
+      : Date.now() - interaction.createdTimestamp;
     const apiLatency = Math.round(interaction.client.ws.ping);
 
     const embed = new EmbedBuilder()
