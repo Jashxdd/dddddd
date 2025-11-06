@@ -15,6 +15,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
   ses kanalı hareketleri ve otomatik filtre ihlalleri
 - ✅ Sunucuya katılan üyelere otomatik rol atayabilen otorol sistemi (listeleme, ekleme/kaldırma, sıfırlama)
 - ✅ Karşılama/veda mesajları ve giriş-çıkış logları: tek mesajla tüm sunucularda geçerli olacak global onay, özelleştirilebilir kanal/mesaj yönetimi
+- ✅ Ayarlanabilir kayıt sistemi: `/kayit` ve `f!kayit` ile yaş doğrulaması, rol dağıtımı, kayıt logu ve guard aynası
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
 - ✅ `f!furmin-merkez` komutu ve slash yardım menüsü, Furmin Merkez panelleriyle destek bağlantılarını ve istatistikleri tek embed'de sunar
 - ✅ Furmin Ekonomi sistemi: günlük ödüller, çalışma ve macera komutları, market/hediyeleşme akışı ve liderlik tablosu hem slash hem önek tarafında desteklenir
@@ -96,7 +97,7 @@ menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" ba�
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/uyari-sil`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu`,
   `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici` ve otomatik moderasyon komutları.
-- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog` (panel alt komutuyla detaylı log ve guard ayarları), `/otorol`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`,
+- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog` (panel alt komutuyla detaylı log ve guard ayarları), `/otorol`, `/kayit`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`,
 `/prefix`,
   `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/cekilis`,
   `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/sahip-kisit`, `/sahip-ekonomi`, `/bakim`, `/sistem-ozeti`,
@@ -106,7 +107,7 @@ menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" ba�
   `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru` ve mini oyunlar.
 - **Ekonomi:** `/ekonomi bakiye|gunluk|calis|macera|gorev|yatirim|hediye|market|satinal|envanter|liderlik`, `f!ekonomi` ile aynı işlemler (günlük ödül, çalışma, macera, görev, yatırım, market, hediyeleşme ve liderlik),
   `f!ekonomi-gorevleri`, `f!yatirim-analizi`, `f!pazar-firsatlari`, `f!bonus-taktikleri`, `f!hediye-planlayici`, `f!banka-gunlugu`.
-- **Önek komutları:** `f!yardim`, `f!ekonomi`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!rolpanel`, `f!cekilis`, `f!premium`, `f!prokomutlar`,
+- **Önek komutları:** `f!yardim`, `f!ekonomi`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!kayit`, `f!rolpanel`, `f!cekilis`, `f!premium`, `f!prokomutlar`,
   `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!selamlama`, `f!ticket`, `f!sunucu-kur`, `f!uyari-sil`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!sahip-kisit`, `f!sahip-ekonomi`, `f!prefix`, `f!furmin-merkez`, `f!bakim`,
   `f!gorev-panosu`, `f!odak-planlayici`, `f!ekip-toplantisi`, `f!icerik-fikirleri`, `f!topluluk-anketi`, `f!gorev-raporu`,
   `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru`,
@@ -118,6 +119,7 @@ menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" ba�
 ### Yeni Sistemler ve Güncellemeler
 - Slash tarafındaki tüm Pro araçları artık tek `/pro` komutunda toplanır; önek tarafında aynı raporlar bireysel komutlar olarak çalışmaya devam eder.
 - `/pro ekonomi` ve `f!pro-ekonomi`, FurCoin dağılımını, görev tamamlamalarını ve yatırım performansını tek bakışta gösterir.
+- `/kayit` ve `f!kayit`, yaş doğrulamasından otomatik rollere kadar kayıt akışını log ve guard yansımalarıyla yönetmenizi sağlar.
 - `/sahip-kisit` ve `/sahip-ekonomi`, Furmin sahibinin global/ekonomi kara listelerini yönetmesine ve kullanıcı bakiyelerini saniyeler içinde ayarlamasına olanak tanır; önek eşleri `f!sahip-kisit` ve `f!sahip-ekonomi` aynı akışı sohbetten sunar.
 - `/rol-panel` ve `f!rolpanel`, seçilen rolleri butonlarla dağıtan modern bir rol seçimi paneli oluşturur.
 - `/modlog panel`, detaylı üye/mesaj/ses log kanallarını ve guard korumalarını menülü olarak yönetmenizi sağlar. Yeni **Beyaz Liste**

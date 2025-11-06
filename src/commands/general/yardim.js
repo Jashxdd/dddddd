@@ -201,6 +201,18 @@ function buildOverviewPage(displayCategories, prefix, statsCategories = displayC
     });
   });
 
+  const registrationCommand = displayCategories
+    .flatMap(([, commands]) => commands)
+    .find((command) => command.key === 'kayit');
+
+  if (registrationCommand) {
+    embed.addFields({
+      name: '🪪 Kayıt Sistemi',
+      value:
+        'Yaş doğrulaması, otomatik rol ataması ve guard log desteğiyle üyeleri güvenle kayıt edebilirsin.'
+    });
+  }
+
   const featureLines = formatFeatureSummaryLines();
   if (featureLines.length) {
     embed.addFields({

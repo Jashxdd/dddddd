@@ -185,6 +185,18 @@ export default {
       embed.addFields({ name: index === 0 ? 'Kategoriler' : '\u200B', value });
     });
 
+    const registrationCommand = sorted
+      .flatMap(([, commands]) => commands)
+      .find((command) => command.key === 'kayit');
+
+    if (registrationCommand) {
+      embed.addFields({
+        name: '🪪 Kayıt Sistemi',
+        value:
+          'Yaş doğrulaması, otomatik rol ataması ve guard log aynasıyla kayıt sürecini kontrol altına al.'
+      });
+    }
+
     const featureLines = formatFeatureSummaryLines();
     if (featureLines.length) {
       embed.addFields({ name: 'Özellik Durumu', value: featureLines.join('\n') });

@@ -16,7 +16,7 @@ export const categoryMetadata = {
   Sistem: {
     emoji: '⚙️',
     color: 0x95a5a6,
-    description: 'Otomasyonlar, kurallar, mod-log ve yönetim panelleri.',
+    description: 'Otomasyonlar, kayıt sistemi, kurallar, mod-log ve yönetim panelleri.',
     order: 3,
     group: 'Sistemler'
   },
