@@ -5,10 +5,10 @@ import {
   endGiveaway,
   getGiveaway,
   getGiveawayMap,
-  listActiveGiveaways,
   removeParticipant,
   updateGiveaway
 } from './giveawayStorage.js';
+export { listActiveGiveaways } from './giveawayStorage.js';
 import { sendModerationLog } from './modLog.js';
 import { sendDetailedLog } from './detailedLog.js';
 
