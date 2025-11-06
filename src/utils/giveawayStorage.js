@@ -54,7 +54,7 @@ async function persist() {
   await writing;
 }
 
-export async function createGiveaway(data) {
+async function createGiveaway(data) {
   await ensureLoaded();
   const id = data.id ?? crypto.randomUUID();
   const guild = ensureGuild(data.guildId);
@@ -76,12 +76,12 @@ export async function createGiveaway(data) {
   return clone(guild[id]);
 }
 
-export async function getGiveaway(guildId, giveawayId) {
+async function getGiveaway(guildId, giveawayId) {
   await ensureLoaded();
   return clone(cache[guildId]?.[giveawayId] ?? null);
 }
 
-export async function updateGiveaway(guildId, giveawayId, updates) {
+async function updateGiveaway(guildId, giveawayId, updates) {
   await ensureLoaded();
   const guild = ensureGuild(guildId);
   const existing = guild[giveawayId];
@@ -91,7 +91,7 @@ export async function updateGiveaway(guildId, giveawayId, updates) {
   return clone(guild[giveawayId]);
 }
 
-export async function listActiveGiveaways(guildId) {
+async function listActiveGiveaways(guildId) {
   await ensureLoaded();
   const guild = cache[guildId];
   if (!guild) return [];
@@ -100,14 +100,14 @@ export async function listActiveGiveaways(guildId) {
     .map((item) => clone(item));
 }
 
-export async function listGiveaways(guildId) {
+async function listGiveaways(guildId) {
   await ensureLoaded();
   const guild = cache[guildId];
   if (!guild) return [];
   return Object.values(guild).map((item) => clone(item));
 }
 
-export async function addParticipant(guildId, giveawayId, userId) {
+async function addParticipant(guildId, giveawayId, userId) {
   if (!guildId || !giveawayId || !userId) return null;
   await ensureLoaded();
   const guild = ensureGuild(guildId);
@@ -120,7 +120,7 @@ export async function addParticipant(guildId, giveawayId, userId) {
   return clone(giveaway);
 }
 
-export async function removeParticipant(guildId, giveawayId, userId) {
+async function removeParticipant(guildId, giveawayId, userId) {
   if (!guildId || !giveawayId || !userId) return null;
   await ensureLoaded();
   const guild = ensureGuild(guildId);
@@ -131,7 +131,7 @@ export async function removeParticipant(guildId, giveawayId, userId) {
   return clone(giveaway);
 }
 
-export async function endGiveaway(guildId, giveawayId, winnerIds = []) {
+async function endGiveaway(guildId, giveawayId, winnerIds = []) {
   await ensureLoaded();
   const guild = ensureGuild(guildId);
   const giveaway = guild[giveawayId];
@@ -142,7 +142,7 @@ export async function endGiveaway(guildId, giveawayId, winnerIds = []) {
   return clone(giveaway);
 }
 
-export async function deleteGiveaway(guildId, giveawayId) {
+async function deleteGiveaway(guildId, giveawayId) {
   await ensureLoaded();
   const guild = ensureGuild(guildId);
   if (!guild[giveawayId]) return false;
@@ -151,7 +151,7 @@ export async function deleteGiveaway(guildId, giveawayId) {
   return true;
 }
 
-export async function findGiveawayByMessage(guildId, messageId) {
+async function findGiveawayByMessage(guildId, messageId) {
   await ensureLoaded();
   const guild = cache[guildId];
   if (!guild) return null;
@@ -160,7 +160,37 @@ export async function findGiveawayByMessage(guildId, messageId) {
   );
 }
 
-export async function getGiveawayMap() {
+async function getGiveawayMap() {
   await ensureLoaded();
   return clone(cache);
 }
+
+export {
+  createGiveaway,
+  getGiveaway,
+  updateGiveaway,
+  listActiveGiveaways,
+  listGiveaways,
+  addParticipant,
+  removeParticipant,
+  endGiveaway,
+  deleteGiveaway,
+  findGiveawayByMessage,
+  getGiveawayMap
+};
+
+const giveawayStorage = {
+  createGiveaway,
+  getGiveaway,
+  updateGiveaway,
+  listActiveGiveaways,
+  listGiveaways,
+  addParticipant,
+  removeParticipant,
+  endGiveaway,
+  deleteGiveaway,
+  findGiveawayByMessage,
+  getGiveawayMap
+};
+
+export default giveawayStorage;
