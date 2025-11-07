@@ -30,7 +30,7 @@ export const categoryMetadata = {
   Ekonomi: {
     emoji: '💰',
     color: 0xf39c12,
-    description: 'Furmin ekonomisi: günlük ödüller, maceralar ve market.',
+    description: 'Furmin ekonomisi: günlük ödüller, maceralar, market ve ayrıntılı işlem kayıtları.',
     order: 5,
     group: 'Ekonomi Sistemleri'
   },

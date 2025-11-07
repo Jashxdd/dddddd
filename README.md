@@ -19,6 +19,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
 - ✅ `f!furmin-merkez` komutu ve slash yardım menüsü, Furmin Merkez panelleriyle destek bağlantılarını ve istatistikleri tek embed'de sunar
 - ✅ Furmin Ekonomi sistemi: günlük ödüller, çalışma ve macera komutları, market/hediyeleşme akışı ve liderlik tablosu hem slash hem önek tarafında desteklenir
+- ✅ Ekonomi defteri ve log kanalı: tüm ekonomi işlemleri kalıcı deftere kaydedilir, `/ekonomi kayit` ve mod-log panelindeki **Ekonomi Logu** ile raporlanır
 - ✅ Global kara liste ve ekonomi kara listesi: bot sahibi `/sahip-kisit` ve `/sahip-ekonomi` (ve önek eşleri) ile erişimi kısıtlayabilir, bakiyeleri düzenleyebilir
 - ✅ Furmin Pro yönetim merkezi: tüm premium analizler `/pro` komutunun alt komutlarında toplanır, önek tarafı aynı raporları ayrı komutlarla sunar
 - ✅ Herkese açık butonlu rol paneli (`/rol-panel` ve `f!rolpanel`) ve Pro üyelik yönetimini tek komutta toplayan `/pro uyelik`
@@ -97,7 +98,7 @@ menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" ba�
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/nuke`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/uyari-sil`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu`,
   `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici`, `f!nuke` ve otomatik moderasyon komutları.
-- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog` (panel alt komutuyla detaylı log ve guard ayarları), `/otorol`, `/kayit`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`,
+- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog` (panel alt komutuyla genel/üye/mesaj/ses + ekonomi log kanalları ve guard ayarları), `/otorol`, `/kayit`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`,
 `/prefix`,
   `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/cekilis`,
   `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/sahip-kisit`, `/sahip-ekonomi`, `/bakim`, `/sistem-ozeti`,
@@ -105,7 +106,7 @@ menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" ba�
 - **Özel Ses:** `f!ozel-ses` ile kullanıcıya özel ses odası açılır; paneldeki butonlarla kilit, üye limiti, isim ve sahiplik anlık yönetilir.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir`,
   `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru` ve mini oyunlar.
-- **Ekonomi:** `/ekonomi bakiye|gunluk|calis|macera|gorev|yatirim|hediye|market|satinal|envanter|liderlik`, `f!ekonomi` ile aynı işlemler (günlük ödül, çalışma, macera, görev, yatırım, market, hediyeleşme ve liderlik),
+- **Ekonomi:** `/ekonomi bakiye|kayit|gunluk|calis|macera|gorev|yatirim|hediye|market|satinal|envanter|liderlik`, `f!ekonomi` ile aynı işlemler (günlük ödül, çalışma, macera, görev, yatırım, market, hediyeleşme, liderlik ve işlem geçmişi görüntüleme),
   `f!ekonomi-gorevleri`, `f!yatirim-analizi`, `f!pazar-firsatlari`, `f!bonus-taktikleri`, `f!hediye-planlayici`, `f!banka-gunlugu`.
 - **Önek komutları:** `f!yardim`, `f!ekonomi`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!kayit`, `f!rolpanel`, `f!cekilis`, `f!premium`, `f!prokomutlar`,
   `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!selamlama`, `f!ticket`, `f!sunucu-kur`, `f!uyari-sil`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!sahip-kisit`, `f!sahip-ekonomi`, `f!prefix`, `f!furmin-merkez`, `f!bakim`,
@@ -124,7 +125,7 @@ menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" ba�
 - `/rol-panel` ve `f!rolpanel`, seçilen rolleri butonlarla dağıtan modern bir rol seçimi paneli oluşturur.
 - `/modlog panel`, detaylı üye/mesaj/ses log kanallarını ve guard korumalarını menülü olarak yönetmenizi sağlar. Yeni **Beyaz Liste**
   düğmesiyle guard yaptırımlarından muaf tutulacak rol listesini doğrudan panelden güncelleyebilirsiniz.
-- Furmin ekonomi modülü günlük ödül serisi, çalışma ve macera komutları, market alışverişi, hediyeleşme ve liderlik tablosunu tek merkezde toplar.
+- Furmin ekonomi modülü günlük ödül serisi, çalışma ve macera komutları, market alışverişi, hediyeleşme, liderlik tablosu ve ayrıntılı işlem kayıtlarını tek merkezde toplar.
 - Ekonomi tarafındaki yeni `/ekonomi gorev` ve `/ekonomi yatirim` alt komutları (önek eşleriyle birlikte) üyelerin görev tamamlayıp yatırım şansı denemesini sağlar.
 - Reklam engeli isteğe bağlı olarak üçüncü ihlalde otomatik ban uygular; uyarı sayacı sıfırlanır ve süreç bot loglarına ayrıntılı şekilde işlenir.
 - Moderatörler `/uyari istatistik` ve `f!mod-uyari-ozet` komutlarıyla uyarı dağılımını anında raporlayabilir.
@@ -148,6 +149,7 @@ menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" ba�
 ## Moderasyon Logu
 `/modlog` ile ayarlanan kanal, aşağıdaki olayları zengin embed mesajlarıyla raporlar:
 - Ban/kick, timeout değişimleri, uyarı yönetimi ve toplu silme işlemleri
+- Ekonomi komutlarıyla yapılan bakiye değişiklikleri (günlük ödül, çalışma, macera, görev, yatırım, hediye, satın alma ve sahip düzenlemeleri)
 - Mesaj silme/düzenleme, otomatik kelime filtresi ihlalleri ve Discord AutoMod eylemleri
 - Üye giriş/çıkışları, rol ve takma ad değişiklikleri, zaman aşımı güncellemeleri
 - Kanal ve rol oluşturma-silme işlemleri ile mod-log testi

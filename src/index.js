@@ -16,6 +16,8 @@ function normaliseInteractionOptions(options) {
   }
 
   const clone = { ...options };
+  const originalFlags = clone.flags;
+  const hadEphemeral = Object.prototype.hasOwnProperty.call(clone, 'ephemeral');
 
   if (Object.prototype.hasOwnProperty.call(clone, 'ephemeral')) {
     if (clone.ephemeral) {
@@ -35,6 +37,27 @@ function normaliseInteractionOptions(options) {
     delete clone.ephemeral;
   }
 
+  let flagBits = 0;
+  if (typeof clone.flags === 'number') {
+    flagBits = clone.flags;
+  } else if (Array.isArray(clone.flags)) {
+    flagBits = clone.flags
+      .filter((flag) => typeof flag === 'number')
+      .reduce((acc, flag) => acc | flag, 0);
+    clone.flags = flagBits;
+  } else if (clone.flags && typeof clone.flags === 'object' && typeof clone.flags.bitfield === 'number') {
+    flagBits = clone.flags.bitfield;
+    clone.flags = flagBits;
+  }
+
+  if (!hadEphemeral && flagBits && (flagBits & MessageFlags.Ephemeral)) {
+    clone.ephemeral = true;
+  }
+
+  if (!flagBits && originalFlags === undefined) {
+    delete clone.flags;
+  }
+
   return clone;
 }
 
@@ -44,7 +67,37 @@ for (const method of ['reply', 'deferReply', 'followUp', 'editReply', 'deferUpda
 
   BaseInteraction.prototype[method] = function patchedInteractionMethod(options, ...args) {
     const normalised = normaliseInteractionOptions(options);
-    return original.call(this, normalised, ...args);
+    try {
+      return original.call(this, normalised, ...args);
+    } catch (error) {
+      if (
+        normalised &&
+        typeof normalised === 'object' &&
+        Object.prototype.hasOwnProperty.call(normalised, 'flags') &&
+        !Object.prototype.hasOwnProperty.call(normalised, '__legacyTried')
+      ) {
+        const fallback = { ...normalised };
+        fallback.__legacyTried = true;
+        const fallbackFlags = fallback.flags;
+        delete fallback.flags;
+        if (
+          !Object.prototype.hasOwnProperty.call(fallback, 'ephemeral') &&
+          typeof fallbackFlags === 'number' &&
+          (fallbackFlags & MessageFlags.Ephemeral)
+        ) {
+          fallback.ephemeral = true;
+        }
+
+        try {
+          delete fallback.__legacyTried;
+          return original.call(this, fallback, ...args);
+        } catch (innerError) {
+          throw innerError;
+        }
+      }
+
+      throw error;
+    }
   };
 }
 

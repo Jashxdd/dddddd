@@ -5,6 +5,8 @@ import {
   setBalance
 } from '../../utils/economyStorage.js';
 import { isEconomyBlacklisted } from '../../utils/blacklistStorage.js';
+import { recordEconomyEvent } from '../../utils/economyLedgerStorage.js';
+import { logEconomyChange } from '../../utils/economyLog.js';
 
 function formatCurrency(amount) {
   const safe = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
@@ -77,10 +79,32 @@ export default {
 
     const sub = interaction.options.getSubcommand();
     const target = interaction.options.getUser('uye', true);
+    const guildId = interaction.guildId ?? '';
 
     if (sub === 'ekle') {
       const amount = interaction.options.getInteger('miktar', true);
       const balance = await modifyBalance(target.id, amount);
+      await recordEconomyEvent({
+        userId: target.id,
+        guildId,
+        executorId: interaction.user.id,
+        type: 'owner_adjust',
+        amount,
+        balanceAfter: balance,
+        note: 'Sahip tarafından bakiye eklendi.'
+      });
+
+      if (interaction.inGuild()) {
+        await logEconomyChange(interaction.client, interaction.guildId, {
+          userId: target.id,
+          executorId: interaction.user.id,
+          amount,
+          balanceAfter: balance,
+          type: 'Sahip İşlemi',
+          note: 'Sahip tarafından bakiye eklendi.'
+        });
+      }
+
       await interaction.editReply({
         content: `✅ ${target} kullanıcısına **${formatCurrency(amount)}** eklendi. Yeni bakiye: **${formatCurrency(balance)}**.`
       });
@@ -90,6 +114,26 @@ export default {
     if (sub === 'cikar') {
       const amount = interaction.options.getInteger('miktar', true);
       const balance = await modifyBalance(target.id, -amount);
+      await recordEconomyEvent({
+        userId: target.id,
+        guildId,
+        executorId: interaction.user.id,
+        type: 'owner_adjust',
+        amount: -amount,
+        balanceAfter: balance,
+        note: 'Sahip tarafından bakiye düşürüldü.'
+      });
+
+      if (interaction.inGuild()) {
+        await logEconomyChange(interaction.client, interaction.guildId, {
+          userId: target.id,
+          executorId: interaction.user.id,
+          amount: -amount,
+          balanceAfter: balance,
+          type: 'Sahip İşlemi',
+          note: 'Sahip tarafından bakiye düşürüldü.'
+        });
+      }
       await interaction.editReply({
         content: `♻️ ${target} kullanıcısından **${formatCurrency(amount)}** düşüldü. Güncel bakiye: **${formatCurrency(balance)}**.`
       });
@@ -98,7 +142,30 @@ export default {
 
     if (sub === 'ayarla') {
       const amount = interaction.options.getInteger('miktar', true);
+      const previous = await getEconomyProfile(target.id);
       const balance = await setBalance(target.id, amount);
+      const delta = balance - previous.balance;
+
+      await recordEconomyEvent({
+        userId: target.id,
+        guildId,
+        executorId: interaction.user.id,
+        type: 'owner_adjust',
+        amount: delta,
+        balanceAfter: balance,
+        note: `Yeni bakiye: ${formatCurrency(balance)}`
+      });
+
+      if (interaction.inGuild()) {
+        await logEconomyChange(interaction.client, interaction.guildId, {
+          userId: target.id,
+          executorId: interaction.user.id,
+          amount: delta,
+          balanceAfter: balance,
+          type: 'Sahip İşlemi',
+          note: `Yeni bakiye: ${formatCurrency(balance)}`
+        });
+      }
       await interaction.editReply({
         content: `🧮 ${target} kullanıcısının bakiyesi **${formatCurrency(balance)}** olarak güncellendi.`
       });

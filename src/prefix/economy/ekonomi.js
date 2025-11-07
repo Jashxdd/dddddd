@@ -21,6 +21,8 @@ import {
   INVESTMENT_MINIMUM
 } from '../../utils/economyGameplay.js';
 import { isEconomyBlacklisted } from '../../utils/blacklistStorage.js';
+import { getUserEconomyHistory, recordEconomyEvent } from '../../utils/economyLedgerStorage.js';
+import { logEconomyChange } from '../../utils/economyLog.js';
 
 const WORK_COOLDOWN = 60 * 60 * 1000;
 const ADVENTURE_COOLDOWN = 90 * 60 * 1000;
@@ -28,8 +30,21 @@ const DAILY_BASE_REWARD = 250;
 const DAILY_STREAK_BONUS = 35;
 const ADVENTURE_FAIL_PENALTY = 40;
 
+const TYPE_LABELS = {
+  daily: 'Günlük Ödül',
+  work: 'Çalışma',
+  adventure: 'Macera',
+  adventure_fail: 'Macera Kaybı',
+  quest: 'Görev',
+  investment: 'Yatırım',
+  gift_sent: 'Hediye Gönderimi',
+  gift_received: 'Hediye Alımı',
+  purchase: 'Market Alımı',
+  owner_adjust: 'Sahip İşlemi'
+};
+
 const usage =
-  'Kullanım: `ekonomi bakiye [@üye]`, `ekonomi gunluk`, `ekonomi calis`, `ekonomi macera`, `ekonomi gorev`, `ekonomi yatirim <miktar>`, `ekonomi hediye @üye miktar`, `ekonomi market`, `ekonomi satinal <urun> [adet]`, `ekonomi envanter`, `ekonomi liderlik`.';
+  'Kullanım: `ekonomi bakiye [@üye]`, `ekonomi kayit [@üye] [limit]`, `ekonomi gunluk`, `ekonomi calis`, `ekonomi macera`, `ekonomi gorev`, `ekonomi yatirim <miktar>`, `ekonomi hediye @üye miktar`, `ekonomi market`, `ekonomi satinal <urun> [adet]`, `ekonomi envanter`, `ekonomi liderlik`.';
 
 function formatCurrency(amount) {
   const safeAmount = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
@@ -55,6 +70,41 @@ function pickRandom(min, max) {
   const lower = Math.min(min, max);
   const upper = Math.max(min, max);
   return Math.floor(Math.random() * (upper - lower + 1)) + lower;
+}
+
+function resolveTypeLabel(type) {
+  if (!type) return 'Genel İşlem';
+  if (TYPE_LABELS[type]) return TYPE_LABELS[type];
+  return type
+    .split(/[-_\s]+/g)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function buildHistoryEmbed(user, entries) {
+  const embed = new EmbedBuilder()
+    .setColor(0xf39c12)
+    .setTitle(`📜 ${user.username} — Ekonomi Kayıtları`)
+    .setTimestamp();
+
+  if (!entries.length) {
+    embed.setDescription('Henüz kayıt bulunamadı. Ekonomi komutlarını kullanarak geçmişini oluşturabilirsin.');
+    return embed;
+  }
+
+  const lines = entries.map((entry) => {
+    const amountLabel = entry.amount >= 0
+      ? `+${formatCurrency(entry.amount)}`
+      : `-${formatCurrency(Math.abs(entry.amount))}`;
+    const balanceLabel = formatCurrency(entry.balanceAfter);
+    const timeLabel = entry.timestamp ? `<t:${Math.floor(entry.timestamp / 1000)}:R>` : 'Bilinmiyor';
+    const noteLine = entry.note ? `\n    ↳ ${entry.note}` : '';
+    return `• **${resolveTypeLabel(entry.type)}** • ${amountLabel} • Bakiye: ${balanceLabel} • ${timeLabel}${noteLine}`;
+  });
+
+  embed.setDescription(lines.join('\n'));
+  return embed;
 }
 
 function buildMarketEmbed() {
@@ -129,6 +179,7 @@ export default {
   async execute(message, args, context) {
     const prefix = context?.prefix ?? 'f!';
     const action = (args.shift() ?? '').toLowerCase();
+    const guildId = message.guildId ?? '';
 
     if (!action) {
       await message.reply({
@@ -175,6 +226,17 @@ export default {
         return;
       }
 
+      if (['kayit', 'kayıt', 'history'].includes(action)) {
+        const target = message.mentions.users.first() ?? message.client.users.cache.get(args[0]) ?? message.author;
+        const limitArg = message.mentions.users.first() ? args[0] : args[1];
+        const parsedLimit = Number.parseInt(limitArg ?? '', 10);
+        const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 10) : 5;
+        const history = await getUserEconomyHistory(target.id, { limit });
+        const embed = buildHistoryEmbed(target, history);
+        await message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
+        return;
+      }
+
       if (['gunluk', 'daily'].includes(action)) {
         const check = await canClaimDaily(userId);
         if (!check.available) {
@@ -188,7 +250,28 @@ export default {
         const streak = await recordDailyClaim(userId);
         const bonus = Math.min(DAILY_STREAK_BONUS * (streak.count - 1), 350);
         const reward = DAILY_BASE_REWARD + Math.max(0, bonus);
-        await modifyBalance(userId, reward);
+        const balanceAfter = await modifyBalance(userId, reward);
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: message.author.id,
+          type: 'daily',
+          amount: reward,
+          balanceAfter,
+          note: bonus > 0 ? `Seri bonusu: ${formatCurrency(bonus)}` : undefined
+        });
+
+        if (message.inGuild()) {
+          await logEconomyChange(message.client, message.guildId, {
+            userId,
+            executorId: message.author.id,
+            amount: reward,
+            balanceAfter,
+            type: resolveTypeLabel('daily'),
+            note: `Günlük seri: ${streak.count} gün`
+          });
+        }
 
         const embed = new EmbedBuilder()
           .setColor(0x2ecc71)
@@ -217,9 +300,28 @@ export default {
         }
 
         const reward = pickRandom(80, 160);
-        await modifyBalance(userId, reward);
+        const balanceAfter = await modifyBalance(userId, reward);
         await incrementStat(userId, 'work', 1);
         await recordActionUsage(userId, 'work');
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: message.author.id,
+          type: 'work',
+          amount: reward,
+          balanceAfter
+        });
+
+        if (message.inGuild()) {
+          await logEconomyChange(message.client, message.guildId, {
+            userId,
+            executorId: message.author.id,
+            amount: reward,
+            balanceAfter,
+            type: resolveTypeLabel('work')
+          });
+        }
 
         await message.reply({
           content: `💼 Mesai tamamlandı! **${formatCurrency(reward)}** kazandın.`,
@@ -243,14 +345,52 @@ export default {
 
         if (Math.random() < 0.7) {
           const reward = pickRandom(120, 260);
-          await modifyBalance(userId, reward);
+          const balanceAfter = await modifyBalance(userId, reward);
+          await recordEconomyEvent({
+            userId,
+            guildId,
+            executorId: message.author.id,
+            type: 'adventure',
+            amount: reward,
+            balanceAfter
+          });
+
+          if (message.inGuild()) {
+            await logEconomyChange(message.client, message.guildId, {
+              userId,
+              executorId: message.author.id,
+              amount: reward,
+              balanceAfter,
+              type: resolveTypeLabel('adventure'),
+              note: 'Macera başarıyla tamamlandı.'
+            });
+          }
           await message.reply({
             content: `🗺️ Macera başarılı! Hazine sandığından **${formatCurrency(reward)}** topladın.`,
             allowedMentions: { repliedUser: false }
           });
         } else {
           const penalty = pickRandom(10, ADVENTURE_FAIL_PENALTY);
-          await modifyBalance(userId, -penalty);
+          const balanceAfter = await modifyBalance(userId, -penalty);
+          await recordEconomyEvent({
+            userId,
+            guildId,
+            executorId: message.author.id,
+            type: 'adventure_fail',
+            amount: -penalty,
+            balanceAfter
+          });
+
+          if (message.inGuild()) {
+            await logEconomyChange(message.client, message.guildId, {
+              userId,
+              executorId: message.author.id,
+              amount: -penalty,
+              balanceAfter,
+              type: resolveTypeLabel('adventure_fail'),
+              note: 'Macera sırasında kayıp yaşandı.'
+            });
+          }
           await message.reply({
             content: `💥 Ufak bir aksilik oldu ve **${formatCurrency(penalty)}** masraf yaptın.`,
             allowedMentions: { repliedUser: false }
@@ -274,7 +414,28 @@ export default {
 
         await recordActionUsage(userId, 'quest');
         await incrementStat(userId, 'quests', 1);
-        await modifyBalance(userId, reward);
+        const balanceAfter = await modifyBalance(userId, reward);
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: message.author.id,
+          type: 'quest',
+          amount: reward,
+          balanceAfter,
+          note: scenario.prompt
+        });
+
+        if (message.inGuild()) {
+          await logEconomyChange(message.client, message.guildId, {
+            userId,
+            executorId: message.author.id,
+            amount: reward,
+            balanceAfter,
+            type: resolveTypeLabel('quest'),
+            note: scenario.result
+          });
+        }
 
         const profile = await getEconomyProfile(userId);
         const embed = new EmbedBuilder()
@@ -338,6 +499,28 @@ export default {
 
         const netChange = outcome.payout - amount;
         const refreshed = await getEconomyProfile(userId);
+        const finalBalance = refreshed.balance;
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: message.author.id,
+          type: 'investment',
+          amount: netChange,
+          balanceAfter: finalBalance,
+          note: outcome.message
+        });
+
+        if (message.inGuild()) {
+          await logEconomyChange(message.client, message.guildId, {
+            userId,
+            executorId: message.author.id,
+            amount: netChange,
+            balanceAfter: finalBalance,
+            type: resolveTypeLabel('investment'),
+            note: outcome.message
+          });
+        }
 
         const embed = new EmbedBuilder()
           .setColor(outcome.success ? 0x2ecc71 : 0xe74c3c)
@@ -397,10 +580,53 @@ export default {
           return;
         }
 
-        await modifyBalance(userId, -amount);
-        await modifyBalance(target.id, amount);
+        const senderBalance = await modifyBalance(userId, -amount);
+        const recipientBalance = await modifyBalance(target.id, amount);
         await incrementStat(userId, 'giftsSent', 1);
         await incrementStat(target.id, 'giftsReceived', 1);
+
+        const senderNote = `Alıcı: ${target.username ?? target.tag ?? target.id}`;
+        const recipientNote = `Gönderen: ${message.author.username ?? message.author.tag ?? message.author.id}`;
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: message.author.id,
+          type: 'gift_sent',
+          amount: -amount,
+          balanceAfter: senderBalance,
+          note: senderNote
+        });
+
+        await recordEconomyEvent({
+          userId: target.id,
+          guildId,
+          executorId: message.author.id,
+          type: 'gift_received',
+          amount,
+          balanceAfter: recipientBalance,
+          note: recipientNote
+        });
+
+        if (message.inGuild()) {
+          await logEconomyChange(message.client, message.guildId, {
+            userId,
+            executorId: message.author.id,
+            amount: -amount,
+            balanceAfter: senderBalance,
+            type: resolveTypeLabel('gift_sent'),
+            note: senderNote
+          });
+
+          await logEconomyChange(message.client, message.guildId, {
+            userId: target.id,
+            executorId: message.author.id,
+            amount,
+            balanceAfter: recipientBalance,
+            type: resolveTypeLabel('gift_received'),
+            note: recipientNote
+          });
+        }
 
         await message.reply({
           content: `🎁 ${userMention(target.id)} üyesine **${formatCurrency(amount)}** gönderdin.`,
@@ -441,13 +667,38 @@ export default {
           return;
         }
 
-        await modifyBalance(userId, -cost);
+        const balanceAfter = await modifyBalance(userId, -cost);
         const result = await addInventoryItem(userId, item.id, quantity);
+
+        const purchaseNote = `${item.name} × ${quantity}`;
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: message.author.id,
+          type: 'purchase',
+          amount: -cost,
+          balanceAfter,
+          note: purchaseNote
+        });
+
+        if (message.inGuild()) {
+          await logEconomyChange(message.client, message.guildId, {
+            userId,
+            executorId: message.author.id,
+            amount: -cost,
+            balanceAfter,
+            type: resolveTypeLabel('purchase'),
+            note: purchaseNote
+          });
+        }
 
         const embed = new EmbedBuilder()
           .setColor(0x8e44ad)
           .setTitle('🛍️ Alışveriş Başarılı')
-          .setDescription(`${item.name} ürününden ${quantity} adet aldın. Toplam tutar: ${formatCurrency(cost)}.`)
+          .setDescription(
+            `${item.name} ürününden ${quantity} adet aldın. Toplam tutar: ${formatCurrency(cost)}. Yeni bakiye: ${formatCurrency(balanceAfter)}.`
+          )
           .addFields({ name: 'Envanter', value: `${item.name}: ${result.total} adet` })
           .setTimestamp();
 

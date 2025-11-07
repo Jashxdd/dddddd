@@ -33,7 +33,8 @@ const LOG_CATEGORY_LABELS = {
   general: 'Genel Log',
   member: 'Üye Logu',
   message: 'Mesaj Logu',
-  voice: 'Ses Logu'
+  voice: 'Ses Logu',
+  economy: 'Ekonomi Logu'
 };
 
 function formatChannelMention(guild, channelId) {
@@ -103,7 +104,16 @@ function buildLogSelectRow(userId) {
           label,
           value: key,
           description: `${label} için kanal ataması yapın.`,
-          emoji: key === 'general' ? '📝' : key === 'member' ? '👥' : key === 'message' ? '💬' : '🔊'
+          emoji:
+            key === 'general'
+              ? '📝'
+              : key === 'member'
+                ? '👥'
+                : key === 'message'
+                  ? '💬'
+                  : key === 'voice'
+                    ? '🔊'
+                    : '💰'
         }))
       )
   );

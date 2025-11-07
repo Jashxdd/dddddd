@@ -5,6 +5,8 @@ import {
   setBalance
 } from '../../utils/economyStorage.js';
 import { isEconomyBlacklisted } from '../../utils/blacklistStorage.js';
+import { recordEconomyEvent } from '../../utils/economyLedgerStorage.js';
+import { logEconomyChange } from '../../utils/economyLog.js';
 
 const usage =
   'Kullanım: `sahip-ekonomi ekle @kullanici miktar`, `sahip-ekonomi cikar @kullanici miktar`, `sahip-ekonomi ayarla @kullanici miktar`, `sahip-ekonomi goruntule @kullanici`.';
@@ -32,6 +34,7 @@ export default {
     }
 
     const actionRaw = (args.shift() ?? '').toLowerCase();
+    const guildId = message.guildId ?? '';
     if (!actionRaw) {
       await message.reply({ content: usage, allowedMentions: { repliedUser: false } });
       return;
@@ -122,6 +125,27 @@ export default {
         return;
       }
       const balance = await modifyBalance(target.id, amount);
+      await recordEconomyEvent({
+        userId: target.id,
+        guildId,
+        executorId: message.author.id,
+        type: 'owner_adjust',
+        amount,
+        balanceAfter: balance,
+        note: 'Sahip tarafından bakiye eklendi.'
+      });
+
+      if (message.inGuild()) {
+        await logEconomyChange(message.client, message.guildId, {
+          userId: target.id,
+          executorId: message.author.id,
+          amount,
+          balanceAfter: balance,
+          type: 'Sahip İşlemi',
+          note: 'Sahip tarafından bakiye eklendi.'
+        });
+      }
+
       await message.reply({
         content: `✅ ${target} kullanıcısına **${formatCurrency(amount)}** eklendi. Yeni bakiye: **${formatCurrency(balance)}**.`,
         allowedMentions: { repliedUser: false }
@@ -138,6 +162,27 @@ export default {
         return;
       }
       const balance = await modifyBalance(target.id, -amount);
+      await recordEconomyEvent({
+        userId: target.id,
+        guildId,
+        executorId: message.author.id,
+        type: 'owner_adjust',
+        amount: -amount,
+        balanceAfter: balance,
+        note: 'Sahip tarafından bakiye düşürüldü.'
+      });
+
+      if (message.inGuild()) {
+        await logEconomyChange(message.client, message.guildId, {
+          userId: target.id,
+          executorId: message.author.id,
+          amount: -amount,
+          balanceAfter: balance,
+          type: 'Sahip İşlemi',
+          note: 'Sahip tarafından bakiye düşürüldü.'
+        });
+      }
+
       await message.reply({
         content: `♻️ ${target} kullanıcısından **${formatCurrency(amount)}** düşüldü. Güncel bakiye: **${formatCurrency(balance)}**.`,
         allowedMentions: { repliedUser: false }
@@ -145,7 +190,31 @@ export default {
       return;
     }
 
+    const previous = await getEconomyProfile(target.id);
     const balance = await setBalance(target.id, Math.max(0, amount));
+    const delta = balance - previous.balance;
+
+    await recordEconomyEvent({
+      userId: target.id,
+      guildId,
+      executorId: message.author.id,
+      type: 'owner_adjust',
+      amount: delta,
+      balanceAfter: balance,
+      note: `Yeni bakiye: ${formatCurrency(balance)}`
+    });
+
+    if (message.inGuild()) {
+      await logEconomyChange(message.client, message.guildId, {
+        userId: target.id,
+        executorId: message.author.id,
+        amount: delta,
+        balanceAfter: balance,
+        type: 'Sahip İşlemi',
+        note: `Yeni bakiye: ${formatCurrency(balance)}`
+      });
+    }
+
     await message.reply({
       content: `🧮 ${target} kullanıcısının bakiyesi **${formatCurrency(balance)}** olarak güncellendi.`,
       allowedMentions: { repliedUser: false }

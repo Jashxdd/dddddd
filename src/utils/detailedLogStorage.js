@@ -9,7 +9,8 @@ const defaultChannels = {
   general: '',
   member: '',
   message: '',
-  voice: ''
+  voice: '',
+  economy: ''
 };
 
 let cache = {};

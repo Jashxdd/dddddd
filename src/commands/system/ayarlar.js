@@ -5,6 +5,8 @@ import { getKeywordRuleInfo } from '../../utils/discordAutomod.js';
 import { getWarningStats } from '../../utils/warnStorage.js';
 import { getAcceptedUsers } from '../../utils/rulesStorage.js';
 import { describeAutoRoles } from '../../utils/autoRoleStorage.js';
+import { listDetailedLogChannels } from '../../utils/detailedLogStorage.js';
+import { getEconomyLedgerStats } from '../../utils/economyLedgerStorage.js';
 
 export default {
   category: 'Sistem',
@@ -20,24 +22,33 @@ export default {
     const guildId = interaction.guildId;
     const [
       modLogChannelId,
+      detailedLogChannels,
       automodEnabled,
       bannedWords,
       discordAutomodInfo,
       warningStats,
       acceptedUsers,
-      autoRoleSummary
+      autoRoleSummary,
+      ledgerStats
     ] = await Promise.all([
       getModLogChannelId(guildId),
+      listDetailedLogChannels(guildId),
       isAutomodEnabled(guildId),
       getBannedWords(guildId),
       getKeywordRuleInfo(interaction.guild),
       getWarningStats(guildId),
       getAcceptedUsers(guildId),
-      describeAutoRoles(guildId, interaction.guild)
+      describeAutoRoles(guildId, interaction.guild),
+      getEconomyLedgerStats({ guildId })
     ]);
 
     const modLogChannel = modLogChannelId
       ? await interaction.guild.channels.fetch(modLogChannelId).catch(() => null)
+      : null;
+
+    const economyLogChannelId = detailedLogChannels.economy ?? '';
+    const economyLogChannel = economyLogChannelId
+      ? await interaction.guild.channels.fetch(economyLogChannelId).catch(() => null)
       : null;
 
     const discordKeywordCount = Array.isArray(discordAutomodInfo.keywords)
@@ -67,6 +78,23 @@ export default {
             autoRoleSummary.count > 0
               ? `🔁 ${autoRoleSummary.count} rol: ${autoRoleSummary.mentionList}`
               : '⚪ Ayarlanmamış. `/otorol ekle` ile hızlıca kurabilirsiniz.',
+          inline: true
+        },
+        {
+          name: 'Ekonomi Logu',
+          value: economyLogChannel
+            ? [
+                `💰 ${economyLogChannel}`,
+                ledgerStats.guildEntries > 0
+                  ? `Kayıt sayısı: **${ledgerStats.guildEntries}**`
+                  : 'Kayıt bulunmuyor.',
+                ledgerStats.lastEntry?.timestamp
+                  ? `Son işlem: <t:${Math.floor(ledgerStats.lastEntry.timestamp / 1000)}:R>`
+                  : null
+              ]
+                .filter(Boolean)
+                .join(' • ')
+            : '💰 Ayarlanmamış. `/modlog panel` ile ekonomi log kanalını seçebilirsiniz.',
           inline: true
         },
         {
