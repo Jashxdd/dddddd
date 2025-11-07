@@ -16,7 +16,6 @@ import { getCategoryMeta } from '../../data/categoryMetadata.js';
 import { buildFurminHubEmbed, buildSupportLinkRow } from '../../utils/hubCard.js';
 import { collectCatalogSummary, computeCatalogStats } from '../../utils/catalogSummary.js';
 import { formatFeatureSummaryLines } from '../../utils/featureFlags.js';
-import { replyWithMessage } from '../../utils/interactionResponse.js';
 
 const GENERIC_GROUPS = new Set(['Slash Komutları', 'Prefix Komutları', 'Slash & Prefix']);
 
@@ -447,14 +446,17 @@ export default {
 
     const components = [navigationRow, menuRow, quickRow, linkRow].filter(Boolean);
 
-    const message = await replyWithMessage(interaction, {
-      embeds: [pages[currentIndex]],
-      components,
-      flags: MessageFlags.Ephemeral
-    });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+    const message = await interaction
+      .editReply({ embeds: [pages[currentIndex]], components })
+      .catch((error) => {
+        console.error('Yardım menüsü gönderilirken hata oluştu:', error);
+        return null;
+      });
 
     if (!message) {
-      console.warn('⚠️ Yardım menüsü yanıt mesajına erişilemedi; etkileşimli bileşenler devre dışı bırakıldı.');
+      console.warn('⚠️ Yardım menüsü yanıtı gönderilemedi; etkileşimli bileşenler devre dışı bırakıldı.');
       return;
     }
 
