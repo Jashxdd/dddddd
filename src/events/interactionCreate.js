@@ -2,6 +2,7 @@ import {
   ActionRowBuilder,
   EmbedBuilder,
   Events,
+  MessageFlags,
   ModalBuilder,
   PermissionFlagsBits,
   TextInputBuilder,
@@ -768,6 +769,85 @@ export default {
       return;
     }
 
+    const originalReply = interaction.reply?.bind(interaction);
+    const originalDeferReply = interaction.deferReply?.bind(interaction);
+    const originalFollowUp = interaction.followUp?.bind(interaction);
+    const originalDeleteReply = interaction.deleteReply?.bind(interaction);
+    const originalEditReply = interaction.editReply?.bind(interaction);
+
+    const ackState = {
+      autoDeferred: false
+    };
+
+    let autoAckTimeout;
+
+    const clearAckTimeout = () => {
+      if (autoAckTimeout) {
+        clearTimeout(autoAckTimeout);
+        autoAckTimeout = undefined;
+      }
+    };
+
+    if (interaction.isRepliable() && originalDeferReply) {
+      autoAckTimeout = setTimeout(async () => {
+        if (interaction.deferred || interaction.replied) return;
+        try {
+          ackState.autoDeferred = true;
+          await originalDeferReply({});
+        } catch (error) {
+          ackState.autoDeferred = false;
+          if (error?.code !== 40060 && error?.code !== 40001 && error?.code !== 10062) {
+            console.error('Otomatik yanıt verilirken hata oluştu:', error);
+          }
+        }
+      }, command.autoDeferTimeout ?? 2500);
+    }
+
+    if (originalDeferReply) {
+      interaction.deferReply = async (...args) => {
+        clearAckTimeout();
+        ackState.autoDeferred = false;
+        return originalDeferReply(...args);
+      };
+    }
+
+    if (originalFollowUp) {
+      interaction.followUp = async (...args) => {
+        clearAckTimeout();
+        ackState.autoDeferred = false;
+        return originalFollowUp(...args);
+      };
+    }
+
+    if (originalReply) {
+      interaction.reply = async (...args) => {
+        clearAckTimeout();
+        const [options] = args;
+        const isEphemeral =
+          typeof options === 'object' && options !== null &&
+          (options.ephemeral === true || Boolean(options.flags & MessageFlags.Ephemeral));
+
+        if (interaction.deferred && !interaction.replied && originalEditReply) {
+          if (ackState.autoDeferred && isEphemeral && originalDeleteReply) {
+            ackState.autoDeferred = false;
+            await originalDeleteReply().catch(() => {});
+            return originalFollowUp ? originalFollowUp(...args) : undefined;
+          }
+
+          ackState.autoDeferred = false;
+          return originalEditReply(options);
+        }
+
+        if (interaction.replied && originalFollowUp) {
+          ackState.autoDeferred = false;
+          return originalFollowUp(...args);
+        }
+
+        ackState.autoDeferred = false;
+        return originalReply(...args);
+      };
+    }
+
     try {
       await command.execute(interaction, client);
     } catch (error) {
@@ -778,6 +858,14 @@ export default {
         await interaction.editReply({ content });
       } else {
         await interaction.reply({ content, ephemeral: true });
+      }
+    } finally {
+      clearAckTimeout();
+      if (interaction.deferred && !interaction.replied && originalEditReply) {
+        await originalEditReply({
+          content:
+            '⏱️ Komut işlemesi tamamlandı ancak yanıt oluşturulamadı. Lütfen işlemi yeniden dene veya yöneticinle iletişime geç.'
+        }).catch(() => {});
       }
     }
   }
