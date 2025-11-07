@@ -94,9 +94,9 @@ menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" ba�
   `f!spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/gunluk-plan`, `f!odak-ipuclari`,
   `/saglik-molasi`, `f!paylasim-rehberi`, `/kaynak-arsivi`, `/guncelleme`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham`,
   `f!gorev-panosu`, `f!odak-planlayici`, `f!ekip-toplantisi`, `f!icerik-fikirleri`, `f!topluluk-anketi`, `f!gorev-raporu` ve daha fazlası.
-- **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
+- **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/nuke`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/uyari-sil`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu`,
-  `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici` ve otomatik moderasyon komutları.
+  `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici`, `f!nuke` ve otomatik moderasyon komutları.
 - **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog` (panel alt komutuyla detaylı log ve guard ayarları), `/otorol`, `/kayit`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`,
 `/prefix`,
   `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/cekilis`,
@@ -110,7 +110,7 @@ menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" ba�
 - **Önek komutları:** `f!yardim`, `f!ekonomi`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!kayit`, `f!rolpanel`, `f!cekilis`, `f!premium`, `f!prokomutlar`,
   `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!selamlama`, `f!ticket`, `f!sunucu-kur`, `f!uyari-sil`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!sahip-kisit`, `f!sahip-ekonomi`, `f!prefix`, `f!furmin-merkez`, `f!bakim`,
   `f!gorev-panosu`, `f!odak-planlayici`, `f!ekip-toplantisi`, `f!icerik-fikirleri`, `f!topluluk-anketi`, `f!gorev-raporu`,
-  `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru`,
+  `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru`, `f!nuke`,
   `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici`,
   `f!log-haritasi`, `f!buton-sablonlari`, `f!panel-ipuclari`, `f!guncelleme-senaryosu`, `f!yedek-planlayici`, `f!bakim-rehberi`,
   `f!ekonomi-gorevleri`, `f!yatirim-analizi`, `f!pazar-firsatlari`, `f!bonus-taktikleri`, `f!hediye-planlayici`, `f!banka-gunlugu` vb.
