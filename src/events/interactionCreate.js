@@ -898,12 +898,51 @@ export default {
     const originalDeleteReply = interaction.deleteReply?.bind(interaction);
     const originalEditReply = interaction.editReply?.bind(interaction);
 
+    const ensureNonEmptyMessage = (options) => {
+      if (!options || typeof options !== 'object') {
+        return options;
+      }
+
+      const {
+        content,
+        embeds,
+        files,
+        attachments,
+        components,
+        stickers
+      } = options;
+
+      const hasContent = typeof content === 'string' && content.trim().length > 0;
+      const hasEmbeds = Array.isArray(embeds) && embeds.some((embed) => {
+        if (!embed) return false;
+        if (typeof embed.toJSON === 'function') {
+          return Object.keys(embed.toJSON()).length > 0;
+        }
+        if (typeof embed.data === 'object' && embed.data) {
+          return Object.keys(embed.data).length > 0;
+        }
+        return Object.keys(embed).length > 0;
+      });
+      const hasFiles = Array.isArray(files) ? files.length > 0 : Boolean(files);
+      const hasAttachments = Array.isArray(attachments)
+        ? attachments.length > 0
+        : Boolean(attachments);
+      const hasComponents = Array.isArray(components) && components.length > 0;
+      const hasStickers = Array.isArray(stickers) && stickers.length > 0;
+
+      if (!hasContent && !hasEmbeds && !hasFiles && !hasAttachments && !hasComponents && !hasStickers) {
+        return { ...options, content: '‎' };
+      }
+
+      return options;
+    };
+
     const normaliseResponseOptions = (input) => {
       if (!input || typeof input !== 'object') {
         return input;
       }
 
-      const normalised = { ...input };
+      const normalised = ensureNonEmptyMessage({ ...input });
 
       if (Object.prototype.hasOwnProperty.call(normalised, 'ephemeral')) {
         if (normalised.ephemeral) {
