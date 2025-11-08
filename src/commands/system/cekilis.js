@@ -25,6 +25,7 @@ function parseMessageId(value) {
 export default {
   category: 'Sistem',
   menuGroup: 'Yönetim Araçları',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('cekilis')
     .setDescription('Sunucu için çekilişleri yönetir.')
@@ -90,7 +91,6 @@ export default {
     const sub = interaction.options.getSubcommand();
 
     if (sub === 'baslat') {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       const prize = interaction.options.getString('odul', true);
       const minutes = interaction.options.getInteger('sure', true);
       const winners = interaction.options.getInteger('kazanan') ?? 1;
@@ -127,7 +127,6 @@ export default {
     }
 
     if (sub === 'liste') {
-      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       const giveaways = await listActiveGiveaways(interaction.guildId);
 
       if (!giveaways.length) {
@@ -147,7 +146,6 @@ export default {
     }
 
     const messageId = parseMessageId(interaction.options.getString('mesaj', true));
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const giveaway = await findGiveawayByMessage(interaction.guildId, messageId);
 
     if (!giveaway) {

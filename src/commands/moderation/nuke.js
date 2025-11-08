@@ -15,6 +15,7 @@ function isSupportedChannel(channel) {
 export default {
   category: 'Moderasyon',
   menuGroup: 'Moderasyon Araçları',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('nuke')
     .setDescription('Bir kanalı temizleyip yeni bir kopyasını oluşturur.')
@@ -80,8 +81,6 @@ export default {
     }
 
     const reason = interaction.options.getString('sebep')?.trim() || 'Sebep belirtilmedi';
-
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     let clonedChannel = null;
     try {

@@ -57,6 +57,7 @@ export default {
   menuGroup: 'Kayıt Sistemi',
   catalogKey: 'kayit',
   featureToggle: 'logs',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('kayit')
     .setDescription('Kayıt sistemini ve kayıt loglarını yönetir.')
@@ -171,8 +172,6 @@ export default {
       await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
       return;
     }
-
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     if (subcommand === 'ayar') {
       const mode = interaction.options.getString('mod', true);

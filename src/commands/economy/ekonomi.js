@@ -1,9 +1,4 @@
-import {
-  EmbedBuilder,
-  MessageFlags,
-  SlashCommandBuilder,
-  userMention
-} from 'discord.js';
+import { EmbedBuilder, SlashCommandBuilder, userMention } from 'discord.js';
 import { economyItems, findEconomyItem } from '../../data/economyItems.js';
 import {
   addInventoryItem,
@@ -269,10 +264,9 @@ const data = new SlashCommandBuilder()
 export default {
   category: 'Ekonomi',
   menuGroup: 'Ekonomi Sistemleri',
+  deferEphemeral: true,
   data,
   async execute(interaction) {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
     const subcommand = interaction.options.getSubcommand();
     const userId = interaction.user.id;
     const guildId = interaction.guildId ?? '';

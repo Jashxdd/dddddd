@@ -7,6 +7,7 @@ export default {
   category: 'Extra',
   menuGroup: 'Pro Üyelik',
   proOnly: false,
+  deferEphemeral: true,
   data: new SlashCommandBuilder().setName('premium').setDescription('Furmin Pro avantajlarını ve erişim talimatlarını gösterir.'),
   async execute(interaction) {
     const proMembers = await listProMembers();

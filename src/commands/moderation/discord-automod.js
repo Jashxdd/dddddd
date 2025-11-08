@@ -4,6 +4,7 @@ import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 export default {
   category: 'Moderasyon',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('discord-otomod')
     .setDescription('Discord\'un otomatik moderasyon sistemini yonetir.')
@@ -55,8 +56,6 @@ export default {
 
       const customMessage = interaction.options.getString('uyari-mesaji') ?? undefined;
 
-      await interaction.deferReply({ ephemeral: true });
-
       await upsertKeywordRule(interaction.guild, keywords, customMessage);
 
       await interaction.editReply({
@@ -81,7 +80,6 @@ export default {
     }
 
     if (subcommand === 'devre-disi') {
-      await interaction.deferReply({ ephemeral: true });
       const disabled = await disableKeywordRule(interaction.guild);
 
       await interaction.editReply({
@@ -102,7 +100,6 @@ export default {
     }
 
     if (subcommand === 'durum') {
-      await interaction.deferReply({ ephemeral: true });
       const info = await getKeywordRuleInfo(interaction.guild);
 
       if (!info.exists) {

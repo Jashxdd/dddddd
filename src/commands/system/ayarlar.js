@@ -10,14 +10,13 @@ import { getEconomyLedgerStats } from '../../utils/economyLedgerStorage.js';
 
 export default {
   category: 'Sistem',
+  deferEphemeral: true,
   data: new SlashCommandBuilder().setName('ayarlar').setDescription('Botun sunucuya özel ayarlarının özetini gösterir.'),
   async execute(interaction) {
     if (!interaction.inGuild()) {
       await interaction.reply({ content: 'Bu komut sadece sunucularda kullanılabilir.', ephemeral: true });
       return;
     }
-
-    await interaction.deferReply({ ephemeral: true });
 
     const guildId = interaction.guildId;
     const [

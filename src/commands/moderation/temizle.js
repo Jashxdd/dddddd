@@ -3,6 +3,7 @@ import { formatUserMention, sendModerationLog } from '../../utils/modLog.js';
 
 export default {
   category: 'Moderasyon',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('temizle')
     .setDescription('Kanaldaki son mesajları toplu olarak siler.')
@@ -39,8 +40,6 @@ export default {
       await interaction.reply({ content: 'Bu komut sadece metin kanallarında kullanılabilir.', ephemeral: true });
       return;
     }
-
-    await interaction.deferReply({ ephemeral: true });
 
     let deleted;
     try {

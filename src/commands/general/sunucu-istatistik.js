@@ -27,6 +27,7 @@ function countPresences(collection) {
 
 export default {
   category: 'Genel',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('sunucu-istatistik')
     .setDescription('Sunucunun genel istatistiklerini ve durumunu gösterir.'),
@@ -37,7 +38,6 @@ export default {
     }
 
     const { guild } = interaction;
-    await interaction.deferReply({ ephemeral: true });
 
     let members;
     try {

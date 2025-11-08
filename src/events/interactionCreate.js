@@ -775,111 +775,118 @@ export default {
     const originalDeleteReply = interaction.deleteReply?.bind(interaction);
     const originalEditReply = interaction.editReply?.bind(interaction);
 
-    const ackState = {
-      autoDeferred: false,
-      hasDeferred: false,
-      responded: false
+    const normaliseResponseOptions = (input) => {
+      if (!input || typeof input !== 'object') {
+        return input;
+      }
+
+      const normalised = { ...input };
+
+      if (Object.prototype.hasOwnProperty.call(normalised, 'ephemeral')) {
+        if (normalised.ephemeral) {
+          normalised.flags = (normalised.flags ?? 0) | MessageFlags.Ephemeral;
+        }
+        delete normalised.ephemeral;
+      }
+
+      return normalised;
     };
 
-    let autoAckTimeout;
+    const defaultDeferOptions = normaliseResponseOptions(
+      (typeof command.defaultDeferOptions === 'function'
+        ? command.defaultDeferOptions(interaction)
+        : command.defaultDeferOptions) ?? (command.deferEphemeral ? { flags: MessageFlags.Ephemeral } : {})
+    );
 
-    const clearAckTimeout = () => {
-      if (autoAckTimeout) {
-        clearTimeout(autoAckTimeout);
-        autoAckTimeout = undefined;
+    let hasResponded = false;
+
+    const ensureDeferred = async (options = {}) => {
+      if (!originalDeferReply) return;
+      if (interaction.deferred || interaction.replied) return;
+
+      const mergedOptions = { ...defaultDeferOptions, ...normaliseResponseOptions(options) };
+      try {
+        await originalDeferReply(mergedOptions);
+      } catch (error) {
+        if (error?.code !== 40060 && error?.code !== 10062 && error?.code !== 40001) {
+          console.error('Komut defere edilirken hata oluştu:', error);
+        }
       }
     };
 
-    if (interaction.isRepliable() && originalDeferReply) {
-      autoAckTimeout = setTimeout(async () => {
-        if (interaction.deferred || interaction.replied) return;
-        try {
-          ackState.autoDeferred = true;
-          ackState.hasDeferred = true;
-          await originalDeferReply({});
-        } catch (error) {
-          ackState.autoDeferred = false;
-          if (error?.code !== 40060 && error?.code !== 40001 && error?.code !== 10062) {
-            console.error('Otomatik yanıt verilirken hata oluştu:', error);
-          }
-        }
-      }, command.autoDeferTimeout ?? 2500);
-    }
+    interaction.deferReply = async (options = {}) => {
+      if (!originalDeferReply) return;
+      if (interaction.deferred || interaction.replied) {
+        return;
+      }
 
-    if (originalDeferReply) {
-      interaction.deferReply = async (...args) => {
-        clearAckTimeout();
-        if (ackState.autoDeferred) {
-          ackState.autoDeferred = false;
-          ackState.responded = false;
-          ackState.hasDeferred = true;
-          return Promise.resolve();
+      const normalised = normaliseResponseOptions(options);
+      await originalDeferReply(normalised);
+    };
+
+    const deleteDeferredSilently = async () => {
+      if (!originalDeleteReply) return;
+      try {
+        await originalDeleteReply();
+      } catch (error) {
+        if (error?.code !== 10008 && error?.code !== 10062) {
+          console.error('Yanıt silinirken hata oluştu:', error);
         }
-        ackState.autoDeferred = false;
-        ackState.hasDeferred = true;
-        ackState.responded = false;
-        return originalDeferReply(...args);
+      }
+    };
+
+    const respondWithPlaceholder = async () => {
+      if (!originalEditReply) return;
+      if (hasResponded) return;
+      try {
+        await originalEditReply({ content: ' ' });
+        hasResponded = true;
+      } catch (error) {
+        if (error?.code !== 10062) {
+          console.error('Yer tutucu yanıt gönderilirken hata oluştu:', error);
+        }
+      }
+    };
+
+    interaction.reply = async (options = {}) => {
+      const normalised = normaliseResponseOptions(options);
+      const wantsEphemeral = Boolean(normalised.flags & MessageFlags.Ephemeral);
+
+      if (interaction.deferred && originalEditReply) {
+        if (wantsEphemeral && originalFollowUp) {
+          await respondWithPlaceholder();
+          await deleteDeferredSilently();
+          hasResponded = true;
+          return originalFollowUp(normalised);
+        }
+
+        hasResponded = true;
+        return originalEditReply(normalised);
+      }
+
+      if (originalReply) {
+        hasResponded = true;
+        return originalReply(normalised);
+      }
+
+      return undefined;
+    };
+
+    if (originalEditReply) {
+      interaction.editReply = async (options = {}) => {
+        hasResponded = true;
+        return originalEditReply(normaliseResponseOptions(options));
       };
     }
 
     if (originalFollowUp) {
-      interaction.followUp = async (...args) => {
-        clearAckTimeout();
-        ackState.autoDeferred = false;
-        const result = await originalFollowUp(...args);
-        ackState.responded = true;
-        return result;
+      interaction.followUp = async (options = {}) => {
+        hasResponded = true;
+        return originalFollowUp(normaliseResponseOptions(options));
       };
     }
 
-    if (originalReply) {
-      interaction.reply = async (...args) => {
-        clearAckTimeout();
-        const [options] = args;
-        const isEphemeral =
-          typeof options === 'object' && options !== null &&
-          (options.ephemeral === true || Boolean(options.flags & MessageFlags.Ephemeral));
-
-        if (interaction.deferred && !interaction.replied && originalEditReply) {
-          if (ackState.autoDeferred && isEphemeral && originalDeleteReply) {
-            ackState.autoDeferred = false;
-            await originalDeleteReply().catch(() => {});
-            const followUpResult = originalFollowUp ? await originalFollowUp(...args) : undefined;
-            if (followUpResult !== undefined) {
-              ackState.responded = true;
-            }
-            return followUpResult;
-          }
-
-          ackState.autoDeferred = false;
-          const editResult = await originalEditReply(options);
-          ackState.responded = true;
-          return editResult;
-        }
-
-        if (interaction.replied && originalFollowUp) {
-          ackState.autoDeferred = false;
-          const followUpResult = await originalFollowUp(...args);
-          ackState.responded = true;
-          return followUpResult;
-        }
-
-        ackState.autoDeferred = false;
-        const replyResult = await originalReply(...args);
-        ackState.responded = true;
-        return replyResult;
-      };
-    }
-
-    if (originalEditReply) {
-      interaction.editReply = async (...args) => {
-        clearAckTimeout();
-        ackState.autoDeferred = false;
-        const result = await originalEditReply(...args);
-        ackState.responded = true;
-        return result;
-      };
-    }
+    await ensureDeferred();
 
     try {
       await command.execute(interaction, client);
@@ -888,19 +895,19 @@ export default {
 
       const content = 'Komut çalıştırılırken beklenmedik bir hata oluştu.';
       if (interaction.deferred || interaction.replied) {
-        await interaction.editReply({ content });
+        if (originalEditReply) {
+          await interaction.editReply({ content });
+        }
       } else {
         await interaction.reply({ content, ephemeral: true });
       }
     } finally {
-      clearAckTimeout();
-      if (ackState.hasDeferred && !ackState.responded && originalEditReply) {
-        await originalEditReply({
-          content:
-            '⏱️ Komut işlemesi tamamlandı ancak yanıt oluşturulamadı. Lütfen işlemi yeniden dene veya yöneticinle iletişime geç.'
+      if (!hasResponded && (interaction.deferred || interaction.replied) && originalEditReply) {
+        await interaction.editReply({
+          content: '⏱️ Komut işlemesi tamamlandı ancak herhangi bir çıktı oluşmadı.'
         }).catch((error) => {
           if (error?.code !== 10062) {
-            console.error('Komut yedeği gönderilirken hata oluştu:', error);
+            console.error('Komut tamamlama bildirimi gönderilirken hata oluştu:', error);
           }
         });
       }

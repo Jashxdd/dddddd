@@ -234,6 +234,7 @@ const REQUIRED_PERMISSIONS = [
 export default {
   category: 'Sistem',
   featureToggle: 'logs',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('modlog')
     .setDescription('Moderasyon log kanalını ayarlar ve test eder.')
@@ -263,7 +264,6 @@ export default {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === 'panel') {
-      await interaction.deferReply({ ephemeral: true });
       const response = await buildLogGuardPanel(interaction);
       await interaction.editReply(response);
       return;
@@ -345,7 +345,6 @@ export default {
     }
 
     if (subcommand === 'test') {
-      await interaction.deferReply({ ephemeral: true });
       const success = await sendModerationLog(interaction.client, interaction.guildId, {
         action: 'Mod-Log Testi',
         moderatorUser: interaction.user,

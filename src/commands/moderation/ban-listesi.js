@@ -3,6 +3,7 @@ import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from 'discord.
 export default {
   category: 'Moderasyon',
   menuGroup: 'Ceza Yönetimi',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('ban-listesi')
     .setDescription('Sunucudan yasaklanan kullanıcıları listeler.')
@@ -20,8 +21,6 @@ export default {
       await interaction.reply({ content: 'Bu komut sadece sunucularda kullanılabilir.', ephemeral: true });
       return;
     }
-
-    await interaction.deferReply({ ephemeral: true });
 
     let bans;
     try {

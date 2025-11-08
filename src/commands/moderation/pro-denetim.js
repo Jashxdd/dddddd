@@ -7,6 +7,7 @@ export default {
   category: 'Moderasyon',
   menuGroup: 'Pro Moderasyon',
   proOnly: true,
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('pro-denetim')
     .setDescription('Pro üyeler için Furmin moderasyon ayarlarının özetini gösterir.')
@@ -22,8 +23,6 @@ export default {
       await interaction.reply({ content: 'Bu komut yalnızca sunucularda kullanılabilir.', ephemeral: true });
       return;
     }
-
-    await interaction.deferReply({ ephemeral: true });
 
     const guildId = interaction.guildId;
     const [modLogId, automodState, bannedWords, warningStats] = await Promise.all([

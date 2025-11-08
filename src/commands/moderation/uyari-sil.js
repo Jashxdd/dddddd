@@ -5,6 +5,7 @@ import { sendModerationLog } from '../../utils/modLog.js';
 export default {
   category: 'Moderasyon',
   menuGroup: 'Denetim',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('uyari-sil')
     .setDescription('Belirtilen üyenin uyarılarından birini kaldırır.')
@@ -23,8 +24,6 @@ export default {
         .setMinValue(1)
     ),
   async execute(interaction) {
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
     const target = interaction.options.getUser('uye', true);
     const indexInput = interaction.options.getInteger('numara', true);
     const warnings = await listWarnings(interaction.guildId, target.id);

@@ -401,6 +401,7 @@ function createQuickJumpRow(categories, currentIndex) {
 export default {
   category: 'Genel',
   menuGroup: 'Yardım Menüsü',
+  deferEphemeral: true,
   data: new SlashCommandBuilder().setName('yardim').setDescription('Kategori kategori tüm komutları listeler.'),
   async execute(interaction) {
     const catalogEntries = Array.from(interaction.client.commandCatalog.entries()).map(([categoryName, entries]) => [
@@ -445,8 +446,6 @@ export default {
     const linkRow = buildSupportLinkRow();
 
     const components = [navigationRow, menuRow, quickRow, linkRow].filter(Boolean);
-
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const message = await interaction
       .editReply({ embeds: [pages[currentIndex]], components })

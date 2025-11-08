@@ -5,6 +5,7 @@ export default {
   category: 'Moderasyon',
   menuGroup: 'Koruma & Log',
   proOnly: true,
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('uyari-raporu')
     .setDescription('Sunucudaki uyarı kayıtlarının özetini çıkarır (Pro).')
@@ -14,8 +15,6 @@ export default {
       await interaction.reply({ content: 'Bu komut yalnızca sunucularda kullanılabilir.', ephemeral: true });
       return;
     }
-
-    await interaction.deferReply({ ephemeral: true });
 
     const stats = await getWarningStats(interaction.guildId);
     const entries = await getGuildWarningEntries(interaction.guildId);

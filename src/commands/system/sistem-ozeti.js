@@ -8,6 +8,7 @@ import { config } from '../../config.js';
 export default {
   category: 'Sistem',
   menuGroup: 'Sistemler',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('sistem-ozeti')
     .setDescription('Sunucudaki Furmin sistemlerinin durumunu raporlar.')
@@ -17,8 +18,6 @@ export default {
       await interaction.reply({ content: 'Bu komut yalnızca sunucularda kullanılabilir.', ephemeral: true });
       return;
     }
-
-    await interaction.deferReply({ ephemeral: true });
 
     const [prefixInfo, modLogChannelId, automodEnabled, bannedWords, proMembers] = await Promise.all([
       describePrefix(interaction.guildId),

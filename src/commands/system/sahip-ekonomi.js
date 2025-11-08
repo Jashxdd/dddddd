@@ -18,6 +18,7 @@ export default {
   menuGroup: 'Sahip Araçları',
   ownerOnly: true,
   catalogKey: 'sahip-ekonomi',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('sahip-ekonomi')
     .setDescription('Ekonomi bakiyelerini ve raporlarını yönetir.')
@@ -74,8 +75,6 @@ export default {
       });
       return;
     }
-
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const sub = interaction.options.getSubcommand();
     const target = interaction.options.getUser('uye', true);

@@ -32,6 +32,7 @@ export default {
   menuGroup: 'Sahip Araçları',
   ownerOnly: true,
   catalogKey: 'sahip-kisit',
+  deferEphemeral: true,
   data: new SlashCommandBuilder()
     .setName('sahip-kisit')
     .setDescription('Furmin kara listelerini yönetir.')
@@ -95,8 +96,6 @@ export default {
       });
       return;
     }
-
-    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     const group = interaction.options.getSubcommandGroup();
     const sub = interaction.options.getSubcommand();
