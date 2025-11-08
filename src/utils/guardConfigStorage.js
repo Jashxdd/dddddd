@@ -20,6 +20,45 @@ const defaultConfig = {
   whitelistRoleIds: []
 };
 
+export const guardPresetDefinitions = {
+  balanced: {
+    label: 'Dengeli Koruma',
+    description: 'Kritik silme işlemlerini engeller, diğerlerini kayıt altına alır.',
+    penalty: 'timeout',
+    protections: {
+      channelDelete: true,
+      channelCreate: true,
+      roleDelete: true,
+      webhookCreate: true,
+      massMention: true
+    }
+  },
+  strict: {
+    label: 'Sıkı Koruma',
+    description: 'Tüm izleme seçeneklerini açar ve ihlallerde yasak uygular.',
+    penalty: 'ban',
+    protections: {
+      channelDelete: true,
+      channelCreate: true,
+      roleDelete: true,
+      webhookCreate: true,
+      massMention: true
+    }
+  },
+  relaxed: {
+    label: 'Esnek İzleme',
+    description: 'Sadece kritik logları tutar, yaptırım uygulamaz.',
+    penalty: 'none',
+    protections: {
+      channelDelete: true,
+      channelCreate: false,
+      roleDelete: true,
+      webhookCreate: true,
+      massMention: false
+    }
+  }
+};
+
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -151,6 +190,48 @@ export async function updateGuardWhitelist(guildId, roleIds) {
   cache[guildId] = config;
   await persist();
   return clone(config);
+}
+
+function mergePreset(targetConfig, preset) {
+  const result = normaliseConfig(targetConfig);
+  if (!preset) {
+    return result;
+  }
+
+  result.penalty = preset.penalty;
+  result.protections = { ...result.protections };
+  for (const key of Object.keys(defaultProtections)) {
+    if (Object.prototype.hasOwnProperty.call(preset.protections, key)) {
+      result.protections[key] = Boolean(preset.protections[key]);
+    }
+  }
+  return result;
+}
+
+export function detectGuardPreset(config) {
+  const normalised = normaliseConfig(config);
+  for (const [key, preset] of Object.entries(guardPresetDefinitions)) {
+    const protectionsMatch = Object.entries(defaultProtections).every(([protectionKey]) => {
+      return Boolean(normalised.protections[protectionKey]) === Boolean(preset.protections[protectionKey]);
+    });
+    if (protectionsMatch && normalised.penalty === preset.penalty) {
+      return key;
+    }
+  }
+  return null;
+}
+
+export async function applyGuardPreset(guildId, presetKey) {
+  if (!guildId) throw new Error('Sunucu kimliği gerekli.');
+  const preset = guardPresetDefinitions[presetKey];
+  if (!preset) throw new Error('Geçersiz guard profili.');
+
+  await ensureLoaded();
+  const config = cache[guildId] ? normaliseConfig(cache[guildId]) : clone(defaultConfig);
+  const merged = mergePreset(config, preset);
+  cache[guildId] = merged;
+  await persist();
+  return clone(merged);
 }
 
 export async function getGuardConfigMap() {

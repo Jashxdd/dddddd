@@ -16,7 +16,7 @@ export const categoryMetadata = {
   Sistem: {
     emoji: '⚙️',
     color: 0x95a5a6,
-    description: 'Otomasyonlar, kayıt sistemi, kurallar, mod-log ve yönetim panelleri.',
+    description: 'Otomasyonlar, kayıt sistemi, kurallar, mod-log, guard profilleri ve ticket panelleri.',
     order: 3,
     group: 'Sistemler'
   },
@@ -30,7 +30,7 @@ export const categoryMetadata = {
   Ekonomi: {
     emoji: '💰',
     color: 0xf39c12,
-    description: 'Furmin ekonomisi: günlük ödüller, maceralar, market ve ayrıntılı işlem kayıtları.',
+    description: 'Furmin ekonomisi: günlük ödüller, maceralar, özelleştirilebilir para birimi ve market.',
     order: 5,
     group: 'Ekonomi Sistemleri'
   },

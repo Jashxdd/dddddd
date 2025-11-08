@@ -185,6 +185,13 @@ export default {
       embed.addFields({ name: index === 0 ? 'Kategoriler' : '\u200B', value });
     });
 
+    const highlights = [
+      '💰 Ekonomi ayarlarını `/ekonomi ayar` ve `f!ekonomi ayar` komutlarıyla özelleştirebilirsin.',
+      '🎫 Ticket panelleri ve guard logları artık menülerle yönetiliyor; `/modlog` ve `f!ticket panel` komutlarını dene.'
+    ];
+
+    embed.addFields({ name: 'Öne Çıkanlar', value: highlights.join('\n') });
+
     const registrationCommand = sorted
       .flatMap(([, commands]) => commands)
       .find((command) => command.key === 'kayit');

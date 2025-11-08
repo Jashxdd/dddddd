@@ -18,9 +18,18 @@ import {
   removePrivateVoice
 } from '../utils/privateVoiceStorage.js';
 import { buildPrivateVoiceButtons, buildPrivateVoiceEmbed } from '../utils/privateVoicePanel.js';
-import { createTicketChannel, closeTicketChannel } from '../utils/ticketManager.js';
+import {
+  claimTicket,
+  closeTicketChannel,
+  createTicketChannel,
+  createTicketTranscript,
+  getOrCreateTicketConfig,
+  getTicketStatusLabel,
+  setTicketStatus
+} from '../utils/ticketManager.js';
 import { setDetailedLogChannel, clearDetailedLogChannel } from '../utils/detailedLogStorage.js';
 import {
+  applyGuardPreset,
   setGuardLogChannel,
   toggleGuardProtection,
   setGuardPenalty,
@@ -42,6 +51,7 @@ async function handleLogPanelComponent(interaction) {
     'guard-channel',
     'guard-refresh',
     'guard-penalty',
+    'guard-preset',
     'guard-whitelist'
   ]);
 
@@ -96,6 +106,25 @@ async function handleLogPanelComponent(interaction) {
 
   if (key === 'guard-toggle') {
     await toggleGuardProtection(interaction.guildId, extra);
+    const response = await buildLogGuardPanel(interaction);
+    await interaction.update(response);
+    return true;
+  }
+
+  if (key === 'guard-preset') {
+    const preset = interaction.values?.[0];
+    if (!preset) {
+      await interaction.reply({ content: 'Bir guard profili seçmelisin.', ephemeral: true });
+      return true;
+    }
+
+    try {
+      await applyGuardPreset(interaction.guildId, preset);
+    } catch (error) {
+      await interaction.reply({ content: `Guard profili uygulanamadı: ${error.message}`, ephemeral: true });
+      return true;
+    }
+
     const response = await buildLogGuardPanel(interaction);
     await interaction.update(response);
     return true;
@@ -480,12 +509,65 @@ async function handleTicketButton(interaction) {
     return true;
   }
 
+  if (action === 'claim') {
+    const channelId = parts[3];
+    if (channelId && channelId !== interaction.channelId) {
+      await interaction.reply({ content: 'Bu düğme artık geçerli değil.', ephemeral: true });
+      return true;
+    }
+
+    const config = await getOrCreateTicketConfig(interaction.guildId);
+    const supportRoleId = config?.supportRoleId;
+    const hasPermission = interaction.member?.permissions?.has(PermissionFlagsBits.ManageChannels) ||
+      (supportRoleId ? interaction.member?.roles?.cache?.has(supportRoleId) : false);
+    if (!hasPermission) {
+      await interaction.reply({ content: 'Ticketi devralmak için destek rolüne veya yönetim yetkisine sahip olmalısın.', ephemeral: true });
+      return true;
+    }
+
+    await interaction.deferReply({ ephemeral: true });
+
+    const result = await claimTicket(interaction.channel, interaction.user);
+    if (result.error) {
+      await interaction.editReply({ content: `⚠️ ${result.error}` });
+      return true;
+    }
+
+    await interaction.editReply({ content: 'Ticket sorumluluğu sana atandı. İlgili üyeyi bilgilendir.' });
+    await interaction.channel.send({
+      content: `👥 Ticket sorumlusu artık ${interaction.user} olarak güncellendi.`,
+      allowedMentions: { users: [interaction.user.id] }
+    }).catch(() => {});
+    return true;
+  }
+
+  if (action === 'transcript') {
+    const channelId = parts[3];
+    if (channelId && channelId !== interaction.channelId) {
+      await interaction.reply({ content: 'Bu düğme artık geçerli değil.', ephemeral: true });
+      return true;
+    }
+
+    await interaction.deferReply({ ephemeral: true });
+    const transcript = await createTicketTranscript(interaction.channel);
+    if (transcript.error) {
+      await interaction.editReply({ content: `⚠️ ${transcript.error}` });
+      return true;
+    }
+
+    await interaction.editReply({
+      content: '📄 Ticket transkripti hazır. Dosyayı aşağıdan indirebilirsin.',
+      files: [transcript.attachment]
+    });
+    return true;
+  }
+
   return false;
 }
 
 async function handleTicketSelect(interaction) {
   const parts = interaction.customId.split(':');
-  if (parts[0] !== 'ticket' || parts[1] !== 'topic') {
+  if (parts[0] !== 'ticket') {
     return false;
   }
 
@@ -495,20 +577,61 @@ async function handleTicketSelect(interaction) {
     return true;
   }
 
-  const value = interaction.values?.[0];
-  if (!value) {
-    await interaction.reply({ content: '⚠️ Bir konu seçmelisin.', ephemeral: true });
+  if (parts[1] === 'topic') {
+    const value = interaction.values?.[0];
+    if (!value) {
+      await interaction.reply({ content: '⚠️ Bir konu seçmelisin.', ephemeral: true });
+      return true;
+    }
+
+    await interaction.deferReply({ ephemeral: true });
+    const result = await createTicketChannel(interaction, value);
+    if (result.error) {
+      await interaction.editReply({ content: `⚠️ ${result.error}` });
+    } else {
+      await interaction.editReply({ content: `✅ Ticket kanalın ${result.channel} olarak açıldı.` });
+    }
     return true;
   }
 
-  await interaction.deferReply({ ephemeral: true });
-  const result = await createTicketChannel(interaction, value);
-  if (result.error) {
-    await interaction.editReply({ content: `⚠️ ${result.error}` });
-  } else {
-    await interaction.editReply({ content: `✅ Ticket kanalın ${result.channel} olarak açıldı.` });
+  if (parts[1] === 'status') {
+    const value = interaction.values?.[0];
+    if (!value) {
+      await interaction.reply({ content: '⚠️ Bir durum seçmelisin.', ephemeral: true });
+      return true;
+    }
+
+    const config = await getOrCreateTicketConfig(interaction.guildId);
+    const supportRoleId = config?.supportRoleId;
+    const isOwner = interaction.channel?.topic?.includes(`TicketOwner:${interaction.user.id}`);
+    const hasPermission = isOwner || interaction.member?.permissions?.has(PermissionFlagsBits.ManageChannels) ||
+      (supportRoleId ? interaction.member?.roles?.cache?.has(supportRoleId) : false);
+
+    if (!hasPermission) {
+      await interaction.reply({ content: 'Ticket durumunu güncellemek için ticket sahibi olmalı veya destek yetkisine sahip olmalısın.', ephemeral: true });
+      return true;
+    }
+
+    await interaction.deferReply({ ephemeral: true });
+
+    const result = await setTicketStatus(interaction.channel, value);
+    if (result.error) {
+      await interaction.editReply({ content: `⚠️ ${result.error}` });
+      return true;
+    }
+
+    const statusLabel = getTicketStatusLabel(value);
+    await interaction.editReply({ content: `Ticket durumu **${statusLabel}** olarak güncellendi.` });
+    if (!isOwner) {
+      await interaction.channel.send({
+        content: `ℹ️ Ticket durumu ${interaction.user} tarafından **${statusLabel}** olarak değiştirildi.`,
+        allowedMentions: { users: [interaction.user.id] }
+      }).catch(() => {});
+    }
+    return true;
   }
-  return true;
+
+  return false;
 }
 
 async function handleGuardWhitelistModal(interaction) {

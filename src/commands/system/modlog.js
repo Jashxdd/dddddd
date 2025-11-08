@@ -21,8 +21,11 @@ import {
   setDetailedLogChannel
 } from '../../utils/detailedLogStorage.js';
 import {
+  applyGuardPreset,
+  detectGuardPreset,
   getGuardConfig,
   guardPenaltyLabels,
+  guardPresetDefinitions,
   guardProtectionLabels,
   setGuardLogChannel,
   setGuardPenalty,
@@ -50,6 +53,12 @@ function buildPanelEmbed(guild, logChannels, guardConfig) {
     inline: true
   }));
 
+  const presetKey = detectGuardPreset(guardConfig);
+  const preset = presetKey ? guardPresetDefinitions[presetKey] : null;
+  const activeProtectionCount = Object.values(guardConfig.protections ?? {}).filter(Boolean).length;
+  const totalProtectionCount = Object.keys(guardProtectionLabels).length;
+  const activeLogCount = Object.values(logChannels).filter((id) => Boolean(id)).length;
+
   embedFields.push({
     name: 'Guard Logu',
     value: formatChannelMention(guild, guardConfig.logChannelId),
@@ -59,6 +68,24 @@ function buildPanelEmbed(guild, logChannels, guardConfig) {
   embedFields.push({
     name: 'Guard Yaptırımı',
     value: guardPenaltyLabels[guardConfig.penalty] ?? 'Belirlenmemiş',
+    inline: true
+  });
+
+  embedFields.push({
+    name: 'Guard Profili',
+    value: preset ? `${preset.label}\n_${preset.description}_` : 'Özel ayar (kaydedilmedi).',
+    inline: true
+  });
+
+  embedFields.push({
+    name: 'Guard Özeti',
+    value: `Aktif koruma: **${activeProtectionCount}/${totalProtectionCount}**`,
+    inline: true
+  });
+
+  embedFields.push({
+    name: 'Log Özeti',
+    value: `Atanan kanal sayısı: **${activeLogCount}/${Object.keys(LOG_CATEGORY_LABELS).length}**`,
     inline: true
   });
 
@@ -180,6 +207,24 @@ function buildGuardPenaltyRow(userId, guardConfig) {
   return new ActionRowBuilder().addComponents(select);
 }
 
+function buildGuardPresetRow(userId, guardConfig) {
+  const presetKey = detectGuardPreset(guardConfig);
+  const select = new StringSelectMenuBuilder()
+    .setCustomId(`guard-preset:${userId}`)
+    .setPlaceholder('Hazır guard profili seçin')
+    .addOptions(
+      Object.entries(guardPresetDefinitions).map(([key, preset]) => ({
+        label: preset.label,
+        description: preset.description.slice(0, 95),
+        value: key,
+        emoji: key === 'strict' ? '🟥' : key === 'relaxed' ? '🟦' : '🟩',
+        default: presetKey === key
+      }))
+    );
+
+  return new ActionRowBuilder().addComponents(select);
+}
+
 function buildChannelSelectRow(userId, category) {
   return new ActionRowBuilder().addComponents(
     new ChannelSelectMenuBuilder()
@@ -211,6 +256,7 @@ export async function buildLogGuardPanel(interaction, options = {}) {
   }
 
   components.push(buildLogSelectRow(interaction.user.id));
+  components.push(buildGuardPresetRow(interaction.user.id, guardConfig));
   components.push(buildGuardToggleRow(interaction.user.id, guardConfig));
   components.push(buildGuardPenaltyRow(interaction.user.id, guardConfig));
   components.push(

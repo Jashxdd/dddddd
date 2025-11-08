@@ -1,4 +1,4 @@
-import { EmbedBuilder, SlashCommandBuilder, userMention } from 'discord.js';
+import { EmbedBuilder, PermissionFlagsBits, SlashCommandBuilder, userMention } from 'discord.js';
 import { economyItems, findEconomyItem } from '../../data/economyItems.js';
 import {
   addInventoryItem,
@@ -23,6 +23,14 @@ import {
 import { isEconomyBlacklisted } from '../../utils/blacklistStorage.js';
 import { getUserEconomyHistory, recordEconomyEvent } from '../../utils/economyLedgerStorage.js';
 import { logEconomyChange } from '../../utils/economyLog.js';
+import {
+  applyBonus,
+  defaultEconomyConfig,
+  describeEconomyConfig,
+  getEconomyConfig,
+  setEconomyBonusMultiplier,
+  setEconomyCurrency
+} from '../../utils/economyConfigStorage.js';
 
 const DAILY_BASE_REWARD = 250;
 const DAILY_STREAK_BONUS = 35;
@@ -45,9 +53,14 @@ const TYPE_LABELS = {
   owner_adjust: 'Sahip İşlemi'
 };
 
-function formatCurrency(amount) {
+function formatCurrency(amount, config = null) {
   const safeAmount = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
-  return `${safeAmount.toLocaleString('tr-TR')} 💰`;
+  const symbol = config?.currencySymbol ?? '💰';
+  return `${safeAmount.toLocaleString('tr-TR')} ${symbol}`;
+}
+
+function createCurrencyFormatter(config) {
+  return (amount) => formatCurrency(amount, config);
 }
 
 function formatDuration(ms) {
@@ -81,7 +94,7 @@ function resolveTypeLabel(type) {
     .join(' ');
 }
 
-function buildHistoryEmbed(user, entries) {
+function buildHistoryEmbed(user, entries, formatAmount) {
   const embed = new EmbedBuilder()
     .setColor(0xf39c12)
     .setTitle(`📜 ${user?.username ?? 'Bir Üye'} — Ekonomi Kayıtları`)
@@ -94,9 +107,9 @@ function buildHistoryEmbed(user, entries) {
 
   const lines = entries.map((entry) => {
     const amountLabel = entry.amount >= 0
-      ? `+${formatCurrency(entry.amount)}`
-      : `-${formatCurrency(Math.abs(entry.amount))}`;
-    const balanceLabel = formatCurrency(entry.balanceAfter);
+      ? `+${formatAmount(entry.amount)}`
+      : `-${formatAmount(Math.abs(entry.amount))}`;
+    const balanceLabel = formatAmount(entry.balanceAfter);
     const timeLabel = entry.timestamp ? `<t:${Math.floor(entry.timestamp / 1000)}:R>` : 'Bilinmiyor';
     const noteLine = entry.note ? `\n    ↳ ${entry.note}` : '';
     return `• **${resolveTypeLabel(entry.type)}** • ${amountLabel} • Bakiye: ${balanceLabel} • ${timeLabel}${noteLine}`;
@@ -106,13 +119,13 @@ function buildHistoryEmbed(user, entries) {
   return embed;
 }
 
-function buildProfileEmbed(user, profile) {
+function buildProfileEmbed(user, profile, formatAmount, currencyName) {
   return new EmbedBuilder()
     .setColor(0xf1c40f)
     .setTitle(`💰 ${user?.username ?? 'Bir Üye'} — Ekonomi Profili`)
     .setThumbnail(user?.displayAvatarURL({ size: 256 }) ?? null)
     .addFields(
-      { name: 'Bakiye', value: formatCurrency(profile.balance), inline: true },
+      { name: 'Bakiye', value: formatAmount(profile.balance), inline: true },
       { name: 'Günlük Seri', value: `${profile.streak.count} gün`, inline: true },
       {
         name: 'İstatistikler',
@@ -124,19 +137,20 @@ function buildProfileEmbed(user, profile) {
           `• Yatırım: **${profile.stats.investmentWins}** kazanç / **${profile.stats.investmentLosses}** kayıp`
       }
     )
+    .addFields({ name: 'Para Birimi', value: currencyName, inline: true })
     .setFooter({ text: 'Furmin Ekonomi — Kazançlarını akıllıca kullan!' })
     .setTimestamp();
 }
 
-function buildMarketEmbed() {
+function buildMarketEmbed(formatAmount, currencyName) {
   const embed = new EmbedBuilder()
     .setColor(0x27ae60)
-    .setTitle('🛒 Furmin Marketi')
+    .setTitle(`🛒 ${currencyName} Marketi`)
     .setDescription('Satın alabileceğin özel eşyalar ve etkileri:');
 
   economyItems.forEach((item) => {
     embed.addFields({
-      name: `${item.name} — ${formatCurrency(item.price)}`,
+      name: `${item.name} — ${formatAmount(item.price)}`,
       value: item.description
     });
   });
@@ -168,7 +182,7 @@ function buildInventoryEmbed(user, inventory) {
   return embed;
 }
 
-function buildLeaderboardEmbed(client, entries) {
+function buildLeaderboardEmbed(client, entries, formatAmount) {
   const embed = new EmbedBuilder()
     .setColor(0x9b59b6)
     .setTitle('🏆 Furmin Zenginler Kulübü')
@@ -183,7 +197,7 @@ function buildLeaderboardEmbed(client, entries) {
   const lines = entries.map((entry, index) => {
     const user = client.users.cache.get(entry.userId);
     const label = user ? `${user.username} (${userMention(entry.userId)})` : `Bilinmeyen Üye (${entry.userId})`;
-    return `**${index + 1}.** ${label} — ${formatCurrency(entry.balance)}`;
+    return `**${index + 1}.** ${label} — ${formatAmount(entry.balance)}`;
   });
 
   embed.setDescription(lines.join('\n'));
@@ -192,7 +206,10 @@ function buildLeaderboardEmbed(client, entries) {
 
 function registerItemChoices(option) {
   economyItems.slice(0, 25).forEach((item) => {
-    option.addChoices({ name: `${item.name} (${item.price} 💰)`, value: item.id });
+    option.addChoices({
+      name: `${item.name} (${item.price} ${defaultEconomyConfig.currencySymbol})`,
+      value: item.id
+    });
   });
   return option;
 }
@@ -203,7 +220,7 @@ const data = new SlashCommandBuilder()
   .addSubcommand((sub) =>
     sub
       .setName('bakiye')
-      .setDescription('Belirtilen üyenin FurCoin bakiyesini gösterir.')
+      .setDescription('Belirtilen üyenin sunucu para birimi bakiyesini gösterir.')
       .addUserOption((option) => option.setName('uye').setDescription('Bakiyesini görmek istediğin üye.'))
   )
   .addSubcommand((sub) =>
@@ -219,14 +236,14 @@ const data = new SlashCommandBuilder()
           .setMaxValue(10)
       )
   )
-  .addSubcommand((sub) => sub.setName('gunluk').setDescription('Günlük FurCoin ödülünü toplar.'))
-  .addSubcommand((sub) => sub.setName('calis').setDescription('Kısa bir mesai yaparak FurCoin kazan.'))
+  .addSubcommand((sub) => sub.setName('gunluk').setDescription('Günlük ekonomi ödülünü toplar.'))
+  .addSubcommand((sub) => sub.setName('calis').setDescription('Kısa bir mesai yaparak para kazan.'))
   .addSubcommand((sub) => sub.setName('macera').setDescription('Macera ile sürpriz ödüller kazanmayı dene.'))
   .addSubcommand((sub) => sub.setName('gorev').setDescription('Günlük bir Furmin görevi tamamla.'))
   .addSubcommand((sub) =>
     sub
       .setName('yatirim')
-      .setDescription('FurCoin bakiyenden yatırım yapıp şansını dene.')
+      .setDescription('Bakiyenden yatırım yapıp şansını dene.')
       .addIntegerOption((option) =>
         option
           .setName('miktar')
@@ -238,7 +255,7 @@ const data = new SlashCommandBuilder()
   .addSubcommand((sub) =>
     sub
       .setName('hediye')
-      .setDescription('FurCoin bakiyenden bir üyeye hediye gönder.')
+      .setDescription('Bakiyenden bir üyeye hediye gönder.')
       .addUserOption((option) => option.setName('uye').setDescription('Hediye göndereceğin üye').setRequired(true))
       .addIntegerOption((option) =>
         option
@@ -246,6 +263,30 @@ const data = new SlashCommandBuilder()
           .setDescription('Göndermek istediğin miktar')
           .setRequired(true)
           .setMinValue(1)
+      )
+  )
+  .addSubcommand((sub) =>
+    sub
+      .setName('ayar')
+      .setDescription('Sunucu para birimini ve ekonomi bonusunu özelleştir.')
+      .addStringOption((option) =>
+        option
+          .setName('isim')
+          .setDescription('Yeni para birimi adı (ör. FurCoin)')
+          .setMaxLength(24)
+      )
+      .addStringOption((option) =>
+        option
+          .setName('sembol')
+          .setDescription('Para birimi sembolü veya emoji')
+          .setMaxLength(5)
+      )
+      .addNumberOption((option) =>
+        option
+          .setName('bonus')
+          .setDescription('Ödül çarpanı (0.5 - 3 arası)')
+          .setMinValue(0.5)
+          .setMaxValue(3)
       )
   )
   .addSubcommand((sub) => sub.setName('market').setDescription('Satın alabileceğin market ürünlerini listeler.'))
@@ -270,6 +311,10 @@ export default {
     const subcommand = interaction.options.getSubcommand();
     const userId = interaction.user.id;
     const guildId = interaction.guildId ?? '';
+    const economyConfig = await getEconomyConfig(guildId);
+    const formatAmount = createCurrencyFormatter(economyConfig);
+    const bonusMultiplier = economyConfig.bonusMultiplier ?? 1;
+    const currencyName = economyConfig.currencyName;
 
     if (await isEconomyBlacklisted(userId)) {
       await interaction.editReply({
@@ -283,7 +328,7 @@ export default {
       if (subcommand === 'bakiye') {
         const target = interaction.options.getUser('uye') ?? interaction.user;
         const profile = await getEconomyProfile(target.id);
-        const embed = buildProfileEmbed(target, profile);
+        const embed = buildProfileEmbed(target, profile, formatAmount, currencyName);
         await interaction.editReply({ embeds: [embed] });
         return;
       }
@@ -292,7 +337,7 @@ export default {
         const target = interaction.options.getUser('uye') ?? interaction.user;
         const limit = interaction.options.getInteger('limit') ?? 5;
         const history = await getUserEconomyHistory(target.id, { limit });
-        const embed = buildHistoryEmbed(target, history);
+        const embed = buildHistoryEmbed(target, history, formatAmount);
         await interaction.editReply({ embeds: [embed] });
         return;
       }
@@ -307,8 +352,10 @@ export default {
         }
 
         const streakInfo = await recordDailyClaim(userId);
-        const streakBonus = Math.min(DAILY_STREAK_BONUS * (streakInfo.count - 1), 350);
-        const totalReward = DAILY_BASE_REWARD + Math.max(0, streakBonus);
+        const streakBonusBase = Math.min(DAILY_STREAK_BONUS * (streakInfo.count - 1), 350);
+        const totalReward = applyBonus(DAILY_BASE_REWARD + Math.max(0, streakBonusBase), bonusMultiplier);
+        const baseReward = applyBonus(DAILY_BASE_REWARD, bonusMultiplier);
+        const streakBonus = Math.max(0, totalReward - baseReward);
         const balanceAfter = await modifyBalance(userId, totalReward);
         await incrementStat(userId, 'work', 0); // Seriyi güncellemek için kayıt
 
@@ -319,7 +366,7 @@ export default {
           type: 'daily',
           amount: totalReward,
           balanceAfter,
-          note: streakBonus > 0 ? `Seri bonusu: ${formatCurrency(streakBonus)}` : undefined
+          note: streakBonus > 0 ? `Seri bonusu: ${formatAmount(streakBonus)}` : undefined
         });
 
         if (interaction.inGuild()) {
@@ -337,13 +384,13 @@ export default {
           .setColor(0x2ecc71)
           .setTitle('📆 Günlük Ödül Tamamlandı')
           .setDescription(
-            `Bugünkü ödülün **${formatCurrency(totalReward)}** oldu. Günlük serin **${streakInfo.count}** gün olarak güncellendi.`
+            `Bugünkü ödülün **${formatAmount(totalReward)}** oldu. Günlük serin **${streakInfo.count}** gün olarak güncellendi.`
           )
           .setFooter({ text: 'Her gün kontrol ederek bonusunu büyüt!' })
           .setTimestamp();
 
         if (streakBonus > 0) {
-          embed.addFields({ name: 'Seri Bonusu', value: `Ek kazanç: ${formatCurrency(streakBonus)}` });
+          embed.addFields({ name: 'Seri Bonusu', value: `Ek kazanç: ${formatAmount(streakBonus)}` });
         }
 
         await interaction.editReply({ embeds: [embed] });
@@ -359,7 +406,7 @@ export default {
           return;
         }
 
-        const reward = pickRandom(WORK_REWARD_RANGE[0], WORK_REWARD_RANGE[1]);
+        const reward = applyBonus(pickRandom(WORK_REWARD_RANGE[0], WORK_REWARD_RANGE[1]), bonusMultiplier);
         const balanceAfter = await modifyBalance(userId, reward);
         await incrementStat(userId, 'work', 1);
         await recordActionUsage(userId, 'work');
@@ -384,7 +431,7 @@ export default {
         }
 
         await interaction.editReply({
-          content: `💼 Mesaiyi tamamladın! Kazancın **${formatCurrency(reward)}** olarak bakiyene eklendi.`
+          content: `💼 Mesaiyi tamamladın! Kazancın **${formatAmount(reward)}** olarak bakiyene eklendi.`
         });
         return;
       }
@@ -403,7 +450,7 @@ export default {
         await incrementStat(userId, 'adventure', 1);
 
         if (success) {
-          const reward = pickRandom(ADVENTURE_REWARD_RANGE[0], ADVENTURE_REWARD_RANGE[1]);
+          const reward = applyBonus(pickRandom(ADVENTURE_REWARD_RANGE[0], ADVENTURE_REWARD_RANGE[1]), bonusMultiplier);
           const balanceAfter = await modifyBalance(userId, reward);
           await recordEconomyEvent({
             userId,
@@ -425,10 +472,10 @@ export default {
             });
           }
           await interaction.editReply({
-            content: `🗺️ Macera başarılı! Hazine sandığından **${formatCurrency(reward)}** topladın.`
+            content: `🗺️ Macera başarılı! Hazine sandığından **${formatAmount(reward)}** topladın.`
           });
         } else {
-          const penalty = pickRandom(10, ADVENTURE_FAIL_PENALTY);
+          const penalty = applyBonus(pickRandom(10, ADVENTURE_FAIL_PENALTY), bonusMultiplier);
           const balanceAfter = await modifyBalance(userId, -penalty);
           await recordEconomyEvent({
             userId,
@@ -450,7 +497,7 @@ export default {
             });
           }
           await interaction.editReply({
-            content: `💥 Macera sırasında küçük bir kaza yaşandı. Tamir masrafı olarak **${formatCurrency(penalty)}** kaybettin.`
+            content: `💥 Macera sırasında küçük bir kaza yaşandı. Tamir masrafı olarak **${formatAmount(penalty)}** kaybettin.`
           });
         }
         return;
@@ -466,7 +513,7 @@ export default {
         }
 
         const scenario = pickQuestScenario();
-        const reward = calculateQuestReward();
+        const reward = applyBonus(calculateQuestReward(scenario.difficulty), bonusMultiplier);
 
         await recordActionUsage(userId, 'quest');
         await incrementStat(userId, 'quests', 1);
@@ -497,22 +544,24 @@ export default {
           .setColor(0x1abc9c)
           .setTitle('🗒️ Günlük Görev Tamamlandı')
           .setDescription(`• Görev: ${scenario.prompt}\n• Sonuç: ${scenario.result}`)
-          .addFields({ name: 'Kazanç', value: formatCurrency(reward) })
+          .addFields({ name: 'Kazanç', value: formatAmount(reward) })
           .setFooter({ text: 'Görevler 6 saat arayla yenilenir.' })
           .setTimestamp();
 
         const profile = await getEconomyProfile(userId);
-        embed.addFields({ name: 'Güncel Bakiye', value: formatCurrency(profile.balance), inline: true });
+        embed.addFields({ name: 'Güncel Bakiye', value: formatAmount(profile.balance), inline: true });
 
         await interaction.editReply({ embeds: [embed] });
         return;
       }
 
       if (subcommand === 'yatirim') {
-        const amount = interaction.options.getInteger('miktar', true);
-        if (amount < INVESTMENT_MINIMUM) {
+        const rawAmount = interaction.options.getInteger('miktar', true);
+        const minimum = applyBonus(INVESTMENT_MINIMUM, bonusMultiplier);
+        const amount = applyBonus(rawAmount, bonusMultiplier);
+        if (amount < minimum) {
           await interaction.editReply({
-            content: `📉 En az ${formatCurrency(INVESTMENT_MINIMUM)} yatırarak deneme yapabilirsin.`
+            content: `📉 En az ${formatAmount(minimum)} yatırarak deneme yapabilirsin.`
           });
           return;
         }
@@ -520,7 +569,7 @@ export default {
         const profile = await getEconomyProfile(userId);
         if (amount > profile.balance) {
           await interaction.editReply({
-            content: `💳 Yatırım için **${formatCurrency(amount)}** gerekli, bakiyen ise ${formatCurrency(profile.balance)}.`
+            content: `💳 Yatırım için **${formatAmount(amount)}** gerekli, bakiyen ise ${formatAmount(profile.balance)}.`
           });
           return;
         }
@@ -577,13 +626,13 @@ export default {
           .setTitle('📈 Yatırım Sonucu')
           .setDescription(outcome.message)
           .addFields(
-            { name: 'Yatırım Miktarı', value: formatCurrency(amount), inline: true },
+            { name: 'Yatırım Miktarı', value: formatAmount(amount), inline: true },
             {
               name: outcome.success ? 'Net Kazanç' : 'Net Kayıp',
-              value: `${netChange >= 0 ? '+' : '-'}${formatCurrency(Math.abs(netChange))}`,
+              value: `${netChange >= 0 ? '+' : '-'}${formatAmount(Math.abs(netChange))}`,
               inline: true
             },
-            { name: 'Güncel Bakiye', value: formatCurrency(refreshedProfile.balance), inline: true }
+            { name: 'Güncel Bakiye', value: formatAmount(refreshedProfile.balance), inline: true }
           )
           .setFooter({ text: 'Yatırım denemeleri 30 dakikada bir yapılabilir.' })
           .setTimestamp();
@@ -604,7 +653,7 @@ export default {
         const profile = await getEconomyProfile(userId);
         if (amount > profile.balance) {
           await interaction.editReply({
-            content: `💸 Yetersiz bakiye. Şu anda sadece **${formatCurrency(profile.balance)}** gönderebilirsin.`
+            content: `💸 Yetersiz bakiye. Şu anda sadece **${formatAmount(profile.balance)}** gönderebilirsin.`
           });
           return;
         }
@@ -658,13 +707,53 @@ export default {
         }
 
         await interaction.editReply({
-          content: `🎁 ${userMention(target.id)} üyesine **${formatCurrency(amount)}** gönderdin. Paylaşmak güzeldir!`
+          content: `🎁 ${userMention(target.id)} üyesine **${formatAmount(amount)}** gönderdin. Paylaşmak güzeldir!`
         });
         return;
       }
 
+      if (subcommand === 'ayar') {
+        if (!interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) {
+          await interaction.editReply({
+            content: '⚙️ Ekonomi ayarlarını düzenlemek için **Sunucuyu Yönet** yetkisine sahip olmalısın.'
+          });
+          return;
+        }
+
+        const nameOption = interaction.options.getString('isim');
+        const symbolOption = interaction.options.getString('sembol');
+        const bonusOption = interaction.options.getNumber('bonus');
+
+        if (nameOption || symbolOption) {
+          await setEconomyCurrency(guildId, {
+            name: nameOption ?? economyConfig.currencyName,
+            symbol: symbolOption ?? economyConfig.currencySymbol
+          });
+        }
+
+        if (bonusOption !== null) {
+          await setEconomyBonusMultiplier(guildId, bonusOption);
+        }
+
+        const summary = await describeEconomyConfig(guildId);
+        const previewAmount = applyBonus(150, summary.bonusMultiplier);
+        const embed = new EmbedBuilder()
+          .setColor(0x00b894)
+          .setTitle('⚙️ Ekonomi Ayarları Güncellendi')
+          .setDescription('Yeni değerler kaydedildi. Değişiklikler tüm ekonomi komutlarına yansıtıldı.')
+          .addFields(
+            { name: 'Para Birimi', value: `${summary.name} (${summary.symbol})`, inline: true },
+            { name: 'Ödül Çarpanı', value: `×${summary.bonusMultiplier.toFixed(1)}`, inline: true },
+            { name: 'Örnek Ödül', value: `150 → ${formatCurrency(previewAmount, summary)}`, inline: true }
+          )
+          .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
+        return;
+      }
+
       if (subcommand === 'market') {
-        const embed = buildMarketEmbed();
+        const embed = buildMarketEmbed(formatAmount, currencyName);
         await interaction.editReply({ embeds: [embed] });
         return;
       }
@@ -681,11 +770,11 @@ export default {
           return;
         }
 
-        const totalCost = item.price * quantity;
+        const totalCost = applyBonus(item.price * quantity, bonusMultiplier);
         const profile = await getEconomyProfile(userId);
         if (totalCost > profile.balance) {
           await interaction.editReply({
-            content: `💳 Bu alışveriş için **${formatCurrency(totalCost)}** gerekiyor. Bakiyen **${formatCurrency(profile.balance)}**.`
+            content: `💳 Bu alışveriş için **${formatAmount(totalCost)}** gerekiyor. Bakiyen **${formatAmount(profile.balance)}**.`
           });
           return;
         }
@@ -720,7 +809,7 @@ export default {
           .setColor(0x8e44ad)
           .setTitle('🛍️ Alışveriş Tamamlandı')
           .setDescription(
-            `**${item.name}** ürününden ${quantity} adet satın aldın. Yeni bakiyen **${formatCurrency(balanceAfter)}**.`
+            `**${item.name}** ürününden ${quantity} adet satın aldın. Yeni bakiyen **${formatAmount(balanceAfter)}**.`
           )
           .addFields({ name: 'Envanter Durumu', value: `${item.name}: ${inventory.total} adet` })
           .setTimestamp();
@@ -738,7 +827,7 @@ export default {
 
       if (subcommand === 'liderlik') {
         const leaderboard = await getLeaderboard(10);
-        const embed = buildLeaderboardEmbed(interaction.client, leaderboard);
+        const embed = buildLeaderboardEmbed(interaction.client, leaderboard, formatAmount);
         await interaction.editReply({ embeds: [embed] });
         return;
       }

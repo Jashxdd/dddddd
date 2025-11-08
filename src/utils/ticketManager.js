@@ -8,7 +8,37 @@ import {
   PermissionFlagsBits,
   StringSelectMenuBuilder
 } from 'discord.js';
-import { getTicketConfig, updateTicketConfig } from './ticketStorage.js';
+import {
+  deleteActiveTicketRecord,
+  getActiveTicketRecord,
+  getTicketConfig,
+  setActiveTicketRecord,
+  updateActiveTicketRecord,
+  updateTicketConfig
+} from './ticketStorage.js';
+
+const ticketStatuses = {
+  waiting: {
+    emoji: '⏳',
+    label: 'Beklemede',
+    description: 'Destek ekibinin sıraya aldığı yeni ticket.'
+  },
+  active: {
+    emoji: '🛠️',
+    label: 'Görüşmede',
+    description: 'Bir yetkili ticket üzerinde çalışıyor.'
+  },
+  pending: {
+    emoji: '📨',
+    label: 'Yanıt Bekliyor',
+    description: 'Kullanıcının geri dönüşü bekleniyor.'
+  },
+  resolved: {
+    emoji: '✅',
+    label: 'Çözüldü',
+    description: 'Ticket kapatılmaya hazır durumda.'
+  }
+};
 
 function buildTopicOptions(config) {
   return config.topics.slice(0, 25).map((topic) => ({
@@ -60,6 +90,85 @@ export function buildTicketPanelComponents(guildId, config) {
   );
 
   return [buttonRow, selectRow];
+}
+
+function readTopicFlag(topic, key) {
+  if (!topic) return null;
+  const pattern = new RegExp(`${key}:([^•]+)`);
+  const match = topic.match(pattern);
+  return match ? match[1].trim() : null;
+}
+
+function writeTopicFlag(topic, key, value) {
+  const cleanTopic = topic ?? '';
+  const flagSegment = value ? `${key}:${value}` : '';
+  const pattern = new RegExp(`${key}:[^•]+`);
+  if (!flagSegment) {
+    return cleanTopic
+      .replace(pattern, '')
+      .replace(/\s*•\s*•/g, '•')
+      .replace(/^\s*•\s*|\s*•\s*$/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+
+  if (pattern.test(cleanTopic)) {
+    return cleanTopic.replace(pattern, flagSegment);
+  }
+
+  return cleanTopic ? `${cleanTopic} • ${flagSegment}` : flagSegment;
+}
+
+function formatStatusLabel(key) {
+  const entry = ticketStatuses[key];
+  if (!entry) {
+    return 'Bilinmiyor';
+  }
+  return `${entry.emoji} ${entry.label}`;
+}
+
+export function getTicketStatusLabel(key) {
+  return formatStatusLabel(key);
+}
+
+function buildTicketActionRow(guildId, channelId, options = {}) {
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`ticket:close:${guildId}:${channelId}`)
+      .setLabel('Ticketi Kapat')
+      .setEmoji('🔒')
+      .setStyle(ButtonStyle.Danger),
+    new ButtonBuilder()
+      .setCustomId(`ticket:claim:${guildId}:${channelId}`)
+      .setLabel(options.claimedBy ? 'Devralındı' : 'Ticketi Üstlen')
+      .setEmoji(options.claimedBy ? '👥' : '🙋')
+      .setStyle(options.claimedBy ? ButtonStyle.Secondary : ButtonStyle.Success)
+      .setDisabled(Boolean(options.claimedBy)),
+    new ButtonBuilder()
+      .setCustomId(`ticket:transcript:${guildId}:${channelId}`)
+      .setLabel('Transkript Oluştur')
+      .setEmoji('📄')
+      .setStyle(ButtonStyle.Secondary)
+  );
+
+  return row;
+}
+
+function buildTicketStatusRow(guildId, currentStatus) {
+  const select = new StringSelectMenuBuilder()
+    .setCustomId(`ticket:status:${guildId}`)
+    .setPlaceholder('Ticket durumunu güncelle')
+    .addOptions(
+      Object.entries(ticketStatuses).map(([key, entry]) => ({
+        label: entry.label,
+        description: entry.description.slice(0, 95),
+        emoji: entry.emoji,
+        value: key,
+        default: key === currentStatus
+      }))
+    );
+
+  return new ActionRowBuilder().addComponents(select);
 }
 
 export async function recordTicketPanel(guildId, { channelId, messageId }) {
@@ -140,36 +249,33 @@ export async function createTicketChannel(interaction, topicId) {
     });
   }
 
+  const baseTopic = writeTopicFlag(`TicketOwner:${interaction.user.id} • Konu:${topic.label}`, 'TicketStatus', 'waiting');
+
   const channel = await guild.channels.create({
     name: channelName,
     type: ChannelType.GuildText,
     parent: category,
-    topic: `TicketOwner:${interaction.user.id} • Konu:${topic.label}`,
+    topic: baseTopic,
     permissionOverwrites: overwrites
   });
 
-  const introEmbed = new EmbedBuilder()
-    .setColor(0x1abc9c)
-    .setTitle('Destek Talebi Açıldı')
-    .setDescription(
-      `Merhaba ${interaction.user}, destek ekibi kısa süre içinde seninle ilgilenecek.\n` +
-      'Ticketi kapatmak için aşağıdaki düğmeyi kullanabilirsin.'
-    )
-    .addFields(
-      { name: 'Konu', value: topic.label, inline: true },
-      { name: 'Açan', value: `<@${interaction.user.id}>`, inline: true }
-    )
-    .setTimestamp();
+  const createdAt = Date.now();
+  const controlMessage = await channel.send({
+    content: `<@${interaction.user.id}>`,
+    embeds: [buildTicketSummaryEmbed(channel, { ownerId: interaction.user.id, status: 'waiting', createdAt, updatedAt: createdAt })],
+    components: buildTicketControlComponents(guildId, channel, interaction.user.id)
+  });
 
-  const closeRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`ticket:close:${guildId}:${channel.id}`)
-      .setLabel('Ticketi Kapat')
-      .setEmoji('🔒')
-      .setStyle(ButtonStyle.Danger)
-  );
+  await setActiveTicketRecord(guildId, channel.id, {
+    controlMessageId: controlMessage.id,
+    ownerId: interaction.user.id,
+    handlerId: null,
+    status: 'waiting',
+    createdAt,
+    updatedAt: createdAt
+  });
 
-  await channel.send({ content: `<@${interaction.user.id}>`, embeds: [introEmbed], components: [closeRow] });
+  await syncTicketControlMessage(channel);
 
   if (config.logChannelId) {
     const logChannel = guild.channels.cache.get(config.logChannelId) ??
@@ -182,7 +288,8 @@ export async function createTicketChannel(interaction, topicId) {
         .addFields(
           { name: 'Kullanıcı', value: `${interaction.user.tag} (${interaction.user.id})` },
           { name: 'Konu', value: topic.label, inline: true },
-          { name: 'Ticket Sahibi', value: `<@${interaction.user.id}>`, inline: true }
+          { name: 'Ticket Sahibi', value: `<@${interaction.user.id}>`, inline: true },
+          { name: 'Durum', value: formatStatusLabel('waiting'), inline: true }
         )
         .setTimestamp();
       await logChannel.send({ embeds: [logEmbed], allowedMentions: { parse: [] } }).catch(() => {});
@@ -196,6 +303,134 @@ function parseTicketOwner(topic) {
   if (!topic) return null;
   const match = topic.match(/TicketOwner:(\d+)/);
   return match ? match[1] : null;
+}
+
+function parseTicketHandler(topic) {
+  if (!topic) return null;
+  const match = topic.match(/TicketHandler:(\d+)/);
+  return match ? match[1] : null;
+}
+
+function parseTicketStatus(topic) {
+  return readTopicFlag(topic, 'TicketStatus') ?? 'waiting';
+}
+
+function parseTicketTopicLabel(topic) {
+  if (!topic) return 'Belirtilmedi';
+  const match = topic.match(/Konu:([^•]+)/);
+  return match ? match[1].trim() || 'Belirtilmedi' : 'Belirtilmedi';
+}
+
+async function updateTicketTopic(channel, key, value) {
+  const nextTopic = writeTopicFlag(channel.topic ?? '', key, value);
+  await channel.setTopic(nextTopic).catch(() => {});
+  return nextTopic;
+}
+
+export async function setTicketStatus(channel, statusKey) {
+  if (!channel?.isTextBased()) {
+    return { error: 'Durum yalnızca metin ticketlarında güncellenebilir.' };
+  }
+
+  if (!ticketStatuses[statusKey]) {
+    return { error: 'Geçersiz ticket durumu seçildi.' };
+  }
+
+  const updatedTopic = await updateTicketTopic(channel, 'TicketStatus', statusKey);
+  await updateActiveTicketRecord(channel.guildId, channel.id, { status: statusKey });
+  await syncTicketControlMessage(channel);
+  return { topic: updatedTopic, status: statusKey };
+}
+
+export async function claimTicket(channel, user) {
+  if (!channel?.isTextBased()) {
+    return { error: 'Ticket kanalı bulunamadı.' };
+  }
+
+  if (!user) {
+    return { error: 'Ticketi devralmak için bir kullanıcı gereklidir.' };
+  }
+
+  await updateTicketTopic(channel, 'TicketHandler', user.id);
+  await setTicketStatus(channel, 'active');
+  await updateActiveTicketRecord(channel.guildId, channel.id, { handlerId: user.id });
+  await syncTicketControlMessage(channel);
+  return { success: true };
+}
+
+export function buildTicketControlComponents(guildId, channel, viewerId) {
+  if (!channel) return [];
+  const claimedBy = parseTicketHandler(channel.topic);
+  const status = parseTicketStatus(channel.topic);
+  const actionRow = buildTicketActionRow(guildId, channel.id, { claimedBy, viewerId });
+  const statusRow = buildTicketStatusRow(guildId, status);
+  return [actionRow, statusRow];
+}
+
+function buildTicketSummaryEmbed(channel, record = null) {
+  const statusKey = parseTicketStatus(channel.topic);
+  const statusEntry = ticketStatuses[statusKey] ?? ticketStatuses.waiting;
+  const ownerId = parseTicketOwner(channel.topic) ?? record?.ownerId ?? null;
+  const handlerId = parseTicketHandler(channel.topic) ?? record?.handlerId ?? null;
+  const topicLabel = parseTicketTopicLabel(channel.topic);
+  const createdAt = record?.createdAt ?? channel.createdTimestamp ?? Date.now();
+  const updatedAt = record?.updatedAt ?? Date.now();
+
+  const embed = new EmbedBuilder()
+    .setColor(statusKey === 'resolved' ? 0x2ecc71 : statusKey === 'pending' ? 0xf1c40f : 0x1abc9c)
+    .setTitle(`${statusEntry?.emoji ?? '🎫'} Ticket Merkezi`)
+    .setDescription(
+      'Destek ekibi en kısa sürede yardımcı olacak. Ticketı yönetmek için aşağıdaki menü ve düğmeleri kullanabilirsin.'
+    )
+    .setFooter({ text: channel.guild?.name ?? 'Furmin Destek' })
+    .setTimestamp(createdAt);
+
+  const fields = [
+    { name: 'Konu', value: topicLabel || 'Belirtilmedi', inline: true },
+    { name: 'Durum', value: formatStatusLabel(statusKey), inline: true }
+  ];
+
+  if (ownerId) {
+    fields.push({ name: 'Ticket Sahibi', value: `<@${ownerId}>`, inline: true });
+  }
+
+  if (handlerId) {
+    fields.push({ name: 'Sorumlu', value: `<@${handlerId}>`, inline: true });
+  }
+
+  fields.push({ name: 'Açılış', value: `<t:${Math.floor(createdAt / 1000)}:f>`, inline: true });
+  fields.push({ name: 'Son Güncelleme', value: `<t:${Math.floor(updatedAt / 1000)}:R>`, inline: true });
+
+  embed.addFields(fields);
+  return embed;
+}
+
+async function syncTicketControlMessage(channel, recordOverride = null) {
+  if (!channel?.isTextBased()) {
+    return false;
+  }
+
+  const guildId = channel.guildId;
+  const record = recordOverride ?? (await getActiveTicketRecord(guildId, channel.id));
+  const controlMessageId = record?.controlMessageId;
+  if (!controlMessageId) {
+    return false;
+  }
+
+  const message = await channel.messages.fetch(controlMessageId).catch(() => null);
+  if (!message) {
+    await deleteActiveTicketRecord(guildId, channel.id);
+    return false;
+  }
+
+  const embed = buildTicketSummaryEmbed(channel, record);
+  const components = buildTicketControlComponents(guildId, channel, record?.handlerId ?? record?.ownerId ?? null);
+  await message.edit({ embeds: [embed], components }).catch(() => {});
+  return true;
+}
+
+export async function refreshTicketMessage(channel) {
+  return syncTicketControlMessage(channel);
 }
 
 function formatDuration(ms) {
@@ -282,6 +517,19 @@ async function collectTranscript(channel, limit = 400) {
   };
 }
 
+export async function createTicketTranscript(channel) {
+  if (!channel?.isTextBased()) {
+    return { error: 'Transkript oluşturmak için metin ticketı gerekir.' };
+  }
+
+  const transcriptData = await collectTranscript(channel).catch(() => null);
+  if (!transcriptData) {
+    return { error: 'Transkript hazırlanırken bir sorun oluştu.' };
+  }
+
+  return transcriptData;
+}
+
 export async function closeTicketChannel(interaction, channel) {
   const guildId = interaction.guildId;
   const config = await getTicketConfig(guildId);
@@ -296,6 +544,12 @@ export async function closeTicketChannel(interaction, channel) {
   const isTicket = channel.topic?.includes('TicketOwner:');
   if (!isTicket) {
     return { error: 'Bu kanal bir ticket olarak işaretlenmemiş.' };
+  }
+
+  const handlerId = parseTicketHandler(channel.topic);
+  const currentStatus = parseTicketStatus(channel.topic);
+  if (currentStatus !== 'resolved') {
+    await setTicketStatus(channel, 'resolved');
   }
 
   if (!interaction.member?.permissions?.has(PermissionFlagsBits.ManageChannels) && channel.topic && !channel.topic.includes(`TicketOwner:${interaction.user.id}`)) {
@@ -315,6 +569,8 @@ export async function closeTicketChannel(interaction, channel) {
   const summaryFields = [
     { name: 'Kapatma Yetkilisi', value: interaction.user.toString(), inline: true },
     ownerId ? { name: 'Ticket Sahibi', value: `<@${ownerId}>`, inline: true } : null,
+    handlerId ? { name: 'Sorumlu', value: `<@${handlerId}>`, inline: true } : null,
+    { name: 'Durum', value: formatStatusLabel('resolved'), inline: true },
     transcriptData ? { name: 'Mesaj Sayısı', value: String(transcriptData.messageCount), inline: true } : null,
     { name: 'Toplam Süre', value: formatDuration(lifetime), inline: true }
   ].filter(Boolean);
@@ -365,6 +621,8 @@ export async function closeTicketChannel(interaction, channel) {
         .catch(() => {});
     }
   }
+
+  await deleteActiveTicketRecord(guildId, channel.id);
 
   setTimeout(() => {
     channel.delete('Ticket kapatıldı.').catch(() => {});

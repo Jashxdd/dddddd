@@ -51,6 +51,7 @@ function ensureGuild(guildId) {
       categoryId: null,
       logChannelId: null,
       transcriptChannelId: null,
+      activeTickets: {},
       topics: [
         { id: 'destek', label: 'Genel Destek', description: 'Soru ve yardım talepleri.' },
         { id: 'sikayet', label: 'Şikayet', description: 'Şikayet ve bildirim talepleri.' },
@@ -67,6 +68,9 @@ function ensureGuild(guildId) {
       { id: 'destek', label: 'Genel Destek', description: 'Soru ve yardım talepleri.' },
       { id: 'sikayet', label: 'Şikayet', description: 'Şikayet ve bildirim talepleri.' }
     ];
+  }
+  if (!Object.prototype.hasOwnProperty.call(data, 'activeTickets') || typeof data.activeTickets !== 'object') {
+    data.activeTickets = {};
   }
   return data;
 }
@@ -109,6 +113,52 @@ export async function setTicketTopics(guildId, topics) {
   data.topics = cleaned;
   await persist();
   return JSON.parse(JSON.stringify(data));
+}
+
+export async function setActiveTicketRecord(guildId, channelId, record) {
+  if (!guildId || !channelId) throw new Error('Sunucu ve kanal kimlikleri gerekli.');
+  await ensureLoaded();
+  const data = ensureGuild(guildId);
+  data.activeTickets[channelId] = {
+    controlMessageId: record?.controlMessageId ?? null,
+    ownerId: record?.ownerId ?? null,
+    handlerId: record?.handlerId ?? null,
+    status: record?.status ?? 'waiting',
+    createdAt: record?.createdAt ?? Date.now(),
+    updatedAt: record?.updatedAt ?? Date.now()
+  };
+  await persist();
+  return JSON.parse(JSON.stringify(data.activeTickets[channelId]));
+}
+
+export async function updateActiveTicketRecord(guildId, channelId, changes) {
+  if (!guildId || !channelId) throw new Error('Sunucu ve kanal kimlikleri gerekli.');
+  await ensureLoaded();
+  const data = ensureGuild(guildId);
+  if (!data.activeTickets[channelId]) {
+    return null;
+  }
+  Object.assign(data.activeTickets[channelId], changes ?? {}, { updatedAt: Date.now() });
+  await persist();
+  return JSON.parse(JSON.stringify(data.activeTickets[channelId]));
+}
+
+export async function getActiveTicketRecord(guildId, channelId) {
+  if (!guildId || !channelId) return null;
+  await ensureLoaded();
+  const data = ensureGuild(guildId);
+  const record = data.activeTickets[channelId];
+  return record ? JSON.parse(JSON.stringify(record)) : null;
+}
+
+export async function deleteActiveTicketRecord(guildId, channelId) {
+  if (!guildId || !channelId) return;
+  await ensureLoaded();
+  const data = ensureGuild(guildId);
+  if (data.activeTickets && data.activeTickets[channelId]) {
+    delete data.activeTickets[channelId];
+    await persist();
+  }
 }
 
 export async function describeTicketConfig(guildId, guild) {
