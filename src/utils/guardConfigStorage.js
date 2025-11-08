@@ -17,7 +17,8 @@ const defaultConfig = {
   logChannelId: '',
   protections: { ...defaultProtections },
   penalty: 'timeout',
-  whitelistRoleIds: []
+  whitelistRoleIds: [],
+  updatedAt: 0
 };
 
 export const guardPresetDefinitions = {
@@ -102,7 +103,16 @@ function normaliseConfig(value) {
   }
 
   result.whitelistRoleIds = normaliseRoleList(value.whitelistRoleIds);
+  if (Number.isFinite(value.updatedAt)) {
+    result.updatedAt = Math.max(0, Math.floor(value.updatedAt));
+  }
   return result;
+}
+
+function markGuardUpdate(config) {
+  const next = normaliseConfig(config);
+  next.updatedAt = Date.now();
+  return next;
 }
 
 async function ensureLoaded() {
@@ -155,9 +165,9 @@ export async function setGuardLogChannel(guildId, channelId) {
   await ensureLoaded();
   const config = cache[guildId] ? normaliseConfig(cache[guildId]) : clone(defaultConfig);
   config.logChannelId = typeof channelId === 'string' ? channelId.trim() : '';
-  cache[guildId] = config;
+  cache[guildId] = markGuardUpdate(config);
   await persist();
-  return clone(config);
+  return clone(cache[guildId]);
 }
 
 export async function setGuardPenalty(guildId, penalty) {
@@ -166,9 +176,9 @@ export async function setGuardPenalty(guildId, penalty) {
   const config = cache[guildId] ? normaliseConfig(cache[guildId]) : clone(defaultConfig);
   const normalised = typeof penalty === 'string' ? penalty.toLowerCase() : 'none';
   config.penalty = ['timeout', 'kick', 'ban', 'none'].includes(normalised) ? normalised : 'none';
-  cache[guildId] = config;
+  cache[guildId] = markGuardUpdate(config);
   await persist();
-  return clone(config);
+  return clone(cache[guildId]);
 }
 
 export async function toggleGuardProtection(guildId, key) {
@@ -177,9 +187,9 @@ export async function toggleGuardProtection(guildId, key) {
   await ensureLoaded();
   const config = cache[guildId] ? normaliseConfig(cache[guildId]) : clone(defaultConfig);
   config.protections[key] = !config.protections[key];
-  cache[guildId] = config;
+  cache[guildId] = markGuardUpdate(config);
   await persist();
-  return clone(config);
+  return clone(cache[guildId]);
 }
 
 export async function updateGuardWhitelist(guildId, roleIds) {
@@ -187,9 +197,9 @@ export async function updateGuardWhitelist(guildId, roleIds) {
   await ensureLoaded();
   const config = cache[guildId] ? normaliseConfig(cache[guildId]) : clone(defaultConfig);
   config.whitelistRoleIds = normaliseRoleList(roleIds);
-  cache[guildId] = config;
+  cache[guildId] = markGuardUpdate(config);
   await persist();
-  return clone(config);
+  return clone(cache[guildId]);
 }
 
 function mergePreset(targetConfig, preset) {
@@ -229,9 +239,9 @@ export async function applyGuardPreset(guildId, presetKey) {
   await ensureLoaded();
   const config = cache[guildId] ? normaliseConfig(cache[guildId]) : clone(defaultConfig);
   const merged = mergePreset(config, preset);
-  cache[guildId] = merged;
+  cache[guildId] = markGuardUpdate(merged);
   await persist();
-  return clone(merged);
+  return clone(cache[guildId]);
 }
 
 export async function getGuardConfigMap() {
@@ -241,6 +251,70 @@ export async function getGuardConfigMap() {
     result[guildId] = clone(value);
   }
   return result;
+}
+
+function applyProtectionState(config, keys, enabled) {
+  const next = normaliseConfig(config);
+  const uniqueKeys = Array.from(new Set(keys)).filter((key) => Object.prototype.hasOwnProperty.call(defaultProtections, key));
+  if (!uniqueKeys.length) {
+    return next;
+  }
+
+  next.protections = { ...next.protections };
+  for (const key of uniqueKeys) {
+    next.protections[key] = Boolean(enabled);
+  }
+  return markGuardUpdate(next);
+}
+
+export const guardProtectionGroups = {
+  critical: {
+    label: 'Kanal & Rol Güvenliği',
+    description: 'Kanal ve rol silme işlemlerini yakalar.',
+    emoji: '🛡️',
+    keys: ['channelDelete', 'roleDelete']
+  },
+  builder: {
+    label: 'Kanal Oluşturma Takibi',
+    description: 'Yeni kanalları bildirerek izleme sağlar.',
+    emoji: '🏗️',
+    keys: ['channelCreate']
+  },
+  integrations: {
+    label: 'Webhook Koruması',
+    description: 'Webhook oluşturmayı denetler.',
+    emoji: '📡',
+    keys: ['webhookCreate']
+  },
+  mentions: {
+    label: 'Toplu Etiket Engeli',
+    description: 'Aşırı etiketlemeleri otomatik engeller.',
+    emoji: '📢',
+    keys: ['massMention']
+  }
+};
+
+export async function setGuardGroupState(guildId, groupKey, enabled) {
+  if (!guildId) throw new Error('Sunucu kimliği gerekli.');
+  await ensureLoaded();
+  const config = cache[guildId] ? normaliseConfig(cache[guildId]) : clone(defaultConfig);
+  if (groupKey === 'all') {
+    const keys = Object.keys(defaultProtections);
+    const updated = applyProtectionState(config, keys, enabled);
+    cache[guildId] = updated;
+    await persist();
+    return clone(cache[guildId]);
+  }
+
+  const group = guardProtectionGroups[groupKey];
+  if (!group) {
+    throw new Error('Geçersiz guard grup anahtarı.');
+  }
+
+  const updated = applyProtectionState(config, group.keys, enabled);
+  cache[guildId] = updated;
+  await persist();
+  return clone(cache[guildId]);
 }
 
 export const guardProtectionLabels = {

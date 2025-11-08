@@ -34,6 +34,14 @@ function ensureProfileShape(profile = {}) {
       investmentLosses:
         Number.isFinite(profile?.stats?.investmentLosses) && profile.stats.investmentLosses > 0
           ? Math.floor(profile.stats.investmentLosses)
+          : 0,
+      guessPlays:
+        Number.isFinite(profile?.stats?.guessPlays) && profile.stats.guessPlays > 0
+          ? Math.floor(profile.stats.guessPlays)
+          : 0,
+      guessWins:
+        Number.isFinite(profile?.stats?.guessWins) && profile.stats.guessWins > 0
+          ? Math.floor(profile.stats.guessWins)
           : 0
     },
     cooldowns: Object.fromEntries(

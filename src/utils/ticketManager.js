@@ -40,6 +40,29 @@ const ticketStatuses = {
   }
 };
 
+export const ticketPriorities = {
+  low: {
+    emoji: '🟦',
+    label: 'Düşük',
+    description: 'Takip edilmesi gereken ama aciliyet gerektirmeyen talepler.'
+  },
+  normal: {
+    emoji: '🟩',
+    label: 'Standart',
+    description: 'Sıradaki görüşme akışında değerlendirilecek talepler.'
+  },
+  high: {
+    emoji: '🟧',
+    label: 'Yüksek',
+    description: 'Ekibin önceliklendirmesi gereken önemli ticket.'
+  },
+  urgent: {
+    emoji: '🟥',
+    label: 'Acil',
+    description: 'Derhal müdahale gerektiren kritik talepler.'
+  }
+};
+
 function buildTopicOptions(config) {
   return config.topics.slice(0, 25).map((topic) => ({
     label: topic.label,
@@ -58,7 +81,7 @@ export function buildTicketPanelEmbed(config, guild) {
     .setTitle('🎫 Ticket Merkezi')
     .setDescription(
       'Destek ekibine ulaşmak için aşağıdaki menüyü kullanabilir veya Ticket Aç düğmesine basabilirsin. '
-      + 'Her ticket yalnızca seni ve yetkilileri içerir.'
+      + 'Her ticket yalnızca seni ve yetkilileri içerir. Öncelik menüsü ile isteğinin aciliyetini belirtebilirsin.'
     )
     .addFields(
       config.topics.map((topic) => ({
@@ -89,7 +112,21 @@ export function buildTicketPanelComponents(guildId, config) {
       .addOptions(options)
   );
 
-  return [buttonRow, selectRow];
+  const priorityRow = new ActionRowBuilder().addComponents(
+    new StringSelectMenuBuilder()
+      .setCustomId(`ticket:panel-priority:${guildId}`)
+      .setPlaceholder('Açılacak ticketların önceliğini belirle')
+      .addOptions(
+        Object.entries(ticketPriorities).map(([key, entry]) => ({
+          label: entry.label,
+          description: entry.description.slice(0, 95),
+          emoji: entry.emoji,
+          value: key
+        }))
+      )
+  );
+
+  return [buttonRow, selectRow, priorityRow];
 }
 
 function readTopicFlag(topic, key) {
@@ -129,6 +166,18 @@ function formatStatusLabel(key) {
 
 export function getTicketStatusLabel(key) {
   return formatStatusLabel(key);
+}
+
+function formatPriorityLabel(key) {
+  const entry = ticketPriorities[key];
+  if (!entry) {
+    return '⚪ Belirtilmedi';
+  }
+  return `${entry.emoji} ${entry.label}`;
+}
+
+export function getTicketPriorityLabel(key) {
+  return formatPriorityLabel(key);
 }
 
 function buildTicketActionRow(guildId, channelId, options = {}) {
@@ -171,6 +220,23 @@ function buildTicketStatusRow(guildId, currentStatus) {
   return new ActionRowBuilder().addComponents(select);
 }
 
+function buildTicketPriorityRow(guildId, currentPriority) {
+  const select = new StringSelectMenuBuilder()
+    .setCustomId(`ticket:priority:${guildId}`)
+    .setPlaceholder('Ticket önceliğini ayarla')
+    .addOptions(
+      Object.entries(ticketPriorities).map(([key, entry]) => ({
+        label: entry.label,
+        description: entry.description.slice(0, 95),
+        emoji: entry.emoji,
+        value: key,
+        default: key === currentPriority
+      }))
+    );
+
+  return new ActionRowBuilder().addComponents(select);
+}
+
 export async function recordTicketPanel(guildId, { channelId, messageId }) {
   if (!guildId) return;
   await updateTicketConfig(guildId, {
@@ -179,7 +245,7 @@ export async function recordTicketPanel(guildId, { channelId, messageId }) {
   });
 }
 
-export async function createTicketChannel(interaction, topicId) {
+export async function createTicketChannel(interaction, topicId, options = {}) {
   const guildId = interaction.guildId;
   const config = await getTicketConfig(guildId);
   if (!config) {
@@ -250,19 +316,32 @@ export async function createTicketChannel(interaction, topicId) {
   }
 
   const baseTopic = writeTopicFlag(`TicketOwner:${interaction.user.id} • Konu:${topic.label}`, 'TicketStatus', 'waiting');
+  const defaultPriority = topic?.priority && ticketPriorities[topic.priority] ? topic.priority : 'normal';
+  const selectedPriority = options.priorityKey && ticketPriorities[options.priorityKey]
+    ? options.priorityKey
+    : defaultPriority;
+  const topicWithPriority = writeTopicFlag(baseTopic, 'TicketPriority', selectedPriority);
 
   const channel = await guild.channels.create({
     name: channelName,
     type: ChannelType.GuildText,
     parent: category,
-    topic: baseTopic,
+    topic: topicWithPriority,
     permissionOverwrites: overwrites
   });
 
   const createdAt = Date.now();
   const controlMessage = await channel.send({
     content: `<@${interaction.user.id}>`,
-    embeds: [buildTicketSummaryEmbed(channel, { ownerId: interaction.user.id, status: 'waiting', createdAt, updatedAt: createdAt })],
+    embeds: [
+      buildTicketSummaryEmbed(channel, {
+        ownerId: interaction.user.id,
+        status: 'waiting',
+        priority: selectedPriority,
+        createdAt,
+        updatedAt: createdAt
+      })
+    ],
     components: buildTicketControlComponents(guildId, channel, interaction.user.id)
   });
 
@@ -271,6 +350,7 @@ export async function createTicketChannel(interaction, topicId) {
     ownerId: interaction.user.id,
     handlerId: null,
     status: 'waiting',
+    priority: selectedPriority,
     createdAt,
     updatedAt: createdAt
   });
@@ -289,7 +369,8 @@ export async function createTicketChannel(interaction, topicId) {
           { name: 'Kullanıcı', value: `${interaction.user.tag} (${interaction.user.id})` },
           { name: 'Konu', value: topic.label, inline: true },
           { name: 'Ticket Sahibi', value: `<@${interaction.user.id}>`, inline: true },
-          { name: 'Durum', value: formatStatusLabel('waiting'), inline: true }
+          { name: 'Durum', value: formatStatusLabel('waiting'), inline: true },
+          { name: 'Öncelik', value: formatPriorityLabel(selectedPriority), inline: true }
         )
         .setTimestamp();
       await logChannel.send({ embeds: [logEmbed], allowedMentions: { parse: [] } }).catch(() => {});
@@ -313,6 +394,10 @@ function parseTicketHandler(topic) {
 
 function parseTicketStatus(topic) {
   return readTopicFlag(topic, 'TicketStatus') ?? 'waiting';
+}
+
+function parseTicketPriority(topic) {
+  return readTopicFlag(topic, 'TicketPriority') ?? 'normal';
 }
 
 function parseTicketTopicLabel(topic) {
@@ -342,6 +427,21 @@ export async function setTicketStatus(channel, statusKey) {
   return { topic: updatedTopic, status: statusKey };
 }
 
+export async function setTicketPriority(channel, priorityKey) {
+  if (!channel?.isTextBased()) {
+    return { error: 'Öncelik yalnızca metin ticketlarında güncellenebilir.' };
+  }
+
+  if (!ticketPriorities[priorityKey]) {
+    return { error: 'Geçersiz ticket önceliği seçildi.' };
+  }
+
+  const updatedTopic = await updateTicketTopic(channel, 'TicketPriority', priorityKey);
+  await updateActiveTicketRecord(channel.guildId, channel.id, { priority: priorityKey });
+  await syncTicketControlMessage(channel);
+  return { topic: updatedTopic, priority: priorityKey };
+}
+
 export async function claimTicket(channel, user) {
   if (!channel?.isTextBased()) {
     return { error: 'Ticket kanalı bulunamadı.' };
@@ -362,9 +462,11 @@ export function buildTicketControlComponents(guildId, channel, viewerId) {
   if (!channel) return [];
   const claimedBy = parseTicketHandler(channel.topic);
   const status = parseTicketStatus(channel.topic);
+  const priority = parseTicketPriority(channel.topic);
   const actionRow = buildTicketActionRow(guildId, channel.id, { claimedBy, viewerId });
   const statusRow = buildTicketStatusRow(guildId, status);
-  return [actionRow, statusRow];
+  const priorityRow = buildTicketPriorityRow(guildId, priority);
+  return [actionRow, statusRow, priorityRow];
 }
 
 function buildTicketSummaryEmbed(channel, record = null) {
@@ -373,6 +475,8 @@ function buildTicketSummaryEmbed(channel, record = null) {
   const ownerId = parseTicketOwner(channel.topic) ?? record?.ownerId ?? null;
   const handlerId = parseTicketHandler(channel.topic) ?? record?.handlerId ?? null;
   const topicLabel = parseTicketTopicLabel(channel.topic);
+  const priorityKey = parseTicketPriority(channel.topic) ?? record?.priority ?? 'normal';
+  const priorityEntry = ticketPriorities[priorityKey] ?? ticketPriorities.normal;
   const createdAt = record?.createdAt ?? channel.createdTimestamp ?? Date.now();
   const updatedAt = record?.updatedAt ?? Date.now();
 
@@ -381,6 +485,7 @@ function buildTicketSummaryEmbed(channel, record = null) {
     .setTitle(`${statusEntry?.emoji ?? '🎫'} Ticket Merkezi`)
     .setDescription(
       'Destek ekibi en kısa sürede yardımcı olacak. Ticketı yönetmek için aşağıdaki menü ve düğmeleri kullanabilirsin.'
+      + `\nÖncelik: **${priorityEntry.emoji} ${priorityEntry.label}**`
     )
     .setFooter({ text: channel.guild?.name ?? 'Furmin Destek' })
     .setTimestamp(createdAt);
@@ -389,6 +494,8 @@ function buildTicketSummaryEmbed(channel, record = null) {
     { name: 'Konu', value: topicLabel || 'Belirtilmedi', inline: true },
     { name: 'Durum', value: formatStatusLabel(statusKey), inline: true }
   ];
+
+  fields.push({ name: 'Öncelik', value: formatPriorityLabel(priorityKey), inline: true });
 
   if (ownerId) {
     fields.push({ name: 'Ticket Sahibi', value: `<@${ownerId}>`, inline: true });
@@ -548,6 +655,7 @@ export async function closeTicketChannel(interaction, channel) {
 
   const handlerId = parseTicketHandler(channel.topic);
   const currentStatus = parseTicketStatus(channel.topic);
+  const currentPriority = parseTicketPriority(channel.topic);
   if (currentStatus !== 'resolved') {
     await setTicketStatus(channel, 'resolved');
   }
@@ -571,6 +679,7 @@ export async function closeTicketChannel(interaction, channel) {
     ownerId ? { name: 'Ticket Sahibi', value: `<@${ownerId}>`, inline: true } : null,
     handlerId ? { name: 'Sorumlu', value: `<@${handlerId}>`, inline: true } : null,
     { name: 'Durum', value: formatStatusLabel('resolved'), inline: true },
+    { name: 'Öncelik', value: formatPriorityLabel(currentPriority), inline: true },
     transcriptData ? { name: 'Mesaj Sayısı', value: String(transcriptData.messageCount), inline: true } : null,
     { name: 'Toplam Süre', value: formatDuration(lifetime), inline: true }
   ].filter(Boolean);

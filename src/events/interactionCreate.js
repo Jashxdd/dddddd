@@ -24,22 +24,65 @@ import {
   createTicketChannel,
   createTicketTranscript,
   getOrCreateTicketConfig,
+  getTicketPriorityLabel,
   getTicketStatusLabel,
-  setTicketStatus
+  setTicketPriority,
+  setTicketStatus,
+  ticketPriorities
 } from '../utils/ticketManager.js';
 import { setDetailedLogChannel, clearDetailedLogChannel } from '../utils/detailedLogStorage.js';
 import {
   applyGuardPreset,
-  setGuardLogChannel,
-  toggleGuardProtection,
-  setGuardPenalty,
+  detectGuardPreset,
+  guardPenaltyLabels,
+  guardPresetDefinitions,
+  guardProtectionGroups,
+  guardProtectionLabels,
   getGuardConfig,
+  setGuardGroupState,
+  setGuardLogChannel,
+  setGuardPenalty,
+  toggleGuardProtection,
   updateGuardWhitelist
 } from '../utils/guardConfigStorage.js';
 import { sendGuardLog } from '../utils/guardLog.js';
 import { buildLogGuardPanel } from '../commands/system/modlog.js';
 import { handleGiveawayJoin } from '../utils/giveawayManager.js';
 import { isGloballyBlacklisted } from '../utils/blacklistStorage.js';
+
+const ticketPanelSelections = new Map();
+const TICKET_PREFERENCE_TTL = 15 * 60 * 1000;
+
+function makeTicketPreferenceKey(guildId, userId) {
+  return `${guildId}:${userId}`;
+}
+
+function setTicketPanelPreference(guildId, userId, priority) {
+  if (!guildId || !userId || !priority) return;
+  ticketPanelSelections.set(makeTicketPreferenceKey(guildId, userId), {
+    priority,
+    expiresAt: Date.now() + TICKET_PREFERENCE_TTL
+  });
+}
+
+function getTicketPanelPreference(guildId, userId) {
+  if (!guildId || !userId) return null;
+  const key = makeTicketPreferenceKey(guildId, userId);
+  const stored = ticketPanelSelections.get(key);
+  if (!stored) return null;
+  if (!stored.expiresAt || stored.expiresAt < Date.now()) {
+    ticketPanelSelections.delete(key);
+    return null;
+  }
+  return stored.priority;
+}
+
+function consumeTicketPanelPreference(guildId, userId) {
+  const preference = getTicketPanelPreference(guildId, userId);
+  if (!preference) return null;
+  ticketPanelSelections.delete(makeTicketPreferenceKey(guildId, userId));
+  return preference;
+}
 
 async function handleLogPanelComponent(interaction) {
   const [key, userId, extra] = interaction.customId.split(':');
@@ -50,8 +93,10 @@ async function handleLogPanelComponent(interaction) {
     'guard-toggle',
     'guard-channel',
     'guard-refresh',
+    'guard-summary',
     'guard-penalty',
     'guard-preset',
+    'guard-group',
     'guard-whitelist'
   ]);
 
@@ -130,6 +175,31 @@ async function handleLogPanelComponent(interaction) {
     return true;
   }
 
+  if (key === 'guard-group') {
+    const selection = interaction.values?.[0];
+    if (!selection) {
+      await interaction.reply({ content: 'Bir hızlı ayar seçmelisin.', ephemeral: true });
+      return true;
+    }
+
+    const [groupKey, state] = selection.split(':');
+    if (!groupKey || !state) {
+      await interaction.reply({ content: 'Seçim okunamadı. Lütfen tekrar dene.', ephemeral: true });
+      return true;
+    }
+
+    try {
+      await setGuardGroupState(interaction.guildId, groupKey, state !== 'off');
+    } catch (error) {
+      await interaction.reply({ content: `Guard ayarı uygulanamadı: ${error.message}`, ephemeral: true });
+      return true;
+    }
+
+    const response = await buildLogGuardPanel(interaction);
+    await interaction.update(response);
+    return true;
+  }
+
   if (key === 'guard-channel') {
     const response = await buildLogGuardPanel(interaction, { guardChannelSelect: true });
     await interaction.update(response);
@@ -164,6 +234,81 @@ async function handleLogPanelComponent(interaction) {
   if (key === 'guard-refresh') {
     const response = await buildLogGuardPanel(interaction);
     await interaction.update(response);
+    return true;
+  }
+
+  if (key === 'guard-summary') {
+    const config = await getGuardConfig(interaction.guildId);
+    const presetKey = detectGuardPreset(config);
+    const preset = presetKey ? guardPresetDefinitions[presetKey] : null;
+    const guild = interaction.guild;
+    const logChannelLabel = config.logChannelId
+      ? guild?.channels.cache.get(config.logChannelId)?.toString() ?? `\`${config.logChannelId}\``
+      : 'Ayarlanmamış';
+
+    const protectionEntries = Object.entries(guardProtectionLabels).map(([protectionKey, label]) => {
+      const active = Boolean(config.protections?.[protectionKey]);
+      return `${active ? '🟢' : '⚪'} ${label}`;
+    });
+
+    const groupSummaries = Object.entries(guardProtectionGroups).map(([groupKey, group]) => {
+      const enabledCount = group.keys.filter((name) => config.protections?.[name]).length;
+      const isActive = enabledCount === group.keys.length;
+      const isPartial = enabledCount > 0 && !isActive;
+      const emoji = isActive ? '🟢' : isPartial ? '🟠' : '⚪';
+      return `${emoji} ${group.emoji} ${group.label}`;
+    });
+
+    const whitelistPreview = (config.whitelistRoleIds ?? [])
+      .slice(0, 10)
+      .map((roleId) => guild?.roles.cache.get(roleId)?.toString() ?? `\`${roleId}\``);
+
+    const updatedAtLabel = config.updatedAt
+      ? `<t:${Math.floor(config.updatedAt / 1000)}:R>`
+      : 'Henüz güncellenmedi';
+
+    const embed = new EmbedBuilder()
+      .setColor(0x2980b9)
+      .setTitle('🛡️ Guard Durum Özeti')
+      .setDescription('Hızlı inceleme için guard koruma ayarlarının güncel özeti hazır.')
+      .addFields(
+        {
+          name: 'Guard Profili',
+          value: preset ? `${preset.label}\n_${preset.description}_` : 'Özel ayar (profil kaydedilmedi).',
+          inline: false
+        },
+        {
+          name: 'Yaptırım',
+          value: guardPenaltyLabels[config.penalty] ?? 'Belirtilmedi',
+          inline: true
+        },
+        { name: 'Log Kanalı', value: logChannelLabel, inline: true },
+        {
+          name: 'Aktif Koruma Sayısı',
+          value: `${Object.values(config.protections ?? {}).filter(Boolean).length}`,
+          inline: true
+        },
+        {
+          name: 'Guard Grupları',
+          value: groupSummaries.length ? groupSummaries.join('\n') : 'Henüz grup tanımlanmadı.',
+          inline: false
+        },
+        {
+          name: 'Koruma Durumları',
+          value: protectionEntries.join('\n') || 'Koruma etkin değil.',
+          inline: false
+        },
+        {
+          name: 'Beyaz Liste',
+          value: whitelistPreview.length ? whitelistPreview.join('\n') : 'Beyaz liste boş.',
+          inline: false
+        },
+        { name: 'Son Güncelleme', value: updatedAtLabel, inline: false }
+      )
+      .setFooter({ text: 'Furmin Guard hızlı özeti' })
+      .setTimestamp();
+
+    await interaction.reply({ embeds: [embed], ephemeral: true });
     return true;
   }
 
@@ -482,12 +627,16 @@ async function handleTicketButton(interaction) {
   }
 
   if (action === 'open') {
+    const preferredPriority = getTicketPanelPreference(interaction.guildId, interaction.user.id);
     await interaction.deferReply({ ephemeral: true });
-    const result = await createTicketChannel(interaction, null);
+    const result = await createTicketChannel(interaction, null, {
+      priorityKey: preferredPriority
+    });
     if (result.error) {
       await interaction.editReply({ content: `⚠️ ${result.error}` });
       return true;
     }
+    consumeTicketPanelPreference(interaction.guildId, interaction.user.id);
     await interaction.editReply({ content: `✅ Ticket kanalın ${result.channel} olarak açıldı.` });
     return true;
   }
@@ -585,12 +734,27 @@ async function handleTicketSelect(interaction) {
     }
 
     await interaction.deferReply({ ephemeral: true });
-    const result = await createTicketChannel(interaction, value);
+    const preferredPriority = getTicketPanelPreference(interaction.guildId, interaction.user.id);
+    const result = await createTicketChannel(interaction, value, { priorityKey: preferredPriority });
     if (result.error) {
       await interaction.editReply({ content: `⚠️ ${result.error}` });
     } else {
+      consumeTicketPanelPreference(interaction.guildId, interaction.user.id);
       await interaction.editReply({ content: `✅ Ticket kanalın ${result.channel} olarak açıldı.` });
     }
+    return true;
+  }
+
+  if (parts[1] === 'panel-priority') {
+    const value = interaction.values?.[0];
+    if (!value || !ticketPriorities[value]) {
+      await interaction.reply({ content: '⚠️ Açılacak ticketlar için geçerli bir öncelik seçmelisin.', ephemeral: true });
+      return true;
+    }
+
+    setTicketPanelPreference(interaction.guildId, interaction.user.id, value);
+    const label = getTicketPriorityLabel(value);
+    await interaction.reply({ content: `🎚️ Yeni ticketların varsayılan önceliği **${label}** olarak ayarlandı.`, ephemeral: true });
     return true;
   }
 
@@ -625,6 +789,44 @@ async function handleTicketSelect(interaction) {
     if (!isOwner) {
       await interaction.channel.send({
         content: `ℹ️ Ticket durumu ${interaction.user} tarafından **${statusLabel}** olarak değiştirildi.`,
+        allowedMentions: { users: [interaction.user.id] }
+      }).catch(() => {});
+    }
+    return true;
+  }
+
+  if (parts[1] === 'priority') {
+    const value = interaction.values?.[0];
+    if (!value) {
+      await interaction.reply({ content: '⚠️ Bir öncelik seçmelisin.', ephemeral: true });
+      return true;
+    }
+
+    const config = await getOrCreateTicketConfig(interaction.guildId);
+    const supportRoleId = config?.supportRoleId;
+    const isOwner = interaction.channel?.topic?.includes(`TicketOwner:${interaction.user.id}`);
+    const hasPermission = interaction.member?.permissions?.has(PermissionFlagsBits.ManageChannels) ||
+      (supportRoleId ? interaction.member?.roles?.cache?.has(supportRoleId) : false) ||
+      isOwner;
+
+    if (!hasPermission) {
+      await interaction.reply({ content: 'Ticket önceliğini güncellemek için ticket sahibi olmalı veya destek yetkisine sahip olmalısın.', ephemeral: true });
+      return true;
+    }
+
+    await interaction.deferReply({ ephemeral: true });
+
+    const result = await setTicketPriority(interaction.channel, value);
+    if (result.error) {
+      await interaction.editReply({ content: `⚠️ ${result.error}` });
+      return true;
+    }
+
+    const label = getTicketPriorityLabel(value);
+    await interaction.editReply({ content: `Öncelik ${label} olarak güncellendi.` });
+    if (!isOwner) {
+      await interaction.channel.send({
+        content: `🚨 Ticket önceliği ${interaction.user} tarafından ${label} seviyesine ayarlandı.`,
         allowedMentions: { users: [interaction.user.id] }
       }).catch(() => {});
     }

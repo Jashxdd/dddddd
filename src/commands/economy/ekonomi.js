@@ -39,6 +39,12 @@ const ADVENTURE_REWARD_RANGE = [120, 260];
 const ADVENTURE_FAIL_PENALTY = 40;
 const WORK_COOLDOWN = 60 * 60 * 1000; // 1 saat
 const ADVENTURE_COOLDOWN = 90 * 60 * 1000; // 1,5 saat
+const CRATE_COOLDOWN = 10 * 60 * 1000; // 10 dakika
+const CRATE_COST = 320;
+const CRATE_REWARD_RANGE = [200, 520];
+const CRATE_ITEM_CHANCE = 0.35;
+const GUESS_ENTRY_COST = 150;
+const GUESS_REWARD_RANGE = [320, 640];
 
 const TYPE_LABELS = {
   daily: 'Günlük Ödül',
@@ -50,6 +56,8 @@ const TYPE_LABELS = {
   gift_sent: 'Hediye Gönderimi',
   gift_received: 'Hediye Alımı',
   purchase: 'Market Alımı',
+  crate: 'Şans Kasası',
+  guess: 'Tahmin Oyunu',
   owner_adjust: 'Sahip İşlemi'
 };
 
@@ -133,6 +141,7 @@ function buildProfileEmbed(user, profile, formatAmount, currencyName) {
           `• Çalışma: **${profile.stats.work}** kez\n` +
           `• Macera: **${profile.stats.adventure}** kez\n` +
           `• Görev: **${profile.stats.quests}** tamamlandı\n` +
+          `• Tahmin Oyunu: **${profile.stats.guessPlays}** deneme / **${profile.stats.guessWins}** isabet\n` +
           `• Hediyeleşme: **${profile.stats.giftsSent}** gönderildi / **${profile.stats.giftsReceived}** alındı\n` +
           `• Yatırım: **${profile.stats.investmentWins}** kazanç / **${profile.stats.investmentLosses}** kayıp`
       }
@@ -240,6 +249,20 @@ const data = new SlashCommandBuilder()
   .addSubcommand((sub) => sub.setName('calis').setDescription('Kısa bir mesai yaparak para kazan.'))
   .addSubcommand((sub) => sub.setName('macera').setDescription('Macera ile sürpriz ödüller kazanmayı dene.'))
   .addSubcommand((sub) => sub.setName('gorev').setDescription('Günlük bir Furmin görevi tamamla.'))
+  .addSubcommand((sub) => sub.setName('kasa').setDescription('Şans kasasını açarak sürpriz ödüller kazan.'))
+  .addSubcommand((sub) =>
+    sub
+      .setName('tahmin')
+      .setDescription('Gizli sayıyı doğru tahmin ederek ödül kazan.')
+      .addIntegerOption((option) =>
+        option
+          .setName('sayi')
+          .setDescription('1 ile 10 arasında bir sayı seç')
+          .setRequired(true)
+          .setMinValue(1)
+          .setMaxValue(10)
+      )
+  )
   .addSubcommand((sub) =>
     sub
       .setName('yatirim')
@@ -550,6 +573,153 @@ export default {
 
         const profile = await getEconomyProfile(userId);
         embed.addFields({ name: 'Güncel Bakiye', value: formatAmount(profile.balance), inline: true });
+
+        await interaction.editReply({ embeds: [embed] });
+        return;
+      }
+
+      if (subcommand === 'kasa') {
+        const profile = await getEconomyProfile(userId);
+        if (profile.balance < CRATE_COST) {
+          await interaction.editReply({
+            content: `📦 Kasayı açmak için **${formatAmount(CRATE_COST)}** gerekiyor. Mevcut bakiyen ${formatAmount(profile.balance)}.`
+          });
+          return;
+        }
+
+        const crateAvailability = await canUseAction(userId, 'crate', CRATE_COOLDOWN);
+        if (!crateAvailability.available) {
+          await interaction.editReply({
+            content: `⏳ Yeni bir kasayı açmak için **${formatDuration(crateAvailability.remaining)}** beklemelisin.`
+          });
+          return;
+        }
+
+        await recordActionUsage(userId, 'crate');
+        await modifyBalance(userId, -CRATE_COST);
+
+        let netChange = -CRATE_COST;
+        let rewardNote = 'Kasadan sürpriz hediyeler çıktı.';
+        let rewardDescription = '';
+        let finalBalanceProfile = null;
+        let rewardColor = 0x3498db;
+
+        if (Math.random() < CRATE_ITEM_CHANCE && economyItems.length) {
+          const item = economyItems[Math.floor(Math.random() * economyItems.length)];
+          await addInventoryItem(userId, item.id, 1);
+          finalBalanceProfile = await getEconomyProfile(userId);
+          rewardNote = `Ödül: ${item.name}`;
+          rewardDescription = `🎁 Kasadan **${item.name}** çıktı! ${item.description}`;
+          rewardColor = 0x9b59b6;
+        } else {
+          const coins = applyBonus(pickRandom(CRATE_REWARD_RANGE[0], CRATE_REWARD_RANGE[1]), bonusMultiplier);
+          await modifyBalance(userId, coins);
+          netChange += coins;
+          finalBalanceProfile = await getEconomyProfile(userId);
+          rewardNote = `Ödül: ${formatAmount(coins)}`;
+          rewardDescription = `💎 Kasadan **${formatAmount(coins)}** çıktı!`;
+          rewardColor = 0x1abc9c;
+        }
+
+        const finalBalance = finalBalanceProfile?.balance ?? profile.balance - CRATE_COST;
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: interaction.user.id,
+          type: 'crate',
+          amount: netChange,
+          balanceAfter: finalBalance,
+          note: rewardNote
+        });
+
+        if (interaction.inGuild()) {
+          await logEconomyChange(interaction.client, interaction.guildId, {
+            userId,
+            executorId: interaction.user.id,
+            amount: netChange,
+            balanceAfter: finalBalance,
+            type: resolveTypeLabel('crate'),
+            note: rewardNote
+          });
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(rewardColor)
+          .setTitle('🎲 Şans Kasası Açıldı')
+          .setDescription(
+            `${rewardDescription}\n💸 Açılış ücreti: ${formatAmount(CRATE_COST)}\n🪙 Güncel bakiye: ${formatAmount(finalBalance)}`
+          )
+          .setFooter({ text: 'Kasaları her 10 dakikada bir açabilirsin.' })
+          .setTimestamp();
+
+        await interaction.editReply({ embeds: [embed] });
+        return;
+      }
+
+      if (subcommand === 'tahmin') {
+        const guess = interaction.options.getInteger('sayi', true);
+        const profile = await getEconomyProfile(userId);
+
+        if (profile.balance < GUESS_ENTRY_COST) {
+          await interaction.editReply({
+            content: `🎯 Tahmin oyununa katılmak için **${formatAmount(GUESS_ENTRY_COST)}** gerekiyor. Bakiyen ${formatAmount(profile.balance)}.`
+          });
+          return;
+        }
+
+        await incrementStat(userId, 'guessPlays', 1);
+        let balanceAfter = await modifyBalance(userId, -GUESS_ENTRY_COST);
+        let netChange = -GUESS_ENTRY_COST;
+        const secretNumber = pickRandom(1, 10);
+        let description = `🎯 Gizli sayı **${secretNumber}** çıktı. Katılım ücreti ${formatAmount(GUESS_ENTRY_COST)} olarak düşüldü.`;
+        let note = `Katılım bedeli: ${formatAmount(GUESS_ENTRY_COST)}`;
+        let color = 0xe74c3c;
+
+        if (guess === secretNumber) {
+          const reward = applyBonus(pickRandom(GUESS_REWARD_RANGE[0], GUESS_REWARD_RANGE[1]), bonusMultiplier);
+          balanceAfter = await modifyBalance(userId, reward);
+          netChange += reward;
+          await incrementStat(userId, 'guessWins', 1);
+          description = `🥳 Tebrikler! Gizli sayı **${secretNumber}** idi ve **${formatAmount(reward)}** kazandın.`;
+          note = `Doğru tahmin ödülü: ${formatAmount(reward)} (Katılım ücreti: ${formatAmount(GUESS_ENTRY_COST)})`;
+          color = 0x2ecc71;
+        } else {
+          description += ` Tahminin **${guess}** idi.`;
+        }
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: interaction.user.id,
+          type: 'guess',
+          amount: netChange,
+          balanceAfter,
+          note
+        });
+
+        if (interaction.inGuild()) {
+          await logEconomyChange(interaction.client, interaction.guildId, {
+            userId,
+            executorId: interaction.user.id,
+            amount: netChange,
+            balanceAfter,
+            type: resolveTypeLabel('guess'),
+            note
+          });
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(color)
+          .setTitle('🎯 Tahmin Oyunu Sonucu')
+          .setDescription(description)
+          .addFields(
+            { name: 'Tahminin', value: `${guess}`, inline: true },
+            { name: 'Gizli Sayı', value: `${secretNumber}`, inline: true },
+            { name: 'Güncel Bakiye', value: formatAmount(balanceAfter), inline: true }
+          )
+          .setFooter({ text: 'Tahmin oyunu giriş ücreti iade edilmez.' })
+          .setTimestamp();
 
         await interaction.editReply({ embeds: [embed] });
         return;

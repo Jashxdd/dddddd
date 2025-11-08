@@ -33,9 +33,15 @@ import {
 
 const WORK_COOLDOWN = 60 * 60 * 1000;
 const ADVENTURE_COOLDOWN = 90 * 60 * 1000;
+const CRATE_COOLDOWN = 10 * 60 * 1000;
 const DAILY_BASE_REWARD = 250;
 const DAILY_STREAK_BONUS = 35;
 const ADVENTURE_FAIL_PENALTY = 40;
+const CRATE_COST = 320;
+const CRATE_REWARD_RANGE = [200, 520];
+const CRATE_ITEM_CHANCE = 0.35;
+const GUESS_ENTRY_COST = 150;
+const GUESS_REWARD_RANGE = [320, 640];
 
 const TYPE_LABELS = {
   daily: 'Günlük Ödül',
@@ -47,11 +53,13 @@ const TYPE_LABELS = {
   gift_sent: 'Hediye Gönderimi',
   gift_received: 'Hediye Alımı',
   purchase: 'Market Alımı',
+  crate: 'Şans Kasası',
+  guess: 'Tahmin Oyunu',
   owner_adjust: 'Sahip İşlemi'
 };
 
 const usage =
-  'Kullanım: `ekonomi bakiye [@üye]`, `ekonomi kayit [@üye] [limit]`, `ekonomi gunluk`, `ekonomi calis`, `ekonomi macera`, `ekonomi gorev`, `ekonomi yatirim <miktar>`, `ekonomi hediye @üye miktar`, `ekonomi market`, `ekonomi satinal <urun> [adet]`, `ekonomi envanter`, `ekonomi liderlik`, `ekonomi ayar <isim|sembol|bonus|goster> [değer]`.';
+  'Kullanım: `ekonomi bakiye [@üye]`, `ekonomi kayit [@üye] [limit]`, `ekonomi gunluk`, `ekonomi calis`, `ekonomi macera`, `ekonomi gorev`, `ekonomi kasa`, `ekonomi tahmin <sayi>`, `ekonomi yatirim <miktar>`, `ekonomi hediye @üye miktar`, `ekonomi market`, `ekonomi satinal <urun> [adet]`, `ekonomi envanter`, `ekonomi liderlik`, `ekonomi ayar <isim|sembol|bonus|goster> [değer]`.';
 
 function formatCurrency(amount, config = null) {
   const safeAmount = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
@@ -233,6 +241,7 @@ export default {
                 `• Çalışma: **${profile.stats.work}** kez\n` +
                 `• Macera: **${profile.stats.adventure}** kez\n` +
                 `• Görev: **${profile.stats.quests}** tamamlandı\n` +
+                `• Tahmin Oyunu: **${profile.stats.guessPlays}** deneme / **${profile.stats.guessWins}** isabet\n` +
                 `• Hediyeleşme: **${profile.stats.giftsSent}** / **${profile.stats.giftsReceived}**\n` +
                 `• Yatırım: **${profile.stats.investmentWins}** kazanç / **${profile.stats.investmentLosses}** kayıp`
             }
@@ -468,6 +477,164 @@ export default {
 
         const profile = await getEconomyProfile(userId);
         embed.addFields({ name: 'Güncel Bakiye', value: formatAmount(profile.balance), inline: true });
+
+        await message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
+        return;
+      }
+
+      if (['kasa', 'kasaa', 'crate'].includes(action)) {
+        const profile = await getEconomyProfile(userId);
+        if (profile.balance < CRATE_COST) {
+          await message.reply({
+            content: `📦 Kasayı açmak için **${formatAmount(CRATE_COST)}** gerekiyor. Bakiyen ${formatAmount(profile.balance)}.`,
+            allowedMentions: { repliedUser: false }
+          });
+          return;
+        }
+
+        const availability = await canUseAction(userId, 'crate', CRATE_COOLDOWN);
+        if (!availability.available) {
+          await message.reply({
+            content: `⏳ Yeni bir kasayı açmak için **${formatDuration(availability.remaining)}** beklemelisin.`,
+            allowedMentions: { repliedUser: false }
+          });
+          return;
+        }
+
+        await recordActionUsage(userId, 'crate');
+        await modifyBalance(userId, -CRATE_COST);
+
+        let netChange = -CRATE_COST;
+        let rewardNote = 'Kasadan sürpriz hediyeler çıktı.';
+        let rewardDescription = '';
+        let rewardColor = 0x3498db;
+        let finalProfile = null;
+
+        if (Math.random() < CRATE_ITEM_CHANCE && economyItems.length) {
+          const item = economyItems[Math.floor(Math.random() * economyItems.length)];
+          await addInventoryItem(userId, item.id, 1);
+          finalProfile = await getEconomyProfile(userId);
+          rewardNote = `Ödül: ${item.name}`;
+          rewardDescription = `🎁 Kasadan **${item.name}** çıktı! ${item.description}`;
+          rewardColor = 0x9b59b6;
+        } else {
+          const coins = applyBonus(pickRandom(CRATE_REWARD_RANGE[0], CRATE_REWARD_RANGE[1]), bonusMultiplier);
+          await modifyBalance(userId, coins);
+          netChange += coins;
+          finalProfile = await getEconomyProfile(userId);
+          rewardNote = `Ödül: ${formatAmount(coins)}`;
+          rewardDescription = `💎 Kasadan **${formatAmount(coins)}** çıktı!`;
+          rewardColor = 0x1abc9c;
+        }
+
+        const finalBalance = finalProfile?.balance ?? profile.balance - CRATE_COST;
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: message.author.id,
+          type: 'crate',
+          amount: netChange,
+          balanceAfter: finalBalance,
+          note: rewardNote
+        });
+
+        if (message.inGuild()) {
+          await logEconomyChange(message.client, message.guildId, {
+            userId,
+            executorId: message.author.id,
+            amount: netChange,
+            balanceAfter: finalBalance,
+            type: resolveTypeLabel('crate'),
+            note: rewardNote
+          });
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(rewardColor)
+          .setTitle('🎲 Şans Kasası Açıldı')
+          .setDescription(
+            `${rewardDescription}\n💸 Açılış ücreti: ${formatAmount(CRATE_COST)}\n🪙 Güncel bakiye: ${formatAmount(finalBalance)}`
+          )
+          .setFooter({ text: 'Kasalar 10 dakikada bir açılabilir.' })
+          .setTimestamp();
+
+        await message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
+        return;
+      }
+
+      if (['tahmin', 'guess'].includes(action)) {
+        const numberArg = args.shift();
+        const parsed = Number.parseInt(numberArg ?? '', 10);
+        if (!Number.isFinite(parsed) || parsed < 1 || parsed > 10) {
+          await message.reply({
+            content: '🎯 Tahmin oyunu için 1 ile 10 arasında bir sayı girmelisin. Örnek: `ekonomi tahmin 7`',
+            allowedMentions: { repliedUser: false }
+          });
+          return;
+        }
+
+        const profile = await getEconomyProfile(userId);
+        if (profile.balance < GUESS_ENTRY_COST) {
+          await message.reply({
+            content: `🎯 Tahmin oyununa katılmak için **${formatAmount(GUESS_ENTRY_COST)}** gerekiyor. Bakiyen ${formatAmount(profile.balance)}.`,
+            allowedMentions: { repliedUser: false }
+          });
+          return;
+        }
+
+        await incrementStat(userId, 'guessPlays', 1);
+        let balanceAfter = await modifyBalance(userId, -GUESS_ENTRY_COST);
+        let netChange = -GUESS_ENTRY_COST;
+        const secretNumber = pickRandom(1, 10);
+        let description = `🎯 Gizli sayı **${secretNumber}** çıktı. Katılım ücreti ${formatAmount(GUESS_ENTRY_COST)} olarak düşüldü.`;
+        let note = `Katılım bedeli: ${formatAmount(GUESS_ENTRY_COST)}`;
+        let color = 0xe74c3c;
+
+        if (parsed === secretNumber) {
+          const reward = applyBonus(pickRandom(GUESS_REWARD_RANGE[0], GUESS_REWARD_RANGE[1]), bonusMultiplier);
+          balanceAfter = await modifyBalance(userId, reward);
+          netChange += reward;
+          await incrementStat(userId, 'guessWins', 1);
+          description = `🥳 Tebrikler! Gizli sayı **${secretNumber}** idi ve **${formatAmount(reward)}** kazandın.`;
+          note = `Doğru tahmin ödülü: ${formatAmount(reward)} (Katılım ücreti: ${formatAmount(GUESS_ENTRY_COST)})`;
+          color = 0x2ecc71;
+        } else {
+          description += ` Tahminin **${parsed}** idi.`;
+        }
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: message.author.id,
+          type: 'guess',
+          amount: netChange,
+          balanceAfter,
+          note
+        });
+
+        if (message.inGuild()) {
+          await logEconomyChange(message.client, message.guildId, {
+            userId,
+            executorId: message.author.id,
+            amount: netChange,
+            balanceAfter,
+            type: resolveTypeLabel('guess'),
+            note
+          });
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(color)
+          .setTitle('🎯 Tahmin Oyunu Sonucu')
+          .setDescription(description)
+          .addFields(
+            { name: 'Tahminin', value: `${parsed}`, inline: true },
+            { name: 'Gizli Sayı', value: `${secretNumber}`, inline: true },
+            { name: 'Güncel Bakiye', value: formatAmount(balanceAfter), inline: true }
+          )
+          .setFooter({ text: 'Tahmin oyunu giriş ücreti iade edilmez.' })
+          .setTimestamp();
 
         await message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
         return;

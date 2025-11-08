@@ -72,6 +72,11 @@ function ensureGuild(guildId) {
   if (!Object.prototype.hasOwnProperty.call(data, 'activeTickets') || typeof data.activeTickets !== 'object') {
     data.activeTickets = {};
   }
+  for (const record of Object.values(data.activeTickets)) {
+    if (record && typeof record === 'object' && !record.priority) {
+      record.priority = 'normal';
+    }
+  }
   return data;
 }
 
@@ -124,6 +129,7 @@ export async function setActiveTicketRecord(guildId, channelId, record) {
     ownerId: record?.ownerId ?? null,
     handlerId: record?.handlerId ?? null,
     status: record?.status ?? 'waiting',
+    priority: record?.priority ?? 'normal',
     createdAt: record?.createdAt ?? Date.now(),
     updatedAt: record?.updatedAt ?? Date.now()
   };
@@ -139,6 +145,9 @@ export async function updateActiveTicketRecord(guildId, channelId, changes) {
     return null;
   }
   Object.assign(data.activeTickets[channelId], changes ?? {}, { updatedAt: Date.now() });
+  if (!data.activeTickets[channelId].priority) {
+    data.activeTickets[channelId].priority = 'normal';
+  }
   await persist();
   return JSON.parse(JSON.stringify(data.activeTickets[channelId]));
 }

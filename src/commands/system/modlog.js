@@ -26,7 +26,9 @@ import {
   getGuardConfig,
   guardPenaltyLabels,
   guardPresetDefinitions,
+  guardProtectionGroups,
   guardProtectionLabels,
+  setGuardGroupState,
   setGuardLogChannel,
   setGuardPenalty,
   toggleGuardProtection
@@ -83,6 +85,20 @@ function buildPanelEmbed(guild, logChannels, guardConfig) {
     inline: true
   });
 
+  const groupLines = Object.entries(guardProtectionGroups).map(([key, group]) => {
+    const enabledCount = group.keys.filter((protectionKey) => guardConfig.protections?.[protectionKey]).length;
+    const isActive = enabledCount === group.keys.length;
+    const isPartial = !isActive && enabledCount > 0;
+    const stateEmoji = isActive ? '🟢' : isPartial ? '🟠' : '⚪';
+    return `${stateEmoji} ${group.emoji} ${group.label}`;
+  });
+
+  embedFields.push({
+    name: 'Guard Hızlı Gruplar',
+    value: groupLines.join('\n') || 'Henüz guard grupları yapılandırılmadı.',
+    inline: false
+  });
+
   embedFields.push({
     name: 'Log Özeti',
     value: `Atanan kanal sayısı: **${activeLogCount}/${Object.keys(LOG_CATEGORY_LABELS).length}**`,
@@ -113,9 +129,16 @@ function buildPanelEmbed(guild, logChannels, guardConfig) {
     inline: false
   });
 
+  const updatedAt = guardConfig.updatedAt
+    ? `<t:${Math.floor(guardConfig.updatedAt / 1000)}:R>`
+    : 'Henüz güncellenmedi';
+
   return {
     color: 0x1abc9c,
     title: `${guild.name} • Log ve Guard Paneli`,
+    description:
+      'Menüler ve düğmeler ile guard/log ayarlarını gerçek zamanlı yönetebilirsin.\n'
+      + `Son güncelleme: **${updatedAt}**`,
     fields: embedFields,
     footer: { text: 'Furmin log & guard yönetimi' }
   };
@@ -174,6 +197,11 @@ function buildGuardControlsRow(userId, options = {}) {
       .setEmoji('🎫')
       .setLabel('Beyaz Liste'),
     new ButtonBuilder()
+      .setCustomId(`guard-summary:${userId}`)
+      .setStyle(ButtonStyle.Secondary)
+      .setEmoji('🧭')
+      .setLabel('Durum Özeti'),
+    new ButtonBuilder()
       .setCustomId(`guard-refresh:${userId}`)
       .setStyle(ButtonStyle.Secondary)
       .setEmoji('🔄')
@@ -225,6 +253,38 @@ function buildGuardPresetRow(userId, guardConfig) {
   return new ActionRowBuilder().addComponents(select);
 }
 
+function buildGuardGroupRow(userId, guardConfig) {
+  const select = new StringSelectMenuBuilder()
+    .setCustomId(`guard-group:${userId}`)
+    .setPlaceholder('Guard hızlı ayarlarını seçin')
+    .addOptions([
+      {
+        label: 'Tüm korumaları aç',
+        value: 'all:on',
+        emoji: '🟢',
+        description: 'Tüm guard korumalarını tek dokunuşla etkinleştir.'
+      },
+      {
+        label: 'Tüm korumaları kapat',
+        value: 'all:off',
+        emoji: '⚪',
+        description: 'Guard korumalarını geçici olarak pasifleştir.'
+      },
+      ...Object.entries(guardProtectionGroups).map(([key, group]) => {
+        const enabledCount = group.keys.filter((protectionKey) => guardConfig.protections?.[protectionKey]).length;
+        const isActive = enabledCount === group.keys.length;
+        return {
+          label: `${group.label} ${isActive ? 'Kapat' : 'Aç'}`.slice(0, 100),
+          value: `${key}:${isActive ? 'off' : 'on'}`,
+          emoji: isActive ? '⚪' : group.emoji,
+          description: group.description.slice(0, 90)
+        };
+      })
+    ]);
+
+  return new ActionRowBuilder().addComponents(select);
+}
+
 function buildChannelSelectRow(userId, category) {
   return new ActionRowBuilder().addComponents(
     new ChannelSelectMenuBuilder()
@@ -244,6 +304,7 @@ export async function buildLogGuardPanel(interaction, options = {}) {
   const embed = new EmbedBuilder()
     .setColor(embedData.color)
     .setTitle(embedData.title)
+    .setDescription(embedData.description)
     .setFields(embedData.fields)
     .setFooter(embedData.footer)
     .setTimestamp();
@@ -257,6 +318,7 @@ export async function buildLogGuardPanel(interaction, options = {}) {
 
   components.push(buildLogSelectRow(interaction.user.id));
   components.push(buildGuardPresetRow(interaction.user.id, guardConfig));
+  components.push(buildGuardGroupRow(interaction.user.id, guardConfig));
   components.push(buildGuardToggleRow(interaction.user.id, guardConfig));
   components.push(buildGuardPenaltyRow(interaction.user.id, guardConfig));
   components.push(

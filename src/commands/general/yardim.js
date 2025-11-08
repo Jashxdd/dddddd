@@ -201,8 +201,10 @@ function buildOverviewPage(displayCategories, prefix, statsCategories = displayC
   });
 
   const highlights = [
-    '💰 Ekonomi ayarlarını `/ekonomi ayar` ve `f!ekonomi ayar` komutlarıyla kişiselleştirebilirsin.',
-    '🎫 Ticket panelleri ve guard logları menülerle yönetilir; `/modlog` ve `f!ticket panel` komutlarını dene.'
+    '🛡️ Guard panelindeki Durum Özeti düğmesi aktif korumaları ve beyaz listeyi tek mesajda özetler.',
+    '🎫 Ticket paneli artık öncelik menüsünü hatırlıyor; açacağın her ticket seçtiğin seviyeyi kullanır.',
+    '💰 Ekonomi ayarlarını `/ekonomi ayar` ve `f!ekonomi ayar` komutlarıyla kişiselleştir, `tahmin` oyunu ile şansını dene.',
+    '🎲 Şans kasasını `/ekonomi kasa` ve `f!ekonomi kasa` komutlarıyla açarak sürpriz ödüller topla.'
   ];
 
   embed.addFields({ name: 'Öne Çıkanlar', value: highlights.join('\n') });
