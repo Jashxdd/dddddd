@@ -776,7 +776,9 @@ export default {
     const originalEditReply = interaction.editReply?.bind(interaction);
 
     const ackState = {
-      autoDeferred: false
+      autoDeferred: false,
+      hasDeferred: false,
+      responded: false
     };
 
     let autoAckTimeout;
@@ -793,6 +795,7 @@ export default {
         if (interaction.deferred || interaction.replied) return;
         try {
           ackState.autoDeferred = true;
+          ackState.hasDeferred = true;
           await originalDeferReply({});
         } catch (error) {
           ackState.autoDeferred = false;
@@ -806,7 +809,15 @@ export default {
     if (originalDeferReply) {
       interaction.deferReply = async (...args) => {
         clearAckTimeout();
+        if (ackState.autoDeferred) {
+          ackState.autoDeferred = false;
+          ackState.responded = false;
+          ackState.hasDeferred = true;
+          return Promise.resolve();
+        }
         ackState.autoDeferred = false;
+        ackState.hasDeferred = true;
+        ackState.responded = false;
         return originalDeferReply(...args);
       };
     }
@@ -815,7 +826,9 @@ export default {
       interaction.followUp = async (...args) => {
         clearAckTimeout();
         ackState.autoDeferred = false;
-        return originalFollowUp(...args);
+        const result = await originalFollowUp(...args);
+        ackState.responded = true;
+        return result;
       };
     }
 
@@ -831,20 +844,40 @@ export default {
           if (ackState.autoDeferred && isEphemeral && originalDeleteReply) {
             ackState.autoDeferred = false;
             await originalDeleteReply().catch(() => {});
-            return originalFollowUp ? originalFollowUp(...args) : undefined;
+            const followUpResult = originalFollowUp ? await originalFollowUp(...args) : undefined;
+            if (followUpResult !== undefined) {
+              ackState.responded = true;
+            }
+            return followUpResult;
           }
 
           ackState.autoDeferred = false;
-          return originalEditReply(options);
+          const editResult = await originalEditReply(options);
+          ackState.responded = true;
+          return editResult;
         }
 
         if (interaction.replied && originalFollowUp) {
           ackState.autoDeferred = false;
-          return originalFollowUp(...args);
+          const followUpResult = await originalFollowUp(...args);
+          ackState.responded = true;
+          return followUpResult;
         }
 
         ackState.autoDeferred = false;
-        return originalReply(...args);
+        const replyResult = await originalReply(...args);
+        ackState.responded = true;
+        return replyResult;
+      };
+    }
+
+    if (originalEditReply) {
+      interaction.editReply = async (...args) => {
+        clearAckTimeout();
+        ackState.autoDeferred = false;
+        const result = await originalEditReply(...args);
+        ackState.responded = true;
+        return result;
       };
     }
 
@@ -861,11 +894,15 @@ export default {
       }
     } finally {
       clearAckTimeout();
-      if (interaction.deferred && !interaction.replied && originalEditReply) {
+      if (ackState.hasDeferred && !ackState.responded && originalEditReply) {
         await originalEditReply({
           content:
             '⏱️ Komut işlemesi tamamlandı ancak yanıt oluşturulamadı. Lütfen işlemi yeniden dene veya yöneticinle iletişime geç.'
-        }).catch(() => {});
+        }).catch((error) => {
+          if (error?.code !== 10062) {
+            console.error('Komut yedeği gönderilirken hata oluştu:', error);
+          }
+        });
       }
     }
   }
