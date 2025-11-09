@@ -67,3 +67,23 @@ export function collectCatalogSummary(client) {
 
   return { categories, stats, topCategory };
 }
+
+export function renderList(items, { emptyFallback = '—' } = {}) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return emptyFallback;
+  }
+
+  return items
+    .map((item) => {
+      if (typeof item === 'string' && item.trim().length > 0) {
+        return `• ${item.trim()}`;
+      }
+      if (item && typeof item.label === 'string' && item.label.trim().length > 0) {
+        return `• ${item.label.trim()}`;
+      }
+      return null;
+    })
+    .filter(Boolean)
+    .join('\n')
+    .trim() || emptyFallback;
+}
