@@ -892,6 +892,179 @@ async function handleGuardWhitelistModal(interaction) {
 
 const bypassCommands = new Set(['kurallar', 'kurallari-kabul']);
 
+function setupSlashResponseContext(interaction, command) {
+  const originalReply = interaction.reply?.bind(interaction);
+  const originalDeferReply = interaction.deferReply?.bind(interaction);
+  const originalFollowUp = interaction.followUp?.bind(interaction);
+  const originalDeleteReply = interaction.deleteReply?.bind(interaction);
+  const originalEditReply = interaction.editReply?.bind(interaction);
+
+  const ensureNonEmptyMessage = (options) => {
+    if (!options || typeof options !== 'object') {
+      return options;
+    }
+
+    const {
+      content,
+      embeds,
+      files,
+      attachments,
+      components,
+      stickers
+    } = options;
+
+    const hasContent = typeof content === 'string' && content.trim().length > 0;
+    const hasEmbeds = Array.isArray(embeds) && embeds.some((embed) => {
+      if (!embed) return false;
+      if (typeof embed.toJSON === 'function') {
+        return Object.keys(embed.toJSON()).length > 0;
+      }
+      if (typeof embed.data === 'object' && embed.data) {
+        return Object.keys(embed.data).length > 0;
+      }
+      return Object.keys(embed).length > 0;
+    });
+    const hasFiles = Array.isArray(files) ? files.length > 0 : Boolean(files);
+    const hasAttachments = Array.isArray(attachments) ? attachments.length > 0 : Boolean(attachments);
+    const hasComponents = Array.isArray(components) && components.length > 0;
+    const hasStickers = Array.isArray(stickers) && stickers.length > 0;
+
+    if (!hasContent && !hasEmbeds && !hasFiles && !hasAttachments && !hasComponents && !hasStickers) {
+      return { ...options, content: '\u200e' };
+    }
+
+    return options;
+  };
+
+  const normaliseResponseOptions = (input) => {
+    if (!input || typeof input !== 'object') {
+      return input;
+    }
+
+    const normalised = ensureNonEmptyMessage({ ...input });
+
+    if (Object.prototype.hasOwnProperty.call(normalised, 'ephemeral')) {
+      if (normalised.ephemeral) {
+        normalised.flags = (normalised.flags ?? 0) | MessageFlags.Ephemeral;
+      }
+      delete normalised.ephemeral;
+    }
+
+    return normalised;
+  };
+
+  const defaultDeferOptions = normaliseResponseOptions(
+    (typeof command.defaultDeferOptions === 'function'
+      ? command.defaultDeferOptions(interaction)
+      : command.defaultDeferOptions) ?? (command.deferEphemeral ? { flags: MessageFlags.Ephemeral } : {})
+  );
+
+  let hasResponded = false;
+
+  const ensureDeferred = async (options = {}) => {
+    if (!originalDeferReply) return;
+    if (interaction.deferred || interaction.replied) return;
+
+    const mergedOptions = { ...defaultDeferOptions, ...normaliseResponseOptions(options) };
+    try {
+      await originalDeferReply(mergedOptions);
+    } catch (error) {
+      if (error?.code !== 40060 && error?.code !== 10062 && error?.code !== 40001) {
+        console.error('Komut defere edilirken hata oluştu:', error);
+      }
+    }
+  };
+
+  interaction.deferReply = async (options = {}) => {
+    if (!originalDeferReply) return;
+    if (interaction.deferred || interaction.replied) {
+      return;
+    }
+
+    const normalised = normaliseResponseOptions(options);
+    await originalDeferReply(normalised);
+  };
+
+  const deleteDeferredSilently = async () => {
+    if (!originalDeleteReply) return;
+    try {
+      await originalDeleteReply();
+    } catch (error) {
+      if (error?.code !== 10008 && error?.code !== 10062) {
+        console.error('Yanıt silinirken hata oluştu:', error);
+      }
+    }
+  };
+
+  const respondWithPlaceholder = async () => {
+    if (!originalEditReply) return;
+    if (hasResponded) return;
+    try {
+      await originalEditReply({ content: ' ' });
+      hasResponded = true;
+    } catch (error) {
+      if (error?.code !== 10062) {
+        console.error('Yer tutucu yanıt gönderilirken hata oluştu:', error);
+      }
+    }
+  };
+
+  interaction.reply = async (options = {}) => {
+    const normalised = normaliseResponseOptions(options);
+    const wantsEphemeral = Boolean(normalised.flags & MessageFlags.Ephemeral);
+
+    if (interaction.deferred && originalEditReply) {
+      if (wantsEphemeral && originalFollowUp) {
+        await respondWithPlaceholder();
+        await deleteDeferredSilently();
+        hasResponded = true;
+        return originalFollowUp(normalised);
+      }
+
+      hasResponded = true;
+      return originalEditReply(normalised);
+    }
+
+    if (originalReply) {
+      hasResponded = true;
+      return originalReply(normalised);
+    }
+
+    return undefined;
+  };
+
+  if (originalEditReply) {
+    interaction.editReply = async (options = {}) => {
+      hasResponded = true;
+      return originalEditReply(normaliseResponseOptions(options));
+    };
+  }
+
+  if (originalFollowUp) {
+    interaction.followUp = async (options = {}) => {
+      hasResponded = true;
+      return originalFollowUp(normaliseResponseOptions(options));
+    };
+  }
+
+  const finalize = async () => {
+    if (!hasResponded && (interaction.deferred || interaction.replied) && originalEditReply) {
+      await interaction
+        .editReply({ content: '⏱️ Komut işlemesi tamamlandı ancak herhangi bir çıktı oluşmadı.' })
+        .catch((error) => {
+          if (error?.code !== 10062) {
+            console.error('Komut tamamlama bildirimi gönderilirken hata oluştu:', error);
+          }
+        });
+    }
+  };
+
+  return {
+    ensureDeferred,
+    finalize
+  };
+}
+
 export default {
   name: Events.InteractionCreate,
   async execute(interaction, client) {
@@ -1043,6 +1216,14 @@ export default {
       return;
     }
 
+    const { ensureDeferred, finalize } = setupSlashResponseContext(interaction, command);
+
+    const replyAndFinalize = async (options, deferOptions) => {
+      await ensureDeferred(deferOptions);
+      await interaction.reply(options);
+      await finalize();
+    };
+
     const maintenance = await getMaintenanceState();
     if (maintenance.enabled && interaction.user.id !== interaction.client.ownerId && !command.ignoreMaintenance) {
       const embed = new EmbedBuilder()
@@ -1056,7 +1237,7 @@ export default {
         embed.addFields({ name: 'Bakım Notu', value: maintenance.message });
       }
 
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      await replyAndFinalize({ embeds: [embed], ephemeral: true }, { flags: MessageFlags.Ephemeral });
       return;
     }
 
@@ -1066,188 +1247,41 @@ export default {
       interaction.user.id !== interaction.client.ownerId &&
       !(await hasAcceptedRules(interaction.guildId, interaction.user.id))
     ) {
-      await interaction.reply({
-        content:
-          '⚠️ Komutları kullanmadan önce sunucu kurallarını kabul etmelisin. Lütfen `/kurallar` komutu ile kuralları inceleyip `/kurallari-kabul` komutu ile onayla.',
-        ephemeral: true
-      });
+      await replyAndFinalize(
+        {
+          content:
+            '⚠️ Komutları kullanmadan önce sunucu kurallarını kabul etmelisin. Lütfen `/kurallar` komutu ile kuralları inceleyip `/kurallari-kabul` komutu ile onayla.',
+          ephemeral: true
+        },
+        { flags: MessageFlags.Ephemeral }
+      );
       return;
     }
 
     if (command.proOnly && interaction.user.id !== interaction.client.ownerId) {
       const proMember = await isProMember(interaction.user.id);
       if (!proMember) {
-        await interaction.reply({
-          content:
-            '💎 Bu komut sadece **Pro** üyelerine açıktır. Bot sahibinden pro üyelik talep edebilir veya `/premium` ile avantajları öğrenebilirsin.',
-          ephemeral: true
-        });
+        await replyAndFinalize(
+          {
+            content:
+              '💎 Bu komut sadece **Pro** üyelerine açıktır. Bot sahibinden pro üyelik talep edebilir veya `/premium` ile avantajları öğrenebilirsin.',
+            ephemeral: true
+          },
+          { flags: MessageFlags.Ephemeral }
+        );
         return;
       }
     }
 
     if (command.ownerOnly && interaction.user.id !== interaction.client.ownerId) {
-      await interaction.reply({
-        content: '⭐ Bu komut yalnızca Furmin sahibine açıktır.',
-        ephemeral: true
-      });
+      await replyAndFinalize(
+        {
+          content: '⭐ Bu komut yalnızca Furmin sahibine açıktır.',
+          ephemeral: true
+        },
+        { flags: MessageFlags.Ephemeral }
+      );
       return;
-    }
-
-    const originalReply = interaction.reply?.bind(interaction);
-    const originalDeferReply = interaction.deferReply?.bind(interaction);
-    const originalFollowUp = interaction.followUp?.bind(interaction);
-    const originalDeleteReply = interaction.deleteReply?.bind(interaction);
-    const originalEditReply = interaction.editReply?.bind(interaction);
-
-    const ensureNonEmptyMessage = (options) => {
-      if (!options || typeof options !== 'object') {
-        return options;
-      }
-
-      const {
-        content,
-        embeds,
-        files,
-        attachments,
-        components,
-        stickers
-      } = options;
-
-      const hasContent = typeof content === 'string' && content.trim().length > 0;
-      const hasEmbeds = Array.isArray(embeds) && embeds.some((embed) => {
-        if (!embed) return false;
-        if (typeof embed.toJSON === 'function') {
-          return Object.keys(embed.toJSON()).length > 0;
-        }
-        if (typeof embed.data === 'object' && embed.data) {
-          return Object.keys(embed.data).length > 0;
-        }
-        return Object.keys(embed).length > 0;
-      });
-      const hasFiles = Array.isArray(files) ? files.length > 0 : Boolean(files);
-      const hasAttachments = Array.isArray(attachments)
-        ? attachments.length > 0
-        : Boolean(attachments);
-      const hasComponents = Array.isArray(components) && components.length > 0;
-      const hasStickers = Array.isArray(stickers) && stickers.length > 0;
-
-      if (!hasContent && !hasEmbeds && !hasFiles && !hasAttachments && !hasComponents && !hasStickers) {
-        return { ...options, content: '‎' };
-      }
-
-      return options;
-    };
-
-    const normaliseResponseOptions = (input) => {
-      if (!input || typeof input !== 'object') {
-        return input;
-      }
-
-      const normalised = ensureNonEmptyMessage({ ...input });
-
-      if (Object.prototype.hasOwnProperty.call(normalised, 'ephemeral')) {
-        if (normalised.ephemeral) {
-          normalised.flags = (normalised.flags ?? 0) | MessageFlags.Ephemeral;
-        }
-        delete normalised.ephemeral;
-      }
-
-      return normalised;
-    };
-
-    const defaultDeferOptions = normaliseResponseOptions(
-      (typeof command.defaultDeferOptions === 'function'
-        ? command.defaultDeferOptions(interaction)
-        : command.defaultDeferOptions) ?? (command.deferEphemeral ? { flags: MessageFlags.Ephemeral } : {})
-    );
-
-    let hasResponded = false;
-
-    const ensureDeferred = async (options = {}) => {
-      if (!originalDeferReply) return;
-      if (interaction.deferred || interaction.replied) return;
-
-      const mergedOptions = { ...defaultDeferOptions, ...normaliseResponseOptions(options) };
-      try {
-        await originalDeferReply(mergedOptions);
-      } catch (error) {
-        if (error?.code !== 40060 && error?.code !== 10062 && error?.code !== 40001) {
-          console.error('Komut defere edilirken hata oluştu:', error);
-        }
-      }
-    };
-
-    interaction.deferReply = async (options = {}) => {
-      if (!originalDeferReply) return;
-      if (interaction.deferred || interaction.replied) {
-        return;
-      }
-
-      const normalised = normaliseResponseOptions(options);
-      await originalDeferReply(normalised);
-    };
-
-    const deleteDeferredSilently = async () => {
-      if (!originalDeleteReply) return;
-      try {
-        await originalDeleteReply();
-      } catch (error) {
-        if (error?.code !== 10008 && error?.code !== 10062) {
-          console.error('Yanıt silinirken hata oluştu:', error);
-        }
-      }
-    };
-
-    const respondWithPlaceholder = async () => {
-      if (!originalEditReply) return;
-      if (hasResponded) return;
-      try {
-        await originalEditReply({ content: ' ' });
-        hasResponded = true;
-      } catch (error) {
-        if (error?.code !== 10062) {
-          console.error('Yer tutucu yanıt gönderilirken hata oluştu:', error);
-        }
-      }
-    };
-
-    interaction.reply = async (options = {}) => {
-      const normalised = normaliseResponseOptions(options);
-      const wantsEphemeral = Boolean(normalised.flags & MessageFlags.Ephemeral);
-
-      if (interaction.deferred && originalEditReply) {
-        if (wantsEphemeral && originalFollowUp) {
-          await respondWithPlaceholder();
-          await deleteDeferredSilently();
-          hasResponded = true;
-          return originalFollowUp(normalised);
-        }
-
-        hasResponded = true;
-        return originalEditReply(normalised);
-      }
-
-      if (originalReply) {
-        hasResponded = true;
-        return originalReply(normalised);
-      }
-
-      return undefined;
-    };
-
-    if (originalEditReply) {
-      interaction.editReply = async (options = {}) => {
-        hasResponded = true;
-        return originalEditReply(normaliseResponseOptions(options));
-      };
-    }
-
-    if (originalFollowUp) {
-      interaction.followUp = async (options = {}) => {
-        hasResponded = true;
-        return originalFollowUp(normaliseResponseOptions(options));
-      };
     }
 
     await ensureDeferred();
@@ -1259,22 +1293,12 @@ export default {
 
       const content = 'Komut çalıştırılırken beklenmedik bir hata oluştu.';
       if (interaction.deferred || interaction.replied) {
-        if (originalEditReply) {
-          await interaction.editReply({ content });
-        }
+        await interaction.editReply({ content });
       } else {
         await interaction.reply({ content, ephemeral: true });
       }
     } finally {
-      if (!hasResponded && (interaction.deferred || interaction.replied) && originalEditReply) {
-        await interaction.editReply({
-          content: '⏱️ Komut işlemesi tamamlandı ancak herhangi bir çıktı oluşmadı.'
-        }).catch((error) => {
-          if (error?.code !== 10062) {
-            console.error('Komut tamamlama bildirimi gönderilirken hata oluştu:', error);
-          }
-        });
-      }
+      await finalize();
     }
   }
 };
