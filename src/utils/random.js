@@ -22,3 +22,18 @@ export function pickRandomItems(list, count) {
 
   return selection;
 }
+
+export function randomInt(min, max) {
+  const safeMin = Number.isFinite(min) ? Math.floor(min) : 0;
+  const safeMax = Number.isFinite(max) ? Math.floor(max) : safeMin;
+
+  if (safeMax < safeMin) {
+    throw new RangeError('randomInt requires max to be greater than or equal to min');
+  }
+
+  if (safeMax === safeMin) {
+    return safeMin;
+  }
+
+  return Math.floor(Math.random() * (safeMax - safeMin + 1)) + safeMin;
+}
