@@ -39,12 +39,9 @@ function buildDefaultConfig() {
     messageXp: toPositiveInt(source.messageXp, defaultSettings.messageXp, 1),
     commandXp: toPositiveInt(source.commandXp, defaultSettings.commandXp, 1),
     voiceXpPerMinute: toPositiveInt(source.voiceXpPerMinute, defaultSettings.voiceXpPerMinute, 1),
-    messageCooldown: toPositiveInt(source.messageCooldown, defaultSettings.messageCooldown, 10)
+    messageCooldown: toPositiveInt(source.messageCooldown, defaultSettings.messageCooldown, 10),
+    rewards: []
   };
-
-  defaults.rewards = Array.isArray(source.rewards)
-    ? source.rewards.map(normaliseReward).filter(Boolean)
-    : [];
 
   return defaults;
 }

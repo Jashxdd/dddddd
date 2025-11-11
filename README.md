@@ -96,9 +96,9 @@ tek yerden açıp kapatabilirsiniz. Örnek:
 `.env` tarafında aynı sonucu `FEATURE_TOGGLES={"guard":false}` veya `FEATURE_TOGGLES_GUARD=false` şeklinde elde edebilirsiniz. Yardım
 menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" başlığında özetler.
 
-Seviye sistemi `leveling` alanı üzerinden yönetilir. `enabled`, `messageXp`, `commandXp`, `voiceXpPerMinute`, `messageCooldown` ve `rewards`
-anahtarlarıyla XP akışını, spam korumasını ve seviye ödüllerini (`credits`, `note` ve ihtiyaç halinde komut içinden seçilen rol/izin seçenekleri) tanımlayabilirsiniz. Bu varsayılanlar `/seviye`
-komutu sayesinde global olarak ya da sunucu bazında güncellenir; ödül tablosu dahil tüm ayrıntılar komut üzerinden ayarlanabilir ve yapılan değişiklikler `data/level-config.json` dosyasında saklanır.
+Seviye sistemi `leveling` alanı üzerinden yönetilir. `enabled`, `messageXp`, `commandXp`, `voiceXpPerMinute` ve `messageCooldown`
+anahtarlarıyla XP akışını ve spam korumasını tanımlayabilirsiniz. Ödül tablosu tamamen `/seviye` alt komutları üzerinden konfigüre edilir;
+değişiklikler `data/level-config.json` dosyasında saklanır ve istenirse global ya da sunucu bazında uygulanır.
 
 ## Komut Kategorileri
 > Not: Discord'un slash komut sınırı 100 olduğu için ek yardımcı araçlar prefix üzerinden sunulur (ör. `f!odak-ipuclari`).

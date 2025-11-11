@@ -19,10 +19,7 @@
     "messageXp": 15,
     "commandXp": 25,
     "voiceXpPerMinute": 20,
-    "messageCooldown": 45,
-    "rewards": [
-      { "level": 5, "credits": 250, "note": "Örnek ödül açıklaması" }
-    ]
+    "messageCooldown": 45
   },
   "featureToggles": {
     "general": true,
