@@ -21,8 +21,7 @@
     "voiceXpPerMinute": 20,
     "messageCooldown": 45,
     "rewards": [
-      { "level": 5, "credits": 250 },
-      { "level": 10, "roleId": "SEVIYE_ROL_ID" }
+      { "level": 5, "credits": 250, "note": "Örnek ödül açıklaması" }
     ]
   },
   "featureToggles": {

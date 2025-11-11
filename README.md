@@ -97,8 +97,8 @@ tek yerden açıp kapatabilirsiniz. Örnek:
 menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" başlığında özetler.
 
 Seviye sistemi `leveling` alanı üzerinden yönetilir. `enabled`, `messageXp`, `commandXp`, `voiceXpPerMinute`, `messageCooldown` ve `rewards`
-anahtarlarıyla XP akışını, spam korumasını ve seviye ödüllerini (`roleId`, `credits`, `note`) tanımlayabilirsiniz. Bu varsayılanlar `/seviye`
-komutu sayesinde global olarak ya da sunucu bazında güncellenir; yapılan değişiklikler `data/level-config.json` dosyasında saklanır.
+anahtarlarıyla XP akışını, spam korumasını ve seviye ödüllerini (`credits`, `note` ve ihtiyaç halinde komut içinden seçilen rol/izin seçenekleri) tanımlayabilirsiniz. Bu varsayılanlar `/seviye`
+komutu sayesinde global olarak ya da sunucu bazında güncellenir; ödül tablosu dahil tüm ayrıntılar komut üzerinden ayarlanabilir ve yapılan değişiklikler `data/level-config.json` dosyasında saklanır.
 
 ## Komut Kategorileri
 > Not: Discord'un slash komut sınırı 100 olduğu için ek yardımcı araçlar prefix üzerinden sunulur (ör. `f!odak-ipuclari`).
