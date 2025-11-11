@@ -213,6 +213,108 @@ function buildFeatureToggles(configValue, envValue, envOverrides) {
   return toggles;
 }
 
+
+function parseRewardEntry(entry) {
+  if (!entry || typeof entry !== 'object') {
+    return null;
+  }
+
+  const levelValue = entry.level ?? entry.seviye ?? entry.rank;
+  const level = Number.parseInt(levelValue, 10);
+  if (!Number.isFinite(level) || level <= 0) {
+    return null;
+  }
+
+  const roleId = normalise(entry.roleId ?? entry.rolId ?? entry.role);
+  const creditsValue = entry.credits ?? entry.para ?? entry.balance;
+  const credits = Number.isFinite(Number(creditsValue)) ? Number.parseInt(creditsValue, 10) : undefined;
+  const note = normalise(entry.note ?? entry.not ?? entry.description);
+  const permission = normalise(entry.permission ?? entry.izin ?? entry.perm);
+
+  const payload = { level };
+  if (roleId) {
+    payload.roleId = roleId;
+  }
+  if (Number.isFinite(credits) && credits > 0) {
+    payload.credits = credits;
+  }
+  if (note) {
+    payload.note = note;
+  }
+  if (permission) {
+    payload.permission = permission;
+  }
+
+  return payload;
+}
+
+function parseLevelRewards(value) {
+  if (!value) {
+    return [];
+  }
+
+  const source = Array.isArray(value)
+    ? value
+    : (() => {
+        if (typeof value !== 'string') return [];
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          console.warn('⚠️ LEVEL_REWARDS değeri ayrıştırılamadı, boş liste kullanılacak.', error);
+          return [];
+        }
+      })();
+
+  return source.map(parseRewardEntry).filter(Boolean);
+}
+
+function parseLevelingConfig(configValue, envValue) {
+  const base = {};
+  if (configValue && typeof configValue === 'object') {
+    Object.assign(base, configValue);
+  }
+
+  if (typeof envValue === 'string' && envValue.trim()) {
+    try {
+      const parsed = JSON.parse(envValue);
+      if (parsed && typeof parsed === 'object') {
+        Object.assign(base, parsed);
+      }
+    } catch (error) {
+      console.warn('⚠️ LEVELING_CONFIG değeri JSON olarak çözümlenemedi. Dosya yapılandırması kullanılacak.', error);
+    }
+  }
+
+  const enabledValue = base.enabled ?? base.aktif ?? base.open;
+  let enabled;
+  if (enabledValue === undefined) {
+    enabled = true;
+  } else if (typeof enabledValue === 'boolean') {
+    enabled = enabledValue;
+  } else if (typeof enabledValue === 'number') {
+    enabled = enabledValue !== 0;
+  } else if (typeof enabledValue === 'string') {
+    enabled = !FALSE_LITERALS.has(enabledValue.trim().toLowerCase());
+  } else {
+    enabled = Boolean(enabledValue);
+  }
+
+  const messageXp = Number.parseInt(base.messageXp ?? base.mesajXp ?? base.mesaj ?? base.text, 10);
+  const commandXp = Number.parseInt(base.commandXp ?? base.komutXp ?? base.komut, 10);
+  const voiceXpPerMinute = Number.parseInt(base.voiceXpPerMinute ?? base.sesXp ?? base.voice, 10);
+  const messageCooldown = Number.parseInt(base.messageCooldown ?? base.cooldown ?? base.delay, 10);
+
+  return {
+    enabled,
+    messageXp: Number.isFinite(messageXp) && messageXp > 0 ? messageXp : undefined,
+    commandXp: Number.isFinite(commandXp) && commandXp > 0 ? commandXp : undefined,
+    voiceXpPerMinute: Number.isFinite(voiceXpPerMinute) && voiceXpPerMinute > 0 ? voiceXpPerMinute : undefined,
+    messageCooldown: Number.isFinite(messageCooldown) && messageCooldown >= 10 ? messageCooldown : undefined,
+    rewards: parseLevelRewards(base.rewards ?? base.oduller ?? base.ödüller)
+  };
+}
+
 function parseSyncMode(value) {
   const candidate = normalise(value)?.toLowerCase();
   if (candidate && candidate !== 'global') {
@@ -250,6 +352,7 @@ export const config = {
   disabledPrefixCommands: parseCommandToggleList(
     fileConfig.disabledPrefixCommands ?? process.env.DISABLED_PREFIX_COMMANDS
   ),
+  leveling: parseLevelingConfig(fileConfig.leveling, process.env.LEVELING_CONFIG),
   featureToggles: buildFeatureToggles(
     fileConfig.featureToggles,
     process.env.FEATURE_TOGGLES,

@@ -1,6 +1,7 @@
 import { Events } from 'discord.js';
 import { formatUserMention, sendModerationLog } from '../utils/modLog.js';
 import { getPrivateVoiceByChannel, removePrivateVoice } from '../utils/privateVoiceStorage.js';
+import { markVoiceJoin, markVoiceLeave } from '../utils/activityTracker.js';
 
 function formatChannel(channel) {
   if (!channel) return 'Yok';
@@ -19,10 +20,14 @@ export default {
     if (oldState.channelId !== newState.channelId) {
       if (!oldState.channelId && newState.channel) {
         changes.push(`• ${newState.channel} kanalına katıldı.`);
+        markVoiceJoin(newState);
       } else if (oldState.channel && !newState.channelId) {
         changes.push(`• ${oldState.channel} kanalından ayrıldı.`);
+        await markVoiceLeave(oldState);
       } else if (oldState.channel && newState.channel) {
         changes.push(`• Ses kanalı değişti: ${oldState.channel} ➜ ${newState.channel}`);
+        await markVoiceLeave(oldState);
+        markVoiceJoin(newState);
       }
 
       extraFields.push({
@@ -50,6 +55,9 @@ export default {
     }
 
     if (!changes.length) {
+      if (!newState.channelId && oldState.channel) {
+        await markVoiceLeave(oldState);
+      }
       await handlePrivateVoiceCleanup(oldState);
       return;
     }

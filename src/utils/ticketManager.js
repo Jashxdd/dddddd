@@ -265,14 +265,18 @@ export async function createTicketChannel(interaction, topicId, options = {}) {
     return { error: 'Ticket kategorisi bulunamadı veya kategori türünde değil. `f!ticket panel` komutu ile güncelle.' };
   }
 
-  const existing = guild.channels.cache.find(
+  const activeTickets = guild.channels.cache.filter(
     (channel) =>
       channel.parentId === category.id &&
       channel.topic &&
       channel.topic.includes(`TicketOwner:${interaction.user.id}`)
   );
-  if (existing) {
-    return { error: `Zaten açık bir ticketın var: ${existing}.` };
+  const limit = Number.isFinite(config.ticketLimit) && config.ticketLimit > 0 ? config.ticketLimit : 1;
+  if (activeTickets.size >= limit) {
+    const listed = activeTickets.first(3).map((channel) => channel.toString()).join(', ');
+    return {
+      error: `Aktif ticket sınırına ulaştın (${activeTickets.size}/${limit}). Açık ticketlar: ${listed}`
+    };
   }
 
   const topic = config.topics.find((entry) => entry.id === topicId) ?? config.topics[0];
@@ -356,6 +360,13 @@ export async function createTicketChannel(interaction, topicId, options = {}) {
   });
 
   await syncTicketControlMessage(channel);
+
+  const welcomeTemplate = config.messageTemplate ??
+    'Merhaba {user}, talebini aldık! Yetkililer kısa süre içinde seninle ilgilenecek. Bu ticket ID: {ticketId}';
+  const welcomeMessage = welcomeTemplate
+    .replaceAll('{user}', interaction.user.toString())
+    .replaceAll('{ticketId}', channel.id);
+  await channel.send({ content: welcomeMessage }).catch(() => {});
 
   if (config.logChannelId) {
     const logChannel = guild.channels.cache.get(config.logChannelId) ??

@@ -14,6 +14,17 @@
   "commandTestGuilds": ["TEST_SUNUCUSU_ID"],
   "disabledSlashCommands": ["ornekkomut"],
   "disabledPrefixCommands": ["ornekprefix"],
+  "leveling": {
+    "enabled": true,
+    "messageXp": 15,
+    "commandXp": 25,
+    "voiceXpPerMinute": 20,
+    "messageCooldown": 45,
+    "rewards": [
+      { "level": 5, "credits": 250 },
+      { "level": 10, "roleId": "SEVIYE_ROL_ID" }
+    ]
+  },
   "featureToggles": {
     "general": true,
     "fun": true,

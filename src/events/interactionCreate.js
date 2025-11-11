@@ -30,6 +30,14 @@ import {
   setTicketStatus,
   ticketPriorities
 } from '../utils/ticketManager.js';
+import {
+  handleTicketSetupButton,
+  handleTicketSetupChannelSelect,
+  handleTicketSetupModal,
+  handleTicketSetupRoleSelect,
+  handleTicketSetupStringSelect
+} from '../utils/ticketSetupWizard.js';
+import { handleCommandXp } from '../utils/activityTracker.js';
 import { setDetailedLogChannel, clearDetailedLogChannel } from '../utils/detailedLogStorage.js';
 import {
   applyGuardPreset,
@@ -1099,6 +1107,11 @@ export default {
       if (handled) {
         return;
       }
+
+      const ticketSetupHandled = await handleTicketSetupModal(interaction);
+      if (ticketSetupHandled) {
+        return;
+      }
     }
 
     if (interaction.isButton()) {
@@ -1113,6 +1126,10 @@ export default {
       }
       const ticketHandled = await handleTicketButton(interaction);
       if (ticketHandled) {
+        return;
+      }
+      const ticketSetupHandled = await handleTicketSetupButton(interaction);
+      if (ticketSetupHandled) {
         return;
       }
       const handled = await handlePrivateVoiceButton(interaction);
@@ -1186,12 +1203,28 @@ export default {
       if (handled) {
         return;
       }
+      const setupHandled = await handleTicketSetupStringSelect(interaction);
+      if (setupHandled) {
+        return;
+      }
     }
 
     if (interaction.isChannelSelectMenu?.()) {
       if (!interaction.inGuild()) return;
       const logHandled = await handleLogPanelComponent(interaction);
       if (logHandled) {
+        return;
+      }
+      const setupHandled = await handleTicketSetupChannelSelect(interaction);
+      if (setupHandled) {
+        return;
+      }
+    }
+
+    if (interaction.isRoleSelectMenu?.()) {
+      if (!interaction.inGuild()) return;
+      const setupHandled = await handleTicketSetupRoleSelect(interaction);
+      if (setupHandled) {
         return;
       }
     }
@@ -1288,6 +1321,68 @@ export default {
 
     try {
       await command.execute(interaction, client);
+      const xpOutcome = await handleCommandXp(interaction);
+      if (xpOutcome?.result?.leveledUp) {
+        if (xpOutcome.result.rewards?.some((reward) => reward.roleId) && interaction.guild) {
+          const member = interaction.member ?? (await interaction.guild.members.fetch(interaction.user.id).catch(() => null));
+          if (member?.manageable) {
+            for (const reward of xpOutcome.result.rewards) {
+              if (!reward.roleId) continue;
+              const role = interaction.guild.roles.cache.get(reward.roleId) ?? (await interaction.guild.roles.fetch(reward.roleId).catch(() => null));
+              if (role && !member.roles.cache.has(role.id)) {
+                await member.roles.add(role).catch((error) => {
+                  console.warn('Seviye ödül rolü verilirken hata oluştu:', error);
+                });
+              }
+            }
+          }
+        }
+
+        const entry = xpOutcome.result.entry;
+        const rewardLines = xpOutcome.result.rewards?.length
+          ? xpOutcome.result.rewards
+              .map((reward) => {
+                const pieces = [];
+                if (reward.roleId) {
+                  pieces.push(`<@&${reward.roleId}>`);
+                }
+                if (Number.isFinite(reward.credits)) {
+                  pieces.push(`${reward.credits} kredi`);
+                }
+                if (reward.permission) {
+                  pieces.push(`${reward.permission} izni`);
+                }
+                if (reward.note) {
+                  pieces.push(reward.note);
+                }
+                return pieces.filter(Boolean).join(' • ');
+              })
+              .filter(Boolean)
+              .join('\n')
+          : null;
+
+        const embed = new EmbedBuilder()
+          .setColor(0x2ecc71)
+          .setTitle('🎉 Seviye Atlama')
+          .setDescription(`Komut etkinliğin sayesinde ${entry.level}. seviyeye ulaştın!`)
+          .addFields(
+            { name: 'Toplam XP', value: `${entry.totalXp}`, inline: true },
+            { name: 'Komut XP', value: `${entry.commandXp}`, inline: true }
+          )
+          .setFooter({ text: 'Furmin Seviye Sistemi' })
+          .setTimestamp();
+
+        if (rewardLines) {
+          embed.addFields({ name: 'Ödüller', value: rewardLines });
+        }
+
+        const payload = { embeds: [embed], flags: MessageFlags.Ephemeral };
+        if (interaction.deferred || interaction.replied) {
+          await interaction.followUp(payload);
+        } else {
+          await interaction.reply(payload);
+        }
+      }
     } catch (error) {
       console.error(`Komut çalıştırılırken hata oluştu: ${interaction.commandName}`, error);
 

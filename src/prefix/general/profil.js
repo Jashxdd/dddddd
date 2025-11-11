@@ -1,5 +1,6 @@
 import { buildProfileEmbed } from '../../commands/general/profil.js';
 import { listWarnings } from '../../utils/warnStorage.js';
+import { getUserLevel, getLevelConfig } from '../../utils/xpStorage.js';
 
 export default {
   name: 'profil',
@@ -29,12 +30,18 @@ export default {
     }
 
     const warnings = await listWarnings(message.guild.id, member.id);
+    let levelData = null;
+    const levelConfig = getLevelConfig();
+    if (levelConfig.enabled) {
+      levelData = await getUserLevel(message.guild.id, member.id);
+    }
 
     const embed = buildProfileEmbed({
       member,
       user: member.user,
       guild: message.guild,
-      warningsCount: warnings.length
+      warningsCount: warnings.length,
+      levelData
     });
 
     await message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });

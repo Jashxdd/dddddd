@@ -15,6 +15,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
   ses kanalı hareketleri ve otomatik filtre ihlalleri
 - ✅ Guard panelindeki hızlı grup menüsü ve Durum Özeti düğmesi, son güncelleme damgası ve beyaz liste özetleri sayesinde korumaları tek ekrandan yönetme imkânı
 - ✅ Sunucuya katılan üyelere otomatik rol atayabilen otorol sistemi (listeleme, ekleme/kaldırma, sıfırlama)
+- ✅ Mesaj, komut ve ses aktivitelerini ayrı toplayan seviye sistemi; dinamik XP oranları, otomatik rol/kredi ödülleri ve `/rank` + `f!rank` liderlik tablosu
 - ✅ Karşılama/veda mesajları ve giriş-çıkış logları: tek mesajla tüm sunucularda geçerli olacak global onay, özelleştirilebilir kanal/mesaj yönetimi
 - ✅ Ayarlanabilir kayıt sistemi: `/kayit` ve `f!kayit` ile yaş doğrulaması, rol dağıtımı, kayıt logu ve guard aynası
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
@@ -37,6 +38,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Planlama, eğlence, moderasyon, sistem ve ekonomi kategorileri için 30 yeni önek rehber komutu
 - ✅ `/gunluk-plan` ve `f!gunluk-plan` ile kullanıcıların günlük hedeflerine özel motivasyon kartları
 - ✅ Ticket sistemi: buton + menü paneli, hafızalı öncelik seçicisi, log ve transkript kanalı ataması, açılış/kapanış logları ve otomatik metin transkripti
+- ✅ `/setup tickets` sihirbazı ile ticket paneli, kategori, log/transkript kanalları ve limit ayarlarını butonlu geri/ileri menüsüyle yapılandırma
 - ✅ `f!sunucu-kur` ile önerilen kategori/kanal/rol yapısını tek komutla oluşturma; operasyon bot loglarına da kaydedilir
 
 ## Furmin Merkez Paneli
@@ -67,6 +69,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
   | `botLogChannelId` | Botun kendi loglarını göndereceği kanalın ID'si (opsiyonel) |
   | `disabledSlashCommands` / `disabledPrefixCommands` | Virgülle ayrılmış liste veya dizi olarak belirttiğiniz komut adları devre dışı bırakılır |
   | `featureToggles` | `guard`, `logs`, `moderation`, `economy`, `fun`, `general`, `system` gibi çekirdek özellikleri açıp kapatmak için anahtar/boolean eşlemesi |
+  | `leveling` | Seviye sistemi için XP değerleri, cooldown süresi ve ödül tablosu |
   | `presenceStatus`, `presenceInterval`, `activities` | Durum rotasyonu için isteğe bağlı ayarlar |
 
 > Furmin yapılandırma yükleyicisi hem proje kökünde hem de `config/` klasöründe `config.json` arar ve yer tutucu değerleri
@@ -90,6 +93,9 @@ tek yerden açıp kapatabilirsiniz. Örnek:
 `.env` tarafında aynı sonucu `FEATURE_TOGGLES={"guard":false}` veya `FEATURE_TOGGLES_GUARD=false` şeklinde elde edebilirsiniz. Yardım
 menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" başlığında özetler.
 
+Seviye sistemi `leveling` alanı üzerinden yönetilir. `enabled`, `messageXp`, `commandXp`, `voiceXpPerMinute`, `messageCooldown` ve `rewards`
+anahtarlarıyla XP akışını, spam korumasını ve seviye ödüllerini (`roleId`, `credits`, `note`) tanımlayabilirsiniz.
+
 ## Komut Kategorileri
 > Not: Discord'un slash komut sınırı 100 olduğu için ek yardımcı araçlar prefix üzerinden sunulur (ör. `f!odak-ipuclari`).
 - **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/doviz`,
@@ -100,7 +106,7 @@ menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" ba�
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/uyari-sil`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu`,
   `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici`, `f!guard-analiz`, `f!nuke` ve otomatik moderasyon komutları.
 - **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog` (panel alt komutuyla genel/üye/mesaj/ses + ekonomi log kanalları ve guard ayarları; yeni guard profili menüsü ve log özeti içerir), `/otorol`, `/kayit`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`,
-`/prefix`,
+  `/prefix`, `/setup tickets`,
   `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/cekilis`,
   `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/sahip-kisit`, `/sahip-ekonomi`, `/bakim`, `/sistem-ozeti`,
   `f!log-haritasi`, `f!buton-sablonlari`, `f!panel-ipuclari`, `f!guncelleme-senaryosu`, `f!yedek-planlayici`, `f!bakim-rehberi` ve diğer yönetim araçları.

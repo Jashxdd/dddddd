@@ -6,6 +6,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { loadCommands } from './utils/loadCommands.js';
 import { loadPrefixCommands } from './utils/loadPrefixCommands.js';
 import { assertConfig, config, describeConfigSource } from './config.js';
+import { finalizeVoiceSessions } from './utils/activityTracker.js';
+import { forcePersistLevels } from './utils/xpStorage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -295,3 +297,29 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+let shuttingDown = false;
+async function flushLevelingAndExit(reason, exitCode = 0) {
+  if (shuttingDown) {
+    if (reason === 'SIGINT' || reason === 'SIGTERM') {
+      process.exit(exitCode);
+    }
+    return;
+  }
+
+  shuttingDown = true;
+  try {
+    await finalizeVoiceSessions();
+    await forcePersistLevels();
+  } catch (error) {
+    console.error('Seviye verileri kapatılırken hata oluştu:', error);
+  }
+
+  if (reason === 'SIGINT' || reason === 'SIGTERM') {
+    process.exit(exitCode);
+  }
+}
+
+process.on('SIGINT', () => flushLevelingAndExit('SIGINT', 0));
+process.on('SIGTERM', () => flushLevelingAndExit('SIGTERM', 0));
+process.on('beforeExit', () => flushLevelingAndExit('beforeExit'));

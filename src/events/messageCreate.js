@@ -30,6 +30,7 @@ import { sendGuardLog } from '../utils/guardLog.js';
 import { enforceGuardPenalty } from '../utils/guardActions.js';
 import { isFeatureEnabled } from '../utils/featureFlags.js';
 import { isGloballyBlacklisted } from '../utils/blacklistStorage.js';
+import { handleMessageXp } from '../utils/activityTracker.js';
 
 function createMaintenanceEmbed(client, note) {
   const embed = new EmbedBuilder()
@@ -257,6 +258,69 @@ export default {
       }
 
       return;
+    }
+
+    const xpOutcome = await handleMessageXp(message);
+    if (xpOutcome?.result?.leveledUp) {
+      const entry = xpOutcome.result.entry;
+      if (xpOutcome.result.rewards?.some((reward) => reward.roleId)) {
+        const member = message.member ?? (await message.guild.members.fetch(message.author.id).catch(() => null));
+        if (member?.manageable) {
+          for (const reward of xpOutcome.result.rewards) {
+            if (!reward.roleId) continue;
+            const role = message.guild.roles.cache.get(reward.roleId) ?? (await message.guild.roles.fetch(reward.roleId).catch(() => null));
+            if (role && !member.roles.cache.has(role.id)) {
+              await member.roles.add(role).catch((error) => {
+                console.warn('Seviye ödül rolü verilirken hata oluştu:', error);
+              });
+            }
+          }
+        }
+      }
+
+      if (mePermissions) {
+      const rewards = xpOutcome.result.rewards?.length
+        ? xpOutcome.result.rewards
+            .map((reward) => {
+              const parts = [];
+              if (reward.roleId) {
+                parts.push(`<@&${reward.roleId}> rolü`);
+              }
+              if (Number.isFinite(reward.credits)) {
+                parts.push(`${reward.credits} kredi`);
+              }
+              if (reward.permission) {
+                parts.push(`${reward.permission} izni`);
+              }
+              if (reward.note) {
+                parts.push(reward.note);
+              }
+              return parts.filter(Boolean).join(' • ');
+            })
+            .filter(Boolean)
+            .join('\n')
+        : null;
+
+      const embed = new EmbedBuilder()
+        .setColor(0x27ae60)
+        .setTitle('🎉 Seviye Atlama')
+        .setDescription(
+          `${message.author}, ${entry.level}. seviyeye ulaştın! Toplam deneyim puanın **${entry.totalXp}** oldu.`
+        )
+        .addFields(
+          { name: 'Mesaj XP', value: `${entry.messageXp}`, inline: true },
+          { name: 'Komut XP', value: `${entry.commandXp}`, inline: true },
+          { name: 'Ses XP', value: `${entry.voiceXp}`, inline: true }
+        )
+        .setFooter({ text: 'Furmin Seviye Sistemi' })
+        .setTimestamp();
+
+      if (rewards) {
+        embed.addFields({ name: 'Ödüller', value: rewards });
+      }
+
+      await message.channel.send({ embeds: [embed] }).catch(() => {});
+      }
     }
 
     if (isFeatureEnabled('guard')) {

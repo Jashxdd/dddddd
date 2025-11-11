@@ -1,11 +1,12 @@
 import { EmbedBuilder, SlashCommandBuilder, time } from 'discord.js';
 import { listWarnings } from '../../utils/warnStorage.js';
+import { getUserLevel, getLevelConfig } from '../../utils/xpStorage.js';
 
 function formatNumber(value) {
   return new Intl.NumberFormat('tr-TR').format(value);
 }
 
-export function buildProfileEmbed({ member, user, guild, warningsCount }) {
+export function buildProfileEmbed({ member, user, guild, warningsCount, levelData }) {
   const displayUser = user ?? member?.user;
   const color = member?.displayHexColor && member.displayHexColor !== '#000000' ? Number(member.displayHexColor.replace('#', '0x')) : 0x3498db;
   const embed = new EmbedBuilder()
@@ -48,6 +49,21 @@ export function buildProfileEmbed({ member, user, guild, warningsCount }) {
 
   embed.addFields({ name: 'Toplam Uyarı', value: formatNumber(warningsCount), inline: true });
 
+  if (levelData) {
+    embed.addFields(
+      { name: 'Seviye', value: formatNumber(levelData.level), inline: true },
+      { name: 'Toplam XP', value: formatNumber(levelData.totalXp), inline: true }
+    );
+
+    const lastUpdate = levelData.lastUpdatedAt ? time(Math.floor(new Date(levelData.lastUpdatedAt).getTime() / 1000), 'R') : 'Bilinmiyor';
+    embed.addFields({ name: 'Son Güncelleme', value: lastUpdate, inline: true });
+
+    const breakdown = `💬 Mesaj: **${formatNumber(levelData.messageXp)}**
+🧭 Komut: **${formatNumber(levelData.commandXp)}**
+🎙️ Ses: **${formatNumber(levelData.voiceXp)}**`;
+    embed.addFields({ name: 'XP Dağılımı', value: breakdown });
+  }
+
   embed.setFooter({ text: guild?.name ?? 'Furmin Sistemleri' }).setTimestamp();
   return embed;
 }
@@ -68,12 +84,18 @@ export default {
     }
 
     const warnings = guild ? await listWarnings(guild.id, targetUser.id) : [];
+    let levelData = null;
+    const levelConfig = getLevelConfig();
+    if (guild && levelConfig.enabled) {
+      levelData = await getUserLevel(guild.id, targetUser.id);
+    }
 
     const embed = buildProfileEmbed({
       member,
       user: targetUser,
       guild,
-      warningsCount: warnings.length
+      warningsCount: warnings.length,
+      levelData
     });
 
     await interaction.reply({ embeds: [embed], ephemeral: true });

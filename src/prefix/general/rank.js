@@ -1,11 +1,11 @@
-import { buildWarningLeaderboard } from '../../commands/general/rank.js';
-import { getGuildWarningEntries } from '../../utils/warnStorage.js';
+import { buildLevelLeaderboard } from '../../commands/general/rank.js';
+import { getLeaderboard, getLevelConfig } from '../../utils/xpStorage.js';
 
 export default {
   name: 'rank',
   aliases: ['uyari-siralama'],
   category: 'Extra',
-  description: 'Uyarı liderlik tablosunu gösterir (Pro).',
+  description: 'XP liderlik tablosunu gösterir (Pro).',
   menuGroup: 'Pro Üyelik',
   proOnly: true,
   async execute(message) {
@@ -14,13 +14,15 @@ export default {
       return;
     }
 
-    const entries = await getGuildWarningEntries(message.guild.id);
-    const formatted = entries
-      .map((entry) => ({ userId: entry.userId, count: entry.warnings.length }))
-      .filter((entry) => entry.count > 0)
-      .sort((a, b) => b.count - a.count || a.userId.localeCompare(b.userId));
+    const levelConfig = getLevelConfig();
+    if (!levelConfig.enabled) {
+      await message.reply({ content: 'Seviye sistemi bu sunucuda devre dışı. Yönetim ile iletişime geçebilirsin.' });
+      return;
+    }
 
-    const embed = buildWarningLeaderboard({ guild: message.guild, entries: formatted });
+    const entries = await getLeaderboard(message.guild.id, 10);
+
+    const embed = buildLevelLeaderboard({ guild: message.guild, entries });
     await message.reply({ embeds: [embed], allowedMentions: { repliedUser: false } });
   }
 };

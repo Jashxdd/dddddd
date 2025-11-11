@@ -51,6 +51,9 @@ function ensureGuild(guildId) {
       categoryId: null,
       logChannelId: null,
       transcriptChannelId: null,
+      ticketLimit: 3,
+      messageTemplate:
+        'Merhaba {user}, talebini aldık! Yetkililer kısa süre içinde seninle ilgilenecek. Bu ticket ID: {ticketId}',
       activeTickets: {},
       topics: [
         { id: 'destek', label: 'Genel Destek', description: 'Soru ve yardım talepleri.' },
@@ -68,6 +71,13 @@ function ensureGuild(guildId) {
       { id: 'destek', label: 'Genel Destek', description: 'Soru ve yardım talepleri.' },
       { id: 'sikayet', label: 'Şikayet', description: 'Şikayet ve bildirim talepleri.' }
     ];
+  }
+  if (!Object.prototype.hasOwnProperty.call(data, 'ticketLimit')) {
+    data.ticketLimit = 3;
+  }
+  if (!Object.prototype.hasOwnProperty.call(data, 'messageTemplate')) {
+    data.messageTemplate =
+      'Merhaba {user}, talebini aldık! Yetkililer kısa süre içinde seninle ilgilenecek. Bu ticket ID: {ticketId}';
   }
   if (!Object.prototype.hasOwnProperty.call(data, 'activeTickets') || typeof data.activeTickets !== 'object') {
     data.activeTickets = {};
