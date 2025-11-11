@@ -85,7 +85,7 @@ export default {
 
     const warnings = guild ? await listWarnings(guild.id, targetUser.id) : [];
     let levelData = null;
-    const levelConfig = getLevelConfig();
+    const levelConfig = getLevelConfig(interaction.guild?.id);
     if (guild && levelConfig.enabled) {
       levelData = await getUserLevel(guild.id, targetUser.id);
     }

@@ -1,8 +1,8 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { config } from '../config.js';
 import { modifyBalance } from './economyStorage.js';
+import { getEffectiveLevelConfig } from './levelConfigStorage.js';
 
 const dataDirectory = join(process.cwd(), 'data');
 const storagePath = join(dataDirectory, 'levels.json');
@@ -73,8 +73,8 @@ function xpForLevel(level) {
   return Math.max(base, 200);
 }
 
-function findRewardsForLevel(level) {
-  const rewards = Array.isArray(config.leveling?.rewards) ? config.leveling.rewards : [];
+function findRewardsForLevel(levelConfig, level) {
+  const rewards = Array.isArray(levelConfig?.rewards) ? levelConfig.rewards : [];
   return rewards.filter((reward) => Number.isFinite(reward?.level) && reward.level === level);
 }
 
@@ -98,6 +98,11 @@ export async function addXp({ guildId, userId, type, amount }) {
 
   const numericAmount = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
   if (!numericAmount) {
+    return { leveledUp: false, entry: null, rewards: [] };
+  }
+
+  const levelConfig = getEffectiveLevelConfig(guildId);
+  if (!levelConfig.enabled) {
     return { leveledUp: false, entry: null, rewards: [] };
   }
 
@@ -126,7 +131,7 @@ export async function addXp({ guildId, userId, type, amount }) {
     entry.level += 1;
     leveledUp = true;
 
-    const rewards = findRewardsForLevel(entry.level);
+    const rewards = findRewardsForLevel(levelConfig, entry.level);
     if (rewards.length) {
       for (const reward of rewards) {
         const formatted = {
@@ -184,31 +189,8 @@ export async function getXpSummary(guildId) {
   return { totalUsers: userIds.length, totalXp };
 }
 
-export function getLevelConfig() {
-  const defaults = {
-    enabled: true,
-    messageXp: 15,
-    commandXp: 25,
-    voiceXpPerMinute: 20,
-    messageCooldown: 45
-  };
-
-  const source = config.leveling ?? {};
-  return {
-    ...defaults,
-    ...source,
-    messageXp: Number.isFinite(source.messageXp) && source.messageXp > 0 ? Math.floor(source.messageXp) : defaults.messageXp,
-    commandXp:
-      Number.isFinite(source.commandXp) && source.commandXp > 0 ? Math.floor(source.commandXp) : defaults.commandXp,
-    voiceXpPerMinute:
-      Number.isFinite(source.voiceXpPerMinute) && source.voiceXpPerMinute > 0
-        ? Math.floor(source.voiceXpPerMinute)
-        : defaults.voiceXpPerMinute,
-    messageCooldown:
-      Number.isFinite(source.messageCooldown) && source.messageCooldown >= 10
-        ? Math.floor(source.messageCooldown)
-        : defaults.messageCooldown
-  };
+export function getLevelConfig(guildId) {
+  return getEffectiveLevelConfig(guildId);
 }
 
 export async function forcePersistLevels() {
@@ -221,4 +203,12 @@ export async function forcePersistLevels() {
   }
 
   await persist();
+}
+
+export function getXpRequirementForLevel(level) {
+  if (!Number.isFinite(level)) {
+    return xpForLevel(1);
+  }
+  const safeLevel = Math.max(1, Math.floor(level));
+  return xpForLevel(safeLevel);
 }

@@ -14,7 +14,7 @@ export default {
       return;
     }
 
-    const levelConfig = getLevelConfig();
+    const levelConfig = getLevelConfig(message.guild?.id);
     if (!levelConfig.enabled) {
       await message.reply({ content: 'Seviye sistemi bu sunucuda devre dışı. Yönetim ile iletişime geçebilirsin.' });
       return;

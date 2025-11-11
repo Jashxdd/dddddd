@@ -35,7 +35,7 @@ export default {
       return;
     }
 
-    const levelConfig = getLevelConfig();
+    const levelConfig = getLevelConfig(interaction.guild?.id);
     if (!levelConfig.enabled) {
       await interaction.reply({
         content: 'Seviye sistemi bu sunucuda devre dışı. Sunucu yöneticilerinden özelliği açmasını isteyebilirsin.',

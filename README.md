@@ -17,7 +17,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Davet takip sistemi: kullanılan kodu otomatik algılar, mod-log ve ayrıntılı loglara rapor düşer, ödül rollerini yönetir; `/setup davet` sihirbazı ve `f!davet` komutuyla log kanalı/ödül tablosu anında güncellenir
 - ✅ Sunucuya katılan üyelere otomatik rol atayabilen otorol sistemi (listeleme, ekleme/kaldırma, sıfırlama)
 - ✅ Guard durum raporu (`/modlog guard-raporu`) aktif korumaları, beyaz listeyi ve seçili profili tek embed’de gösterir
-- ✅ Mesaj, komut ve ses aktivitelerini ayrı toplayan seviye sistemi; dinamik XP oranları, otomatik rol/kredi ödülleri ve `/rank` + `f!rank` liderlik tablosu
+- ✅ Mesaj, komut ve ses aktivitelerini ayrı toplayan seviye sistemi; dinamik XP oranları, otomatik rol/kredi ödülleri, `/rank` + `f!rank` liderlik tablosu ve `/seviye` komutuyla XP değerleri ile ödül rollerini sunucu veya global olarak ayarlama
 - ✅ Karşılama/veda mesajları ve giriş-çıkış logları: tek mesajla tüm sunucularda geçerli olacak global onay, özelleştirilebilir kanal/mesaj yönetimi
 - ✅ Ayarlanabilir kayıt sistemi: `/kayit` ve `f!kayit` ile yaş doğrulaması, rol dağıtımı, kayıt logu ve guard aynası
 - ✅ Yardım menüsünde emojili sayfalar, kategori seçici ve düğme tabanlı gezinme (slash + önek biçimleri tek satırda birleşir)
@@ -42,6 +42,7 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Ticket sistemi: buton + menü paneli, hafızalı öncelik seçicisi, log ve transkript kanalı ataması, açılış/kapanış logları ve otomatik metin transkripti
 - ✅ `/setup tickets` sihirbazı ile ticket paneli, kategori, log/transkript kanalları ve limit ayarlarını butonlu geri/ileri menüsüyle yapılandırma
 - ✅ `f!sunucu-kur` ile önerilen kategori/kanal/rol yapısını tek komutla oluşturma; operasyon bot loglarına da kaydedilir
+- ✅ `/ilerleme` komutu seviye ve ekonomi ilerlemesini tek kartta toplar, `/macera-karti` ise topluluğa renk katacak rastgele görevler üretir
 
 ## Furmin Merkez Paneli
 - `f!furmin-merkez` komutu, Furmin'in destek bağlantılarını, global komut istatistiklerini ve öne çıkan sistemlerini tek bir embedde toplar.
@@ -96,24 +97,25 @@ tek yerden açıp kapatabilirsiniz. Örnek:
 menüsü ve Furmin Merkez paneli aktif/pasif durumlarını "Özellik Durumu" başlığında özetler.
 
 Seviye sistemi `leveling` alanı üzerinden yönetilir. `enabled`, `messageXp`, `commandXp`, `voiceXpPerMinute`, `messageCooldown` ve `rewards`
-anahtarlarıyla XP akışını, spam korumasını ve seviye ödüllerini (`roleId`, `credits`, `note`) tanımlayabilirsiniz.
+anahtarlarıyla XP akışını, spam korumasını ve seviye ödüllerini (`roleId`, `credits`, `note`) tanımlayabilirsiniz. Bu varsayılanlar `/seviye`
+komutu sayesinde global olarak ya da sunucu bazında güncellenir; yapılan değişiklikler `data/level-config.json` dosyasında saklanır.
 
 ## Komut Kategorileri
 > Not: Discord'un slash komut sınırı 100 olduğu için ek yardımcı araçlar prefix üzerinden sunulur (ör. `f!odak-ipuclari`).
-- **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/doviz`,
+- **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/ilerleme`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/doviz`,
   `f!spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/gunluk-plan`, `f!odak-ipuclari`,
   `/saglik-molasi`, `f!paylasim-rehberi`, `/kaynak-arsivi`, `/guncelleme`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham`,
   `f!gorev-panosu`, `f!odak-planlayici`, `f!ekip-toplantisi`, `f!icerik-fikirleri`, `f!topluluk-anketi`, `f!gorev-raporu` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/nuke`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/uyari-sil`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu`,
   `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici`, `f!guard-analiz`, `f!nuke` ve otomatik moderasyon komutları.
-- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog` (panel alt komutuyla genel/üye/mesaj/ses + ekonomi log kanalları ve guard ayarları; yeni guard profili menüsü ve log özeti içerir), `/otorol`, `/kayit`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`,
+- **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog` (panel alt komutuyla genel/üye/mesaj/ses + ekonomi log kanalları ve guard ayarları; yeni guard profili menüsü ve log özeti içerir), `/otorol`, `/kayit`, `/rol-panel`, `/ayarlar`, `/seviye`, `/bot-bilgi`,
   `/prefix`, `/setup tickets`, `/setup davet kanal|odul-ekle|odul-kaldir|liste`,
   `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/cekilis`,
   `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/sahip-kisit`, `/sahip-ekonomi`, `/bakim`, `/sistem-ozeti`,
   `f!davet`, `f!log-haritasi`, `f!buton-sablonlari`, `f!panel-ipuclari`, `f!guncelleme-senaryosu`, `f!yedek-planlayici`, `f!bakim-rehberi` ve diğer yönetim araçları.
 - **Özel Ses:** `f!ozel-ses` ile kullanıcıya özel ses odası açılır; paneldeki butonlarla kilit, üye limiti, isim ve sahiplik anlık yönetilir.
-- **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir`,
+- **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir`, `/macera-karti`,
   `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru`, `f!oyun-oner` ve mini oyunlar.
 - **Ekonomi:** `/ekonomi bakiye|kayit|gunluk|calis|macera|gorev|kasa|tahmin|cark|arena|yatirim|hediye|market|satinal|envanter|liderlik|ayar`, `f!ekonomi` ile aynı işlemler (günlük ödül, çalışma, macera, görev, şans kasası, tahmin oyunu, çark ve arena mini oyunları, yatırım, kategori filtresiyle market, hediyeleşme, liderlik ve işlem geçmişi görüntüleme) + para birimi özelleştirme,
   `f!ekonomi-gorevleri`, `f!yatirim-analizi`, `f!pazar-firsatlari`, `f!bonus-taktikleri`, `f!hediye-planlayici`, `f!banka-gunlugu`.

@@ -10,12 +10,13 @@ function buildCooldownKey(guildId, userId) {
 }
 
 export async function handleMessageXp(message) {
-  const config = getLevelConfig();
+  const guildId = message?.guild?.id;
+  const config = getLevelConfig(guildId);
   if (!config.enabled) {
     return null;
   }
 
-  if (!message?.guild || !message.member) {
+  if (!message?.guild || !message.member || !guildId) {
     return null;
   }
 
@@ -36,22 +37,23 @@ export async function handleMessageXp(message) {
   const total = config.messageXp + bonus + randomBonus;
 
   messageCooldowns.set(key, now);
-  const result = await addXp({ guildId: message.guild.id, userId: message.author.id, type: 'message', amount: total });
+  const result = await addXp({ guildId, userId: message.author.id, type: 'message', amount: total });
   return { total, result };
 }
 
 export async function handleCommandXp(interaction) {
-  const config = getLevelConfig();
+  const guildId = interaction?.guild?.id;
+  const config = getLevelConfig(guildId);
   if (!config.enabled) {
     return null;
   }
 
-  if (!interaction?.guild || !interaction.user) {
+  if (!interaction?.guild || !interaction.user || !guildId) {
     return null;
   }
 
   const amount = config.commandXp + randomInt(0, 5);
-  const result = await addXp({ guildId: interaction.guild.id, userId: interaction.user.id, type: 'command', amount });
+  const result = await addXp({ guildId, userId: interaction.user.id, type: 'command', amount });
   return { amount, result };
 }
 
@@ -64,12 +66,13 @@ export function markVoiceJoin(state) {
     return;
   }
 
-  const config = getLevelConfig();
+  const guildId = state.guild.id;
+  const config = getLevelConfig(guildId);
   if (!config.enabled) {
     return;
   }
 
-  const key = getVoiceKey(state.guild.id, state.member.id);
+  const key = getVoiceKey(guildId, state.member.id);
   voiceSessions.set(key, Date.now());
 }
 
@@ -78,12 +81,13 @@ export async function markVoiceLeave(state) {
     return null;
   }
 
-  const config = getLevelConfig();
+  const guildId = state.guild.id;
+  const config = getLevelConfig(guildId);
   if (!config.enabled) {
     return null;
   }
 
-  const key = getVoiceKey(state.guild.id, state.member.id);
+  const key = getVoiceKey(guildId, state.member.id);
   const joinedAt = voiceSessions.get(key);
   voiceSessions.delete(key);
 
@@ -98,7 +102,7 @@ export async function markVoiceLeave(state) {
 
   const minutes = Math.floor(diff / 60_000);
   const amount = Math.max(config.voiceXpPerMinute * minutes, config.voiceXpPerMinute);
-  const result = await addXp({ guildId: state.guild.id, userId: state.member.id, type: 'voice', amount });
+  const result = await addXp({ guildId, userId: state.member.id, type: 'voice', amount });
   return { minutes, amount, result };
 }
 
@@ -113,7 +117,11 @@ export async function finalizeVoiceSessions() {
 
     const [guildId, userId] = key.split(':');
     const minutes = Math.floor(diff / 60_000);
-    const config = getLevelConfig();
+    const config = getLevelConfig(guildId);
+    if (!config.enabled) {
+      voiceSessions.delete(key);
+      continue;
+    }
     const amount = Math.max(config.voiceXpPerMinute * minutes, config.voiceXpPerMinute);
     promises.push(addXp({ guildId, userId, type: 'voice', amount }));
     voiceSessions.delete(key);
