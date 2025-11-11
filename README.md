@@ -14,7 +14,9 @@ projesinde toplanır; kuralları kabul etme zorunluluğu, otomatik moderasyon, p
 - ✅ Ayrıntılı mod-log: ban/kick, mesaj silme/düzenleme, toplu silme, üye giriş/çıkış, rol değişimi, kanal/rol oluşturma-silme,
   ses kanalı hareketleri ve otomatik filtre ihlalleri
 - ✅ Guard panelindeki hızlı grup menüsü ve Durum Özeti düğmesi, son güncelleme damgası ve beyaz liste özetleri sayesinde korumaları tek ekrandan yönetme imkânı
+- ✅ Davet takip sistemi: kullanılan kodu otomatik algılar, mod-log ve ayrıntılı loglara rapor düşer, ödül rollerini yönetir; `/setup davet` sihirbazı ve `f!davet` komutuyla log kanalı/ödül tablosu anında güncellenir
 - ✅ Sunucuya katılan üyelere otomatik rol atayabilen otorol sistemi (listeleme, ekleme/kaldırma, sıfırlama)
+- ✅ Guard durum raporu (`/modlog guard-raporu`) aktif korumaları, beyaz listeyi ve seçili profili tek embed’de gösterir
 - ✅ Mesaj, komut ve ses aktivitelerini ayrı toplayan seviye sistemi; dinamik XP oranları, otomatik rol/kredi ödülleri ve `/rank` + `f!rank` liderlik tablosu
 - ✅ Karşılama/veda mesajları ve giriş-çıkış logları: tek mesajla tüm sunucularda geçerli olacak global onay, özelleştirilebilir kanal/mesaj yönetimi
 - ✅ Ayarlanabilir kayıt sistemi: `/kayit` ve `f!kayit` ile yaş doğrulaması, rol dağıtımı, kayıt logu ve guard aynası
@@ -106,16 +108,16 @@ anahtarlarıyla XP akışını, spam korumasını ve seviye ödüllerini (`roleI
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/uyari-sil`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu`,
   `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici`, `f!guard-analiz`, `f!nuke` ve otomatik moderasyon komutları.
 - **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog` (panel alt komutuyla genel/üye/mesaj/ses + ekonomi log kanalları ve guard ayarları; yeni guard profili menüsü ve log özeti içerir), `/otorol`, `/kayit`, `/rol-panel`, `/ayarlar`, `/bot-bilgi`,
-  `/prefix`, `/setup tickets`,
+  `/prefix`, `/setup tickets`, `/setup davet kanal|odul-ekle|odul-kaldir|liste`,
   `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/cekilis`,
   `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/sahip-kisit`, `/sahip-ekonomi`, `/bakim`, `/sistem-ozeti`,
-  `f!log-haritasi`, `f!buton-sablonlari`, `f!panel-ipuclari`, `f!guncelleme-senaryosu`, `f!yedek-planlayici`, `f!bakim-rehberi` ve diğer yönetim araçları.
+  `f!davet`, `f!log-haritasi`, `f!buton-sablonlari`, `f!panel-ipuclari`, `f!guncelleme-senaryosu`, `f!yedek-planlayici`, `f!bakim-rehberi` ve diğer yönetim araçları.
 - **Özel Ses:** `f!ozel-ses` ile kullanıcıya özel ses odası açılır; paneldeki butonlarla kilit, üye limiti, isim ve sahiplik anlık yönetilir.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir`,
   `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru`, `f!oyun-oner` ve mini oyunlar.
-- **Ekonomi:** `/ekonomi bakiye|kayit|gunluk|calis|macera|gorev|kasa|yatirim|hediye|market|satinal|envanter|liderlik|ayar`, `f!ekonomi` ile aynı işlemler (günlük ödül, çalışma, macera, görev, şans kasası, yatırım, market, hediyeleşme, liderlik ve işlem geçmişi görüntüleme) + para birimi özelleştirme,
+- **Ekonomi:** `/ekonomi bakiye|kayit|gunluk|calis|macera|gorev|kasa|tahmin|cark|arena|yatirim|hediye|market|satinal|envanter|liderlik|ayar`, `f!ekonomi` ile aynı işlemler (günlük ödül, çalışma, macera, görev, şans kasası, tahmin oyunu, çark ve arena mini oyunları, yatırım, kategori filtresiyle market, hediyeleşme, liderlik ve işlem geçmişi görüntüleme) + para birimi özelleştirme,
   `f!ekonomi-gorevleri`, `f!yatirim-analizi`, `f!pazar-firsatlari`, `f!bonus-taktikleri`, `f!hediye-planlayici`, `f!banka-gunlugu`.
-- **Önek komutları:** `f!yardim`, `f!ekonomi`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!kayit`, `f!rolpanel`, `f!cekilis`, `f!premium`, `f!prokomutlar`,
+- **Önek komutları:** `f!yardim`, `f!ekonomi`, `f!cark`, `f!arena`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!kayit`, `f!rolpanel`, `f!cekilis`, `f!premium`, `f!prokomutlar`,
   `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!pro-ajanda`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!selamlama`, `f!ticket`, `f!sunucu-kur`, `f!uyari-sil`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!sahip-kisit`, `f!sahip-ekonomi`, `f!prefix`, `f!furmin-merkez`, `f!bakim`,
   `f!gorev-panosu`, `f!odak-planlayici`, `f!ekip-toplantisi`, `f!icerik-fikirleri`, `f!topluluk-anketi`, `f!gorev-raporu`,
   `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru`, `f!oyun-oner`, `f!nuke`,

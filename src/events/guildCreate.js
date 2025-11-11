@@ -1,6 +1,7 @@
-import { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from 'discord.js';
+import { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } from 'discord.js';
 import { config } from '../config.js';
 import { sendBotLog } from '../utils/botLog.js';
+import { snapshotInvites } from '../utils/inviteCache.js';
 
 async function sendOwnerGreeting(guild) {
   try {
@@ -68,6 +69,20 @@ export default {
   name: Events.GuildCreate,
   async execute(guild, client) {
     const greetingResult = await sendOwnerGreeting(guild);
+
+    const resolvedClient = client ?? guild.client;
+
+    try {
+      const me = guild.members.me ?? (await guild.members.fetch(resolvedClient.user.id));
+      if (me?.permissions.has(PermissionFlagsBits.ManageGuild)) {
+        const invites = await guild.invites.fetch().catch(() => null);
+        if (invites) {
+          snapshotInvites(guild.id, invites);
+        }
+      }
+    } catch (error) {
+      console.warn(`Yeni sunucu davetleri alınamadı (${guild.id}):`, error);
+    }
 
     const embed = new EmbedBuilder()
       .setColor(0xe74c3c)

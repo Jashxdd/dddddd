@@ -1,6 +1,7 @@
-import { ActivityType, Events, Routes } from 'discord.js';
+import { ActivityType, Events, PermissionFlagsBits, Routes } from 'discord.js';
 import { config } from '../config.js';
 import { startGiveawayScheduler } from '../utils/giveawayManager.js';
+import { snapshotInvites } from '../utils/inviteCache.js';
 
 const activityTypeMap = {
   playing: ActivityType.Playing,
@@ -173,6 +174,26 @@ function startPresenceRotation(client) {
   }
 }
 
+async function primeInviteTracking(client) {
+  const guilds = client.guilds.cache.values();
+
+  for (const guild of guilds) {
+    try {
+      const me = guild.members.me ?? (await guild.members.fetch(client.user.id));
+      if (!me?.permissions.has(PermissionFlagsBits.ManageGuild)) {
+        continue;
+      }
+
+      const invites = await guild.invites.fetch().catch(() => null);
+      if (invites) {
+        snapshotInvites(guild.id, invites);
+      }
+    } catch (error) {
+      console.warn(`Davet önbelleği hazırlanırken hata oluştu (${guild.id}):`, error);
+    }
+  }
+}
+
 export default {
   name: Events.ClientReady,
   once: true,
@@ -185,5 +206,6 @@ export default {
     await syncApplicationCommands(client);
     startPresenceRotation(client);
     startGiveawayScheduler(client);
+    await primeInviteTracking(client);
   }
 };

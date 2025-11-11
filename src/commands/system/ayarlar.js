@@ -7,6 +7,7 @@ import { getAcceptedUsers } from '../../utils/rulesStorage.js';
 import { describeAutoRoles } from '../../utils/autoRoleStorage.js';
 import { listDetailedLogChannels } from '../../utils/detailedLogStorage.js';
 import { getEconomyLedgerStats } from '../../utils/economyLedgerStorage.js';
+import { describeInviteConfig } from '../../utils/inviteStorage.js';
 
 export default {
   category: 'Sistem',
@@ -28,7 +29,8 @@ export default {
       warningStats,
       acceptedUsers,
       autoRoleSummary,
-      ledgerStats
+      ledgerStats,
+      inviteConfig
     ] = await Promise.all([
       getModLogChannelId(guildId),
       listDetailedLogChannels(guildId),
@@ -38,7 +40,8 @@ export default {
       getWarningStats(guildId),
       getAcceptedUsers(guildId),
       describeAutoRoles(guildId, interaction.guild),
-      getEconomyLedgerStats({ guildId })
+      getEconomyLedgerStats({ guildId }),
+      describeInviteConfig(guildId, interaction.guild)
     ]);
 
     const modLogChannel = modLogChannelId
@@ -53,6 +56,28 @@ export default {
     const discordKeywordCount = Array.isArray(discordAutomodInfo.keywords)
       ? discordAutomodInfo.keywords.length
       : 0;
+
+    const inviteLogLabel = inviteConfig.logChannel
+      ? typeof inviteConfig.logChannel === 'string'
+        ? inviteConfig.logChannel
+        : inviteConfig.logChannel.toString()
+      : 'Ayarlanmamış';
+
+    const inviteRewardPreview = inviteConfig.rewards.length
+      ? inviteConfig.rewards
+          .slice(0, 3)
+          .map((reward) => {
+            const role = interaction.guild.roles.cache.get(reward.roleId);
+            const roleLabel = role ? role.toString() : `\`${reward.roleId}\``;
+            return `${reward.amount} → ${roleLabel}`;
+          })
+          .join('\n')
+      : 'Ödül tanımlanmadı.';
+
+    const topInviter = inviteConfig.leaderboard?.[0];
+    const inviteTopLine = topInviter
+      ? `En aktif: <@${topInviter.userId}> • ${topInviter.total} davet`
+      : 'Henüz kayıt yok.';
 
     const embed = new EmbedBuilder()
       .setColor(0x7289da)
@@ -77,6 +102,11 @@ export default {
             autoRoleSummary.count > 0
               ? `🔁 ${autoRoleSummary.count} rol: ${autoRoleSummary.mentionList}`
               : '⚪ Ayarlanmamış. `/otorol ekle` ile hızlıca kurabilirsiniz.',
+          inline: true
+        },
+        {
+          name: 'Davet Takibi',
+          value: [inviteLogLabel, inviteRewardPreview, inviteTopLine].filter(Boolean).join('\n'),
           inline: true
         },
         {

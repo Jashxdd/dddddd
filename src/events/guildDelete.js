@@ -1,5 +1,6 @@
 import { EmbedBuilder, Events } from 'discord.js';
 import { sendBotLog } from '../utils/botLog.js';
+import { clearInviteCache } from '../utils/inviteCache.js';
 
 export default {
   name: Events.GuildDelete,
@@ -20,5 +21,8 @@ export default {
       .setTimestamp();
 
     await sendBotLog(client, { embeds: [embed] });
+    if (guild?.id) {
+      clearInviteCache(guild.id);
+    }
   }
 };

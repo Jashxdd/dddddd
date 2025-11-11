@@ -362,6 +362,7 @@ export default {
     .addSubcommand((sub) => sub.setName('kaldir').setDescription('Kayıtlı mod-log kanalını sıfırlar.'))
     .addSubcommand((sub) => sub.setName('goster').setDescription('Aktif mod-log kanalını gösterir.'))
     .addSubcommand((sub) => sub.setName('test').setDescription('Mod-log kanalına test mesajı gönderir.'))
+    .addSubcommand((sub) => sub.setName('guard-raporu').setDescription('Guard korumalarının özet raporunu gönderir.'))
     .addSubcommand((sub) => sub.setName('panel').setDescription('Detaylı log ve guard ayar panelini açar.')),
   async execute(interaction) {
     if (!interaction.inGuild()) {
@@ -370,6 +371,51 @@ export default {
     }
 
     const subcommand = interaction.options.getSubcommand();
+
+    if (subcommand === 'guard-raporu') {
+      const guardConfig = await getGuardConfig(interaction.guildId);
+      const activeProtectionCount = Object.values(guardConfig.protections ?? {}).filter(Boolean).length;
+      const totalProtectionCount = Object.keys(guardProtectionLabels).length;
+      const presetKey = detectGuardPreset(guardConfig);
+      const preset = presetKey ? guardPresetDefinitions[presetKey] : null;
+      const whitelistLines = guardConfig.whitelistRoleIds
+        .map((roleId) => interaction.guild.roles.cache.get(roleId)?.toString() ?? `\`${roleId}\``);
+      const protectionLines = Object.entries(guardProtectionLabels)
+        .map(([key, label]) => `${guardConfig.protections?.[key] ? '🟢' : '⚪'} ${label}`)
+        .join('\n');
+
+      const embed = new EmbedBuilder()
+        .setColor(0xe74c3c)
+        .setTitle('Guard Durum Özeti')
+        .setDescription('Korumaların son durumunu gösterir. Paneli ` /modlog panel ` ile açabilirsiniz.')
+        .addFields(
+          { name: 'Aktif Koruma', value: `${activeProtectionCount}/${totalProtectionCount}`, inline: true },
+          {
+            name: 'Yaptırım',
+            value: guardPenaltyLabels[guardConfig.penalty] ?? 'Belirlenmemiş',
+            inline: true
+          },
+          {
+            name: 'Profil',
+            value: preset ? `${preset.label}\n_${preset.description}_` : 'Özel yapılandırma',
+            inline: true
+          },
+          {
+            name: 'Beyaz Liste',
+            value: whitelistLines.length ? whitelistLines.join('\n') : 'Tanımlı değil.',
+            inline: false
+          },
+          {
+            name: 'Koruma Durumu',
+            value: protectionLines || 'Korumalar devre dışı.',
+            inline: false
+          }
+        )
+        .setTimestamp();
+
+      await interaction.editReply({ embeds: [embed] });
+      return;
+    }
 
     if (subcommand === 'panel') {
       const response = await buildLogGuardPanel(interaction);

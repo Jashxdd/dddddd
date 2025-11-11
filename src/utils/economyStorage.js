@@ -42,6 +42,18 @@ function ensureProfileShape(profile = {}) {
       guessWins:
         Number.isFinite(profile?.stats?.guessWins) && profile.stats.guessWins > 0
           ? Math.floor(profile.stats.guessWins)
+          : 0,
+      wheelSpins:
+        Number.isFinite(profile?.stats?.wheelSpins) && profile.stats.wheelSpins > 0
+          ? Math.floor(profile.stats.wheelSpins)
+          : 0,
+      arenaMatches:
+        Number.isFinite(profile?.stats?.arenaMatches) && profile.stats.arenaMatches > 0
+          ? Math.floor(profile.stats.arenaMatches)
+          : 0,
+      arenaWins:
+        Number.isFinite(profile?.stats?.arenaWins) && profile.stats.arenaWins > 0
+          ? Math.floor(profile.stats.arenaWins)
           : 0
     },
     cooldowns: Object.fromEntries(

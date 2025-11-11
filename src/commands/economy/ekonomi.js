@@ -45,6 +45,12 @@ const CRATE_REWARD_RANGE = [200, 520];
 const CRATE_ITEM_CHANCE = 0.35;
 const GUESS_ENTRY_COST = 150;
 const GUESS_REWARD_RANGE = [320, 640];
+const WHEEL_ENTRY_COST = 200;
+const WHEEL_COOLDOWN = 15 * 60 * 1000;
+const WHEEL_MULTIPLIERS = [0, 0.5, 1, 1.5, 2.5, 4];
+const ARENA_ENTRY_COST = 250;
+const ARENA_COOLDOWN = 25 * 60 * 1000;
+const ARENA_REWARD_RANGE = [320, 680];
 
 const TYPE_LABELS = {
   daily: 'Günlük Ödül',
@@ -58,8 +64,14 @@ const TYPE_LABELS = {
   purchase: 'Market Alımı',
   crate: 'Şans Kasası',
   guess: 'Tahmin Oyunu',
+  wheel: 'Çark Oyunu',
+  duel: 'Arena Karşılaşması',
   owner_adjust: 'Sahip İşlemi'
 };
+
+const MARKET_CATEGORIES = Array.from(
+  new Set(economyItems.map((item) => (item.category ?? 'genel').toLowerCase()))
+);
 
 function formatCurrency(amount, config = null) {
   const safeAmount = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0;
@@ -142,6 +154,8 @@ function buildProfileEmbed(user, profile, formatAmount, currencyName) {
           `• Macera: **${profile.stats.adventure}** kez\n` +
           `• Görev: **${profile.stats.quests}** tamamlandı\n` +
           `• Tahmin Oyunu: **${profile.stats.guessPlays}** deneme / **${profile.stats.guessWins}** isabet\n` +
+          `• Çark Denemeleri: **${profile.stats.wheelSpins ?? 0}** tur\n` +
+          `• Arena: **${profile.stats.arenaWins ?? 0}** galibiyet / **${profile.stats.arenaMatches ?? 0}** maç\n` +
           `• Hediyeleşme: **${profile.stats.giftsSent}** gönderildi / **${profile.stats.giftsReceived}** alındı\n` +
           `• Yatırım: **${profile.stats.investmentWins}** kazanç / **${profile.stats.investmentLosses}** kayıp`
       }
@@ -151,18 +165,51 @@ function buildProfileEmbed(user, profile, formatAmount, currencyName) {
     .setTimestamp();
 }
 
-function buildMarketEmbed(formatAmount, currencyName) {
+function buildMarketEmbed(formatAmount, currencyName, category = 'all') {
+  const normalised = category?.toLowerCase() ?? 'all';
+  const filteredItems = normalised === 'all'
+    ? economyItems
+    : economyItems.filter((item) => (item.category ?? 'genel').toLowerCase() === normalised);
+
   const embed = new EmbedBuilder()
     .setColor(0x27ae60)
     .setTitle(`🛒 ${currencyName} Marketi`)
-    .setDescription('Satın alabileceğin özel eşyalar ve etkileri:');
+    .setTimestamp();
 
-  economyItems.forEach((item) => {
+  if (normalised !== 'all') {
+    const label = normalised.charAt(0).toLocaleUpperCase('tr') + normalised.slice(1);
+    embed.setDescription(`Kategori: **${label}** — seçili ürünlerin etkileri aşağıdadır.`);
+  } else {
+    embed.setDescription('Satın alabileceğin özel eşyalar ve etkileri:');
+  }
+
+  if (!filteredItems.length) {
+    embed.addFields({ name: 'Ürün bulunamadı', value: 'Bu kategoriye ait ürün tanımlanmamış.' });
+    return embed;
+  }
+
+  filteredItems.forEach((item) => {
+    const categoryLabel = item.category
+      ? item.category.charAt(0).toLocaleUpperCase('tr') + item.category.slice(1)
+      : 'Genel';
     embed.addFields({
-      name: `${item.name} — ${formatAmount(item.price)}`,
+      name: `${item.name} • ${formatAmount(item.price)} (${categoryLabel})`,
       value: item.description
     });
   });
+
+  if (normalised !== 'all') {
+    const extraItems = economyItems
+      .filter((item) => (item.category ?? 'genel').toLowerCase() !== normalised)
+      .slice(0, 3);
+    if (extraItems.length) {
+      embed.addFields({
+        name: 'Diğer kategorilerden öneriler',
+        value: extraItems.map((item) => `${item.name} — ${formatAmount(item.price)}`).join('\n'),
+        inline: false
+      });
+    }
+  }
 
   return embed;
 }
@@ -223,6 +270,15 @@ function registerItemChoices(option) {
   return option;
 }
 
+function registerCategoryChoices(option) {
+  option.addChoices({ name: 'Tüm Ürünler', value: 'all' });
+  MARKET_CATEGORIES.slice(0, 24).forEach((category) => {
+    const label = category.charAt(0).toLocaleUpperCase('tr') + category.slice(1);
+    option.addChoices({ name: label, value: category });
+  });
+  return option;
+}
+
 const data = new SlashCommandBuilder()
   .setName('ekonomi')
   .setDescription('Furmin ekonomi sisteminde kazançlarını yönet.')
@@ -263,6 +319,8 @@ const data = new SlashCommandBuilder()
           .setMaxValue(10)
       )
   )
+  .addSubcommand((sub) => sub.setName('cark').setDescription('Çarkı çevirerek sürpriz ödüller kazanmayı dene.'))
+  .addSubcommand((sub) => sub.setName('arena').setDescription('Furmin arenasında riskli bir mücadeleye gir.'))
   .addSubcommand((sub) =>
     sub
       .setName('yatirim')
@@ -312,7 +370,14 @@ const data = new SlashCommandBuilder()
           .setMaxValue(3)
       )
   )
-  .addSubcommand((sub) => sub.setName('market').setDescription('Satın alabileceğin market ürünlerini listeler.'))
+  .addSubcommand((sub) =>
+    sub
+      .setName('market')
+      .setDescription('Satın alabileceğin market ürünlerini listeler.')
+      .addStringOption((option) =>
+        registerCategoryChoices(option.setName('kategori').setDescription('Belirli bir kategoriye göre filtrele.'))
+      )
+  )
   .addSubcommand((sub) =>
     sub
       .setName('satinal')
@@ -725,6 +790,146 @@ export default {
         return;
       }
 
+      if (subcommand === 'cark') {
+        const profile = await getEconomyProfile(userId);
+        if (profile.balance < WHEEL_ENTRY_COST) {
+          await interaction.editReply({
+            content: `🌀 Çarkı çevirmek için **${formatAmount(WHEEL_ENTRY_COST)}** gerekiyor. Bakiyen **${formatAmount(profile.balance)}**.`
+          });
+          return;
+        }
+
+        const availability = await canUseAction(userId, 'wheel', WHEEL_COOLDOWN);
+        if (!availability.available) {
+          await interaction.editReply({
+            content: `🌀 Çarkı tekrar çevirmeden önce **${formatDuration(availability.remaining)}** beklemelisin.`
+          });
+          return;
+        }
+
+        await recordActionUsage(userId, 'wheel');
+        await incrementStat(userId, 'wheelSpins', 1);
+
+        await modifyBalance(userId, -WHEEL_ENTRY_COST);
+        const multiplier = WHEEL_MULTIPLIERS[Math.floor(Math.random() * WHEEL_MULTIPLIERS.length)];
+        const rawReward = Math.round(WHEEL_ENTRY_COST * multiplier);
+        const reward = applyBonus(rawReward, bonusMultiplier);
+        const balanceAfter = await modifyBalance(userId, reward);
+        const netGain = reward - WHEEL_ENTRY_COST;
+
+        const wheelNote = multiplier ? `${multiplier.toFixed(1)}x çarpan` : 'Çark ödül vermedi';
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: interaction.user.id,
+          type: 'wheel',
+          amount: netGain,
+          balanceAfter,
+          note: wheelNote
+        });
+
+        if (interaction.inGuild()) {
+          await logEconomyChange(interaction.client, interaction.guildId, {
+            userId,
+            executorId: interaction.user.id,
+            amount: netGain,
+            balanceAfter,
+            type: resolveTypeLabel('wheel'),
+            note: wheelNote
+          });
+        }
+
+        const lines = [
+          `Giriş ücreti: **${formatAmount(WHEEL_ENTRY_COST)}**`,
+          multiplier
+            ? `Çark ${multiplier.toFixed(1)}x çarpan verdi ve **${formatAmount(reward)}** kazandın.`
+            : 'Çark bu turda ödül vermedi.'
+        ];
+
+        if (netGain >= 0) {
+          lines.push(`Net kazancın: **${formatAmount(netGain)}** • Yeni bakiye: ${formatAmount(balanceAfter)}`);
+        } else {
+          lines.push(`Net kaybın: **${formatAmount(Math.abs(netGain))}** • Yeni bakiye: ${formatAmount(balanceAfter)}`);
+        }
+
+        await interaction.editReply({ content: `🌀 ${lines.join('\n')}` });
+        return;
+      }
+
+      if (subcommand === 'arena') {
+        const profile = await getEconomyProfile(userId);
+        if (profile.balance < ARENA_ENTRY_COST) {
+          await interaction.editReply({
+            content: `⚔️ Arenaya girmek için **${formatAmount(ARENA_ENTRY_COST)}** gerekiyor. Bakiyen **${formatAmount(profile.balance)}**.`
+          });
+          return;
+        }
+
+        const availability = await canUseAction(userId, 'duel', ARENA_COOLDOWN);
+        if (!availability.available) {
+          await interaction.editReply({
+            content: `⚔️ Arenaya tekrar girmeden önce **${formatDuration(availability.remaining)}** beklemelisin.`
+          });
+          return;
+        }
+
+        await recordActionUsage(userId, 'duel');
+        await incrementStat(userId, 'arenaMatches', 1);
+
+        await modifyBalance(userId, -ARENA_ENTRY_COST);
+        const success = Math.random() < 0.55;
+        let reward = 0;
+        let note = 'Maç kaybedildi.';
+
+        if (success) {
+          const rawReward = pickRandom(ARENA_REWARD_RANGE[0], ARENA_REWARD_RANGE[1]);
+          reward = applyBonus(rawReward, bonusMultiplier);
+          await incrementStat(userId, 'arenaWins', 1);
+          note = 'Arena karşılaşmasını kazandın!';
+        }
+
+        const balanceAfter = await modifyBalance(userId, reward);
+        const netGain = reward - ARENA_ENTRY_COST;
+
+        await recordEconomyEvent({
+          userId,
+          guildId,
+          executorId: interaction.user.id,
+          type: 'duel',
+          amount: netGain,
+          balanceAfter,
+          note
+        });
+
+        if (interaction.inGuild()) {
+          await logEconomyChange(interaction.client, interaction.guildId, {
+            userId,
+            executorId: interaction.user.id,
+            amount: netGain,
+            balanceAfter,
+            type: resolveTypeLabel('duel'),
+            note
+          });
+        }
+
+        const lines = [
+          `Giriş ücreti: **${formatAmount(ARENA_ENTRY_COST)}**`,
+          success
+            ? `🏆 ${note} Ödülün **${formatAmount(reward)}** olarak bakiyene eklendi.`
+            : '😖 Arena mücadelesi kaybedildi; giriş ücretini kaybettin.'
+        ];
+
+        if (netGain >= 0) {
+          lines.push(`Net kazancın: **${formatAmount(netGain)}** • Yeni bakiye: ${formatAmount(balanceAfter)}`);
+        } else {
+          lines.push(`Net kaybın: **${formatAmount(Math.abs(netGain))}** • Yeni bakiye: ${formatAmount(balanceAfter)}`);
+        }
+
+        await interaction.editReply({ content: `⚔️ ${lines.join('\n')}` });
+        return;
+      }
+
       if (subcommand === 'yatirim') {
         const rawAmount = interaction.options.getInteger('miktar', true);
         const minimum = applyBonus(INVESTMENT_MINIMUM, bonusMultiplier);
@@ -923,7 +1128,8 @@ export default {
       }
 
       if (subcommand === 'market') {
-        const embed = buildMarketEmbed(formatAmount, currencyName);
+        const categoryOption = interaction.options.getString('kategori') ?? 'all';
+        const embed = buildMarketEmbed(formatAmount, currencyName, categoryOption);
         await interaction.editReply({ embeds: [embed] });
         return;
       }
