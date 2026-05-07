@@ -1,0 +1,103 @@
+import { EmbedBuilder, SlashCommandBuilder, time } from 'discord.js';
+import { listWarnings } from '../../utils/warnStorage.js';
+import { getUserLevel, getLevelConfig } from '../../utils/xpStorage.js';
+
+function formatNumber(value) {
+  return new Intl.NumberFormat('tr-TR').format(value);
+}
+
+export function buildProfileEmbed({ member, user, guild, warningsCount, levelData }) {
+  const displayUser = user ?? member?.user;
+  const color = member?.displayHexColor && member.displayHexColor !== '#000000' ? Number(member.displayHexColor.replace('#', '0x')) : 0x3498db;
+  const embed = new EmbedBuilder()
+    .setColor(color)
+    .setAuthor({ name: displayUser?.tag ?? 'Profil', iconURL: displayUser?.displayAvatarURL({ size: 128 }) ?? undefined })
+    .setThumbnail(displayUser?.displayAvatarURL({ size: 256 }))
+    .setTitle('Kullanıcı Profili')
+    .setDescription('Sunucu verileri, roller ve uyarı istatistikleri tek kartta toplandı.')
+    .addFields({ name: 'Kullanıcı ID', value: displayUser?.id ?? 'Bilinmiyor', inline: true });
+
+  if (displayUser?.bot) {
+    embed.addFields({ name: 'Bot', value: '🤖 Evet', inline: true });
+  } else {
+    embed.addFields({ name: 'Bot', value: 'Hayır', inline: true });
+  }
+
+  if (displayUser?.createdTimestamp) {
+    embed.addFields({ name: 'Hesap Oluşturma', value: time(Math.floor(displayUser.createdTimestamp / 1000), 'F') });
+  }
+
+  if (member) {
+    if (member.joinedTimestamp) {
+      embed.addFields({ name: 'Sunucuya Katılım', value: time(Math.floor(member.joinedTimestamp / 1000), 'F') });
+    }
+
+    const roles = member.roles.cache
+      .filter((role) => role.id !== guild.id)
+      .sort((a, b) => b.position - a.position)
+      .map((role) => role.toString());
+
+    embed.addFields({ name: 'Roller', value: roles.join(' ') || 'Rol bulunmuyor.' });
+
+    const hoisted = member.roles.hoist ?? member.roles.highest;
+    if (hoisted) {
+      embed.addFields({ name: 'Öne Çıkan Rol', value: hoisted.toString(), inline: true });
+    }
+
+    embed.addFields({ name: 'Sunucu Takma Adı', value: member.nickname ?? 'Yok', inline: true });
+  }
+
+  embed.addFields({ name: 'Toplam Uyarı', value: formatNumber(warningsCount), inline: true });
+
+  if (levelData) {
+    embed.addFields(
+      { name: 'Seviye', value: formatNumber(levelData.level), inline: true },
+      { name: 'Toplam XP', value: formatNumber(levelData.totalXp), inline: true }
+    );
+
+    const lastUpdate = levelData.lastUpdatedAt ? time(Math.floor(new Date(levelData.lastUpdatedAt).getTime() / 1000), 'R') : 'Bilinmiyor';
+    embed.addFields({ name: 'Son Güncelleme', value: lastUpdate, inline: true });
+
+    const breakdown = `💬 Mesaj: **${formatNumber(levelData.messageXp)}**
+🧭 Komut: **${formatNumber(levelData.commandXp)}**
+🎙️ Ses: **${formatNumber(levelData.voiceXp)}**`;
+    embed.addFields({ name: 'XP Dağılımı', value: breakdown });
+  }
+
+  embed.setFooter({ text: guild?.name ?? 'Furmin Sistemleri' }).setTimestamp();
+  return embed;
+}
+
+export default {
+  category: 'Genel',
+  menuGroup: 'Kullanıcı Sistemleri',
+  data: new SlashCommandBuilder()
+    .setName('profil')
+    .setDescription('Kapsamlı kullanıcı profil kartı oluşturur.')
+    .addUserOption((option) => option.setName('uye').setDescription('Profili görüntülenecek kişi')),
+  async execute(interaction) {
+    const targetUser = interaction.options.getUser('uye') ?? interaction.user;
+    const guild = interaction.guild;
+    let member = null;
+    if (guild) {
+      member = await guild.members.fetch(targetUser.id).catch(() => null);
+    }
+
+    const warnings = guild ? await listWarnings(guild.id, targetUser.id) : [];
+    let levelData = null;
+    const levelConfig = getLevelConfig(interaction.guild?.id);
+    if (guild && levelConfig.enabled) {
+      levelData = await getUserLevel(guild.id, targetUser.id);
+    }
+
+    const embed = buildProfileEmbed({
+      member,
+      user: targetUser,
+      guild,
+      warningsCount: warnings.length,
+      levelData
+    });
+
+    await interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+};
