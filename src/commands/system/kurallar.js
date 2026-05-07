@@ -1,22 +1,22 @@
 import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
 
 const rulesList = [
-  'Sunucuda saygi esastir, hakaret ve asiri argo yasaktir.',
-  'Spam, flood veya reklam icerikli mesaj paylasmayin.',
-  'Kisisel verileri ve gizli bilgileri paylasmayin.',
-  'Sunucu gorevlilerinin talimatlarina uyun.',
-  'Yasaklanan kelimeler otomatik olarak engellenir; listeyi güncel tutmak icin `/otomod` komutunu kullanin.'
+  'Sunucuda saygı esastır; hakaret ve aşırı argo yasaktır.',
+  'Spam, flood veya reklam içerikli mesaj paylaşmayın.',
+  'Kişisel verileri ve gizli bilgileri paylaşmayın.',
+  'Sunucu görevlilerinin talimatlarına uyun.',
+  'Yasaklanan kelimeler otomatik olarak engellenir; listeyi güncel tutmak için `/otomod` komutunu kullanın.'
 ];
 
 export default {
   category: 'Sistem',
   data: new SlashCommandBuilder()
     .setName('kurallar')
-    .setDescription('Sunucunun bot kullanimi icin gecerli kurallarini gosterir.'),
+    .setDescription('Sunucunun bot kullanımı için geçerli kurallarını gösterir.'),
   async execute(interaction) {
     if (!interaction.inGuild()) {
       await interaction.reply({
-        content: 'Kurallar sadece bir sunucu icinde goruntulenebilir.',
+        content: 'Kurallar yalnızca bir sunucu içinde görüntülenebilir.',
         ephemeral: true
       });
       return;
@@ -24,9 +24,9 @@ export default {
 
     const embed = new EmbedBuilder()
       .setColor(0xfacd2e)
-      .setTitle('Sunucu Kurallari')
+      .setTitle('Sunucu Kuralları')
       .setDescription(
-        'Bot komutlarini kullanabilmek icin asagidaki kurallari okuman ve kabul etmen gerekir. Kabul etmek icin `/kurallari-kabul` komutunu kullan.'
+        'Bot komutlarını kullanabilmek için aşağıdaki kuralları okuman ve kabul etmen gerekir. Kabul etmek için `/kurallari-kabul` komutunu kullan.'
       )
       .addFields(
         rulesList.map((rule, index) => ({
@@ -35,7 +35,7 @@ export default {
         }))
       )
       .setFooter({
-        text: 'Kurallari kabul ettiginde tum slash komutlarina erisebilirsin.'
+        text: 'Kuralları kabul ettiğinde tüm slash komutlarına erişebilirsin.'
       });
 
     await interaction.reply({ embeds: [embed], ephemeral: true });

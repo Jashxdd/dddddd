@@ -61,6 +61,119 @@ import { isGloballyBlacklisted } from '../utils/blacklistStorage.js';
 const ticketPanelSelections = new Map();
 const TICKET_PREFERENCE_TTL = 15 * 60 * 1000;
 
+function ensureNonEmptyMessage(options) {
+  if (!options || typeof options !== 'object') {
+    return options;
+  }
+
+  const { content, embeds, files, attachments, components, stickers } = options;
+  const hasContent = typeof content === 'string' && content.trim().length > 0;
+  const hasEmbeds = Array.isArray(embeds) && embeds.some((embed) => {
+    if (!embed) return false;
+    if (typeof embed.toJSON === 'function') {
+      return Object.keys(embed.toJSON()).length > 0;
+    }
+    if (typeof embed.data === 'object' && embed.data) {
+      return Object.keys(embed.data).length > 0;
+    }
+    return Object.keys(embed).length > 0;
+  });
+  const hasFiles = Array.isArray(files) ? files.length > 0 : Boolean(files);
+  const hasAttachments = Array.isArray(attachments) ? attachments.length > 0 : Boolean(attachments);
+  const hasComponents = Array.isArray(components) && components.length > 0;
+  const hasStickers = Array.isArray(stickers) && stickers.length > 0;
+
+  if (!hasContent && !hasEmbeds && !hasFiles && !hasAttachments && !hasComponents && !hasStickers) {
+    return { ...options, content: '\u200e' };
+  }
+
+  return options;
+}
+
+function normaliseResponseOptions(input) {
+  if (typeof input === 'string') {
+    return { content: input.trim() || '\u200e' };
+  }
+
+  if (!input || typeof input !== 'object') {
+    return input;
+  }
+
+  const normalised = ensureNonEmptyMessage({ ...input });
+
+  if (Object.prototype.hasOwnProperty.call(normalised, 'ephemeral')) {
+    if (normalised.ephemeral) {
+      normalised.flags = (normalised.flags ?? 0) | MessageFlags.Ephemeral;
+    }
+    delete normalised.ephemeral;
+  }
+
+  return normalised;
+}
+
+function normaliseDeferOptions(input) {
+  if (!input || typeof input !== 'object') {
+    return input;
+  }
+
+  const normalised = { ...input };
+  if (Object.prototype.hasOwnProperty.call(normalised, 'ephemeral')) {
+    if (normalised.ephemeral) {
+      normalised.flags = (normalised.flags ?? 0) | MessageFlags.Ephemeral;
+    }
+    delete normalised.ephemeral;
+  }
+
+  delete normalised.content;
+  delete normalised.embeds;
+  delete normalised.components;
+  delete normalised.files;
+  delete normalised.attachments;
+  delete normalised.stickers;
+
+  return normalised;
+}
+
+function setupInteractionResponseSafety(interaction) {
+  if (!interaction?.isRepliable?.() || interaction.__furminResponseSafety) {
+    return;
+  }
+
+  interaction.__furminResponseSafety = true;
+
+  const originalReply = interaction.reply?.bind(interaction);
+  const originalDeferReply = interaction.deferReply?.bind(interaction);
+  const originalEditReply = interaction.editReply?.bind(interaction);
+  const originalFollowUp = interaction.followUp?.bind(interaction);
+  const originalUpdate = interaction.update?.bind(interaction);
+  const originalDeferUpdate = interaction.deferUpdate?.bind(interaction);
+
+  if (originalReply) {
+    interaction.reply = (options = {}) => originalReply(normaliseResponseOptions(options));
+  }
+
+  if (originalDeferReply) {
+    interaction.deferReply = (options = {}) => originalDeferReply(normaliseDeferOptions(options));
+  }
+
+  if (originalEditReply) {
+    interaction.editReply = (options = {}) => originalEditReply(normaliseResponseOptions(options));
+  }
+
+  if (originalFollowUp) {
+    interaction.followUp = (options = {}) => originalFollowUp(normaliseResponseOptions(options));
+  }
+
+  if (originalUpdate) {
+    interaction.update = (options = {}) => originalUpdate(normaliseResponseOptions(options));
+  }
+
+  if (originalDeferUpdate) {
+    interaction.deferUpdate = (options = {}) => originalDeferUpdate(normaliseDeferOptions(options));
+  }
+}
+
+
 function makeTicketPreferenceKey(guildId, userId) {
   return `${guildId}:${userId}`;
 }
@@ -907,61 +1020,7 @@ function setupSlashResponseContext(interaction, command) {
   const originalDeleteReply = interaction.deleteReply?.bind(interaction);
   const originalEditReply = interaction.editReply?.bind(interaction);
 
-  const ensureNonEmptyMessage = (options) => {
-    if (!options || typeof options !== 'object') {
-      return options;
-    }
-
-    const {
-      content,
-      embeds,
-      files,
-      attachments,
-      components,
-      stickers
-    } = options;
-
-    const hasContent = typeof content === 'string' && content.trim().length > 0;
-    const hasEmbeds = Array.isArray(embeds) && embeds.some((embed) => {
-      if (!embed) return false;
-      if (typeof embed.toJSON === 'function') {
-        return Object.keys(embed.toJSON()).length > 0;
-      }
-      if (typeof embed.data === 'object' && embed.data) {
-        return Object.keys(embed.data).length > 0;
-      }
-      return Object.keys(embed).length > 0;
-    });
-    const hasFiles = Array.isArray(files) ? files.length > 0 : Boolean(files);
-    const hasAttachments = Array.isArray(attachments) ? attachments.length > 0 : Boolean(attachments);
-    const hasComponents = Array.isArray(components) && components.length > 0;
-    const hasStickers = Array.isArray(stickers) && stickers.length > 0;
-
-    if (!hasContent && !hasEmbeds && !hasFiles && !hasAttachments && !hasComponents && !hasStickers) {
-      return { ...options, content: '\u200e' };
-    }
-
-    return options;
-  };
-
-  const normaliseResponseOptions = (input) => {
-    if (!input || typeof input !== 'object') {
-      return input;
-    }
-
-    const normalised = ensureNonEmptyMessage({ ...input });
-
-    if (Object.prototype.hasOwnProperty.call(normalised, 'ephemeral')) {
-      if (normalised.ephemeral) {
-        normalised.flags = (normalised.flags ?? 0) | MessageFlags.Ephemeral;
-      }
-      delete normalised.ephemeral;
-    }
-
-    return normalised;
-  };
-
-  const defaultDeferOptions = normaliseResponseOptions(
+  const defaultDeferOptions = normaliseDeferOptions(
     (typeof command.defaultDeferOptions === 'function'
       ? command.defaultDeferOptions(interaction)
       : command.defaultDeferOptions) ?? (command.deferEphemeral ? { flags: MessageFlags.Ephemeral } : {})
@@ -973,7 +1032,7 @@ function setupSlashResponseContext(interaction, command) {
     if (!originalDeferReply) return;
     if (interaction.deferred || interaction.replied) return;
 
-    const mergedOptions = { ...defaultDeferOptions, ...normaliseResponseOptions(options) };
+    const mergedOptions = { ...defaultDeferOptions, ...normaliseDeferOptions(options) };
     try {
       await originalDeferReply(mergedOptions);
     } catch (error) {
@@ -989,7 +1048,7 @@ function setupSlashResponseContext(interaction, command) {
       return;
     }
 
-    const normalised = normaliseResponseOptions(options);
+    const normalised = normaliseDeferOptions(options);
     await originalDeferReply(normalised);
   };
 
@@ -1019,7 +1078,7 @@ function setupSlashResponseContext(interaction, command) {
 
   interaction.reply = async (options = {}) => {
     const normalised = normaliseResponseOptions(options);
-    const wantsEphemeral = Boolean(normalised.flags & MessageFlags.Ephemeral);
+    const wantsEphemeral = Boolean(normalised?.flags & MessageFlags.Ephemeral);
 
     if (interaction.deferred && originalEditReply) {
       if (wantsEphemeral && originalFollowUp) {
@@ -1076,6 +1135,8 @@ function setupSlashResponseContext(interaction, command) {
 export default {
   name: Events.InteractionCreate,
   async execute(interaction, client) {
+    setupInteractionResponseSafety(interaction);
+
     if (
       interaction.user &&
       interaction.user.id !== interaction.client.ownerId &&

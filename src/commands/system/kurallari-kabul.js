@@ -5,11 +5,11 @@ export default {
   category: 'Sistem',
   data: new SlashCommandBuilder()
     .setName('kurallari-kabul')
-    .setDescription('Bot komutlarini kullanmadan once sunucu kurallarini kabul et.'),
+    .setDescription('Bot komutlarını kullanmadan önce sunucu kurallarını kabul et.'),
   async execute(interaction) {
     if (!interaction.inGuild()) {
       await interaction.reply({
-        content: 'Bu komut yalnizca bir sunucu icinde kullanilabilir.',
+        content: 'Bu komut yalnızca bir sunucu içinde kullanılabilir.',
         ephemeral: true
       });
       return;
@@ -19,7 +19,7 @@ export default {
 
     if (await hasAcceptedRules(guildId, user.id)) {
       await interaction.reply({
-        content: '✅ Zaten kurallari kabul etmis görünüyorsun. Tüm komutlari kullanabilirsin.',
+        content: '✅ Zaten kuralları kabul etmiş görünüyorsun. Tüm komutları kullanabilirsin.',
         ephemeral: true
       });
       return;
@@ -27,8 +27,8 @@ export default {
 
     const { alreadyAccepted } = await acceptRules(guildId, user.id);
     const message = alreadyAccepted
-      ? '✅ Kurallari daha once kabul etmistin. Komutlari kullanabilirsin.'
-      : '✅ Kurallar basariyla kabul edildi! Artik botun tum slash komutlarini kullanabilirsin.';
+      ? '✅ Kuralları daha önce kabul etmiştin. Komutları kullanabilirsin.'
+      : '✅ Kurallar başarıyla kabul edildi! Artık botun tüm slash komutlarını kullanabilirsin.';
 
     await interaction.reply({
       content: message,

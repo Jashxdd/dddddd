@@ -3,23 +3,23 @@ import { listWarnings } from '../../utils/warnStorage.js';
 
 export default {
   category: 'Genel',
-  data: new SlashCommandBuilder().setName('uyarilarim').setDescription('Sunucudaki kendi uyari kayitlarini goruntuler.'),
+  data: new SlashCommandBuilder().setName('uyarilarim').setDescription('Sunucudaki kendi uyarı kayıtlarını görüntüler.'),
   async execute(interaction) {
     if (!interaction.inGuild()) {
-      await interaction.reply({ content: 'Bu komut sadece sunucularda kullanilabilir.', ephemeral: true });
+      await interaction.reply({ content: 'Bu komut yalnızca sunucularda kullanılabilir.', ephemeral: true });
       return;
     }
 
     const warnings = await listWarnings(interaction.guildId, interaction.user.id);
 
     if (!warnings.length) {
-      await interaction.reply({ content: '✅ Sunucuda kayitli uyarin bulunmuyor.', ephemeral: true });
+      await interaction.reply({ content: '✅ Sunucuda kayıtlı uyarın bulunmuyor.', ephemeral: true });
       return;
     }
 
     const embed = new EmbedBuilder()
       .setColor(0xe67e22)
-      .setTitle('📋 Uyari Kayitlarin')
+      .setTitle('📋 Uyarı Kayıtların')
       .setDescription(
         warnings
           .map((warning, index) => {

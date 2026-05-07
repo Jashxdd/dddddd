@@ -14,7 +14,7 @@ if (typeof globalThis.fetch !== 'function') {
       }
     })
     .catch((error) => {
-      console.warn('node-fetch modülü yüklenemedi. Deprem ve dış veri komutları çalışmayabilir.', error);
+      console.warn('node-fetch modülü yüklenemedi. Dış veri kullanan komutlar çalışmayabilir.', error);
     });
 }
 
