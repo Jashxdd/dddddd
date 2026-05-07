@@ -1,0 +1,37 @@
+{
+  "token": "BOT_TOKENINIZI_BURAYA_YAZIN",
+  "clientId": "DISCORD_UYGULAMA_ID",
+  "guildId": "TEST_SUNUCUSU_ID (opsiyonel)",
+  "ownerId": "BOT_SAHIBI_DISCORD_ID",
+  "defaultPrefix": "f!",
+  "supportServerUrl": "https://discord.gg/ornek",
+  "inviteUrl": "https://discord.com/api/oauth2/authorize?client_id=DISCORD_UYGULAMA_ID&permissions=8&scope=bot%20applications.commands",
+  "proInfoUrl": "https://ornek.site/pro",
+  "botLogChannelId": "BOT_LOG_KANAL_ID",
+  "presenceStatus": "online",
+  "presenceInterval": 75,
+  "commandSyncMode": "global",
+  "commandTestGuilds": ["TEST_SUNUCUSU_ID"],
+  "disabledSlashCommands": ["ornekkomut"],
+  "disabledPrefixCommands": ["ornekprefix"],
+  "leveling": {
+    "enabled": true,
+    "messageXp": 15,
+    "commandXp": 25,
+    "voiceXpPerMinute": 20,
+    "messageCooldown": 45
+  },
+  "featureToggles": {
+    "general": true,
+    "fun": true,
+    "moderation": true,
+    "economy": true,
+    "logs": true,
+    "guard": true,
+    "system": true
+  },
+  "activities": [
+    { "name": "sunucunuzu izliyor", "type": "Watching" },
+    { "name": "/yardim ile komutları anlatıyor", "type": "Playing" }
+  ]
+}
