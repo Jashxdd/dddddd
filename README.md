@@ -105,38 +105,38 @@ değişiklikler `data/level-config.json` dosyasında saklanır ve istenirse glob
 - **Genel:** `/yardim`, `/ping`, `/afk`, `/profil`, `/ilerleme`, `/sunucu-bilgi`, `/sunucu-istatistik`, `/emoji-bilgi`, `/doviz`,
   `f!spotify`, `/not`, `/sunucu-saat`, `/uyarilarim`, `/gunluk`, `/gunun-sorusu`, `/gunun-sozu`, `/gunluk-plan`, `f!odak-ipuclari`,
   `/saglik-molasi`, `f!paylasim-rehberi`, `/kaynak-arsivi`, `/guncelleme`, `/etkinlik-takvimi`, `/kanal-onerileri`, `/hatirlatici-rehberi`, `/topluluk-ilham`,
-  `f!gorev-panosu`, `f!odak-planlayici`, `f!ekip-toplantisi`, `f!icerik-fikirleri`, `f!topluluk-anketi`, `f!gorev-raporu` ve daha fazlası.
+  `f!gorev-panosu`, `f!odak-planlayici`, `f!ekip-toplantisi`, `f!icerik-fikirleri`, `f!topluluk-anketi`, `f!gorev-raporu`, `f!gunluk-akis`, `f!duyuru-taslagi`, `f!kaynak-kontrol` ve daha fazlası.
 - **Moderasyon:** `/ban`, `/ban-listesi`, `/kick`, `/timeout`, `/untimeout`, `/temizle`, `/nuke`, `/yavas-mod`, `/kanal-kilit`, `/takma-ad`,
   `/rol-ver`, `/rol-al`, `/sicil`, `/uyari`, `/uyari-raporu`, `/uyari-sil`, `/pro-denetim`, `/mod-bulteni`, `/ceza-sablonlari`, `/denetim-kontrol`, `/uyari-sayaci`, `/kanal-denetim`, `/rol-inceleme`, `/temizlik-plan`, `/bekleme-sureleri`, `/guvenlik-notlari`, `/topluluk-raporu`,
-  `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici`, `f!guard-analiz`, `f!nuke` ve otomatik moderasyon komutları.
+  `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici`, `f!raid-hazirlik`, `f!ceza-ozeti`, `f!mod-vardiya`, `f!guard-analiz`, `f!nuke` ve otomatik moderasyon komutları.
 - **Sistem:** `/kurallar`, `/kurallari-kabul`, `/kurallar-yonet`, `/modlog` (panel alt komutuyla genel/üye/mesaj/ses + ekonomi log kanalları ve guard ayarları; yeni guard profili menüsü ve log özeti içerir), `/otorol`, `/kayit`, `/rol-panel`, `/ayarlar`, `/seviye`, `/bot-bilgi`,
   `/prefix`, `/setup tickets`, `/setup davet kanal|odul-ekle|odul-kaldir|liste`,
   `/pro` (alt komutlarıyla arşiv, ekip, içerik, otomasyon, rapor ve `/pro uyelik` yönetimi), `/pro-panel`, `/cekilis`,
   `/sahip-duyuru`, `/sahip-kontrol`, `/sahip-durum`, `/sahip-sunucu`, `/sahip-kisit`, `/sahip-ekonomi`, `/bakim`, `/sistem-ozeti`,
-  `f!davet`, `f!log-haritasi`, `f!buton-sablonlari`, `f!panel-ipuclari`, `f!guncelleme-senaryosu`, `f!yedek-planlayici`, `f!bakim-rehberi` ve diğer yönetim araçları.
+  `f!davet`, `f!log-haritasi`, `f!buton-sablonlari`, `f!panel-ipuclari`, `f!guncelleme-senaryosu`, `f!yedek-planlayici`, `f!bakim-rehberi`, `f!ticket-kontrol`, `f!guard-kurulum`, `f!sunucu-checkup` ve diğer yönetim araçları.
 - **Özel Ses:** `f!ozel-ses` ile kullanıcıya özel ses odası açılır; paneldeki butonlarla kilit, üye limiti, isim ve sahiplik anlık yönetilir.
 - **Eğlence:** `/espri`, `/bilmece`, `/kedi`, `/motivasyon`, `/yazi-tura`, `/zar`, `/kahve`, `/slot`, `/sayi-tahmin`, `/kelime-karistir`, `/macera-karti`,
-  `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru`, `f!oyun-oner` ve mini oyunlar.
+  `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru`, `f!evcil-dost`, `f!sans-karti`, `f!rp-kivilcim`, `f!oyun-oner` ve mini oyunlar.
 - **Ekonomi:** `/ekonomi bakiye|kayit|gunluk|calis|macera|gorev|kasa|tahmin|cark|arena|yatirim|hediye|market|satinal|envanter|liderlik|ayar`, `f!ekonomi` ile aynı işlemler (günlük ödül, çalışma, macera, görev, şans kasası, tahmin oyunu, çark ve arena mini oyunları, yatırım, kategori filtresiyle market, hediyeleşme, liderlik ve işlem geçmişi görüntüleme) + para birimi özelleştirme,
-  `f!ekonomi-gorevleri`, `f!yatirim-analizi`, `f!pazar-firsatlari`, `f!bonus-taktikleri`, `f!hediye-planlayici`, `f!banka-gunlugu`.
+  `f!avlan`, `f!maden`, `f!soygun`, `f!ekonomi-gorevleri`, `f!yatirim-analizi`, `f!pazar-firsatlari`, `f!bonus-taktikleri`, `f!hediye-planlayici`, `f!banka-gunlugu`, `f!owo-rehberi`, `f!ticaret-rotasi`, `f!kazanc-serisi`.
 - **Önek komutları:** `f!yardim`, `f!ekonomi`, `f!cark`, `f!arena`, `f!profil`, `f!rank`, `f!not`, `f!spotify`, `f!roller`, `f!gunluk-plan`, `f!otorol`, `f!kayit`, `f!rolpanel`, `f!cekilis`, `f!premium`, `f!prokomutlar`,
-  `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!pro-ajanda`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!selamlama`, `f!ticket`, `f!sunucu-kur`, `f!uyari-sil`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!sahip-kisit`, `f!sahip-ekonomi`, `f!prefix`, `f!furmin-merkez`, `f!bakim`,
+  `f!pro-rapor`, `f!prodenetim`, `f!pro-jail`, `f!pro-ajanda`, `f!pro-ekonomi-rotasi`, `f!pro-guard-plan`, `f!pro-etkinlik-paketi`, `f!otocevap`, `f!ozel-ses`, `f!slot`, `f!tahmin`, `f!karistir`, `f!selamlama`, `f!ticket`, `f!sunucu-kur`, `f!uyari-sil`, `f!sahip-kontrol`, `f!sahip-durum`, `f!sahip-sunucu`, `f!sahip-kisit`, `f!sahip-ekonomi`, `f!sahip-lansman`, `f!sahip-denetim`, `f!prefix`, `f!furmin-merkez`, `f!bakim`,
   `f!gorev-panosu`, `f!odak-planlayici`, `f!ekip-toplantisi`, `f!icerik-fikirleri`, `f!topluluk-anketi`, `f!gorev-raporu`,
   `f!mini-gorev`, `f!rastgele-senaryo`, `f!emoji-hikaye`, `f!ikonik-replik`, `f!macera-kupu`, `f!kahkaha-kupuru`, `f!oyun-oner`, `f!nuke`,
   `f!mod-gunlugu`, `f!olay-haritasi`, `f!kriz-senaryosu`, `f!otomasyon-denetimi`, `f!kanal-denetim-listesi`, `f!ceza-planlayici`, `f!guard-analiz`,
   `f!log-haritasi`, `f!buton-sablonlari`, `f!panel-ipuclari`, `f!guncelleme-senaryosu`, `f!yedek-planlayici`, `f!bakim-rehberi`,
-  `f!ekonomi-gorevleri`, `f!yatirim-analizi`, `f!pazar-firsatlari`, `f!bonus-taktikleri`, `f!hediye-planlayici`, `f!banka-gunlugu` vb.
+  `f!avlan`, `f!maden`, `f!soygun`, `f!owo-rehberi`, `f!ticaret-rotasi`, `f!kazanc-serisi`, `f!ekonomi-gorevleri`, `f!yatirim-analizi`, `f!pazar-firsatlari`, `f!bonus-taktikleri`, `f!hediye-planlayici`, `f!banka-gunlugu` vb.
   `f!istek` ile kullanıcılar bot geliştiricisine öneri/istek/sorun iletebilir.
 
 ### Yeni Sistemler ve Güncellemeler
 - Slash tarafındaki tüm Pro araçları artık tek `/pro` komutunda toplanır; önek tarafında aynı raporlar bireysel komutlar olarak çalışmaya devam eder.
-- `/pro ekonomi` ve `f!pro-ekonomi`, FurCoin dağılımını, görev tamamlamalarını ve yatırım performansını tek bakışta gösterir.
+- `/pro ekonomi` ve `f!pro-ekonomi`, FurCoin dağılımını, görev tamamlamalarını ve yatırım performansını tek bakışta gösterir. Yeni `f!pro-ekonomi-rotasi`, `f!pro-guard-plan` ve `f!pro-etkinlik-paketi` komutları Pro üyeler için plan kartları üretir.
 - `/kayit` ve `f!kayit`, yaş doğrulamasından otomatik rollere kadar kayıt akışını log ve guard yansımalarıyla yönetmenizi sağlar.
 - `/sahip-kisit` ve `/sahip-ekonomi`, Furmin sahibinin global/ekonomi kara listelerini yönetmesine ve kullanıcı bakiyelerini saniyeler içinde ayarlamasına olanak tanır; önek eşleri `f!sahip-kisit` ve `f!sahip-ekonomi` aynı akışı sohbetten sunar.
 - `/rol-panel` ve `f!rolpanel`, seçilen rolleri butonlarla dağıtan modern bir rol seçimi paneli oluşturur.
 - `/modlog panel`, detaylı üye/mesaj/ses log kanallarını ve guard korumalarını menülü olarak yönetmenizi sağlar. Yeni **Beyaz Liste**
   düğmesiyle guard yaptırımlarından muaf tutulacak rol listesini doğrudan panelden güncelleyebilirsiniz.
-- Furmin ekonomi modülü günlük ödül serisi, çalışma ve macera komutları, market alışverişi, hediyeleşme, liderlik tablosu ve ayrıntılı işlem kayıtlarını tek merkezde toplar.
+- Furmin ekonomi modülü günlük ödül serisi, çalışma ve macera komutları, OwO tarzı `f!avlan`/`f!maden`/`f!soygun` etkinlikleri, market alışverişi, hediyeleşme, liderlik tablosu ve ayrıntılı işlem kayıtlarını tek merkezde toplar.
 - Ekonomi tarafındaki yeni `/ekonomi gorev` ve `/ekonomi yatirim` alt komutları (önek eşleriyle birlikte) üyelerin görev tamamlayıp yatırım şansı denemesini sağlar.
 - Reklam engeli isteğe bağlı olarak üçüncü ihlalde otomatik ban uygular; uyarı sayacı sıfırlanır ve süreç bot loglarına ayrıntılı şekilde işlenir.
 - Moderatörler `/uyari istatistik` ve `f!mod-uyari-ozet` komutlarıyla uyarı dağılımını anında raporlayabilir.

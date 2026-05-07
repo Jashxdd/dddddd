@@ -78,6 +78,46 @@ export const generalToolkit = [
       '🧩 Karşılaşılan sorunları ve çözümleri not et.',
       '🚀 Sonraki adımları maddeler halinde yaz.'
     ]
+  },
+  {
+    name: 'gunluk-akis',
+    description: 'Günün genel planını düzenlemek için kısa akış kartı sunar.',
+    title: '🧭 Günlük Akış Kartı',
+    intro: 'Bugünü daha düzenli geçirmek için bu üç adımı uygula:',
+    bullets: [
+      '🗒️ Öncelikli üç işi belirle ve ilkini hemen başlat.',
+      '🔔 Bildirimleri 30 dakikalık odak süresince sessize al.',
+      '📌 Gün sonunda tamamlananları ve eksikleri kısa notla özetle.',
+      '🤝 Ekipten destek gereken başlıkları ayrı mesajda paylaş.',
+      '🌙 Kapanışta ertesi gün için tek hedef seç.'
+    ],
+    randomCount: 3
+  },
+  {
+    name: 'duyuru-taslagi',
+    description: 'Duyuru hazırlamak için başlık ve içerik kontrolü sağlar.',
+    title: '📣 Duyuru Taslağı',
+    intro: 'Duyurunu paylaşmadan önce şu yapıyı kullan:',
+    bullets: [
+      '🎯 Başlıkta konuyu ve hedef kitleyi açıkça belirt.',
+      '🧾 İlk cümlede değişikliğin nedenini anlat.',
+      '🗓️ Tarih, saat ve geçerlilik süresini net yaz.',
+      '🔗 Gerekli bağlantıları tek satırda topla.',
+      '✅ Son satırda kullanıcıdan beklenen aksiyonu belirt.'
+    ]
+  },
+  {
+    name: 'kaynak-kontrol',
+    description: 'Paylaşılacak kaynakların güvenilirliğini kontrol ettirir.',
+    title: '🔎 Kaynak Kontrol Listesi',
+    intro: 'Bir bağlantı veya bilgi paylaşmadan önce bunları kontrol et:',
+    bullets: [
+      '🌐 Kaynağın resmi veya güvenilir olduğundan emin ol.',
+      '📅 İçeriğin tarihini ve güncelliğini kontrol et.',
+      '🧩 Aynı bilgiyi ikinci bir kaynakla doğrula.',
+      '🚫 Kişisel veri veya özel bağlantı içermediğini incele.',
+      '💬 Paylaşım amacını kısa bir notla açıkla.'
+    ]
   }
 ];
 
@@ -165,6 +205,48 @@ export const funPlayground = [
       '🤖 Furmin yapay zekâ olsaydı hangi komutu isterdi?' 
     ],
     randomCount: 1
+  },
+  {
+    name: 'evcil-dost',
+    description: 'OwO tarzı sanal evcil dost rol oyunu başlatır.',
+    title: '🐾 Evcil Dost Etkinliği',
+    intro: 'Sanal dostun bugün senden şunu istiyor:',
+    bullets: [
+      '🐱 Ona komik bir isim ver ve sohbette tanıt.',
+      '🎁 Ekonomi marketinden alınabilecek hayalî bir ödül seç.',
+      '📸 Dostunun profil kartında nasıl görüneceğini tarif et.',
+      '🎲 Bir zar at; çıkan sayı kadar sevgi puanı kazan.',
+      '💬 Bir üyeye dostun adına iyi dilek gönder.'
+    ],
+    randomCount: 1
+  },
+  {
+    name: 'sans-karti',
+    description: 'Sohbet için rastgele şans ve görev kartı üretir.',
+    title: '🍀 Şans Kartı',
+    intro: 'Bugünkü şans kartın açıldı:',
+    bullets: [
+      '💰 İlk ekonomi komutunda bereketli kazanç dile.',
+      '🎯 Bir mini oyunda arkadaşını düelloya davet et.',
+      '🎁 Bir üyeye küçük bir hediye fikri öner.',
+      '🧩 Sohbette üç kelimelik hikâye başlat.',
+      '🌟 Bugünün en aktif üyesine iltifat et.'
+    ],
+    randomCount: 1
+  },
+  {
+    name: 'rp-kivilcim',
+    description: 'Roleplay sohbetleri için kısa başlangıç fikri verir.',
+    title: '✨ RP Kıvılcımı',
+    intro: 'Roleplay sahnesini başlatacak kısa fikir:',
+    bullets: [
+      '🏙️ Şehir meydanında gizemli bir ekonomi pazarı açıldı.',
+      '🛡️ Guard loncası yeni bir üyeyi sınava çağırdı.',
+      '🎭 Maskeli baloda kaybolan davetiye aranıyor.',
+      '🚪 Ticket odasından beklenmedik bir yardım çağrısı geldi.',
+      '💎 Pro arşivinde parlayan eski bir harita bulundu.'
+    ],
+    randomCount: 1
   }
 ];
 
@@ -246,6 +328,45 @@ export const moderationToolkit = [
       '🔷 Ağır hakaret/tehdit → süreli yasaklama.',
       '🔴 Güvenlik ihlali → kalıcı ban ve rapor paylaş.'
     ]
+  },
+  {
+    name: 'raid-hazirlik',
+    description: 'Olası raid durumları için hızlı hazırlık planı verir.',
+    title: '🚨 Raid Hazırlık Planı',
+    intro: 'Sunucuyu hızlıca güvene almak için şu sırayı izle:',
+    bullets: [
+      '🛡️ Guard korumalarının açık olduğunu doğrula.',
+      '🔐 Yeni hesap filtresini ve anti-bot ayarlarını kontrol et.',
+      '📢 Yetkililere tek kanaldan bilgilendirme yap.',
+      '🧾 Şüpheli girişleri log kanalında işaretle.',
+      '🧹 Olay sonrası ceza kayıtlarını ve rolleri gözden geçir.'
+    ]
+  },
+  {
+    name: 'ceza-ozeti',
+    description: 'Ceza uygulamadan önce moderasyon özeti hazırlar.',
+    title: '⚖️ Ceza Özeti Şablonu',
+    intro: 'İşlemden önce şu bilgileri tamamla:',
+    bullets: [
+      '👤 Kullanıcı, kanal ve olay saatini not et.',
+      '📎 Kanıt bağlantılarını tek mesajda topla.',
+      '📚 Daha önceki uyarı/sicil kayıtlarını incele.',
+      '🧭 Uygulanacak yaptırımı ekip kurallarına göre seç.',
+      '📨 İşlem sonrası kullanıcıya kısa ve saygılı bilgi ver.'
+    ]
+  },
+  {
+    name: 'mod-vardiya',
+    description: 'Yetkililer için vardiya devri kontrol listesi oluşturur.',
+    title: '🕒 Moderasyon Vardiya Devri',
+    intro: 'Nöbeti devrederken aşağıdaki maddeleri paylaş:',
+    bullets: [
+      '📌 Açık ticket ve bekleyen rapor sayısını yaz.',
+      '🚫 Son uygulanan cezaları ve gerekçeleri özetle.',
+      '🔔 Takip edilmesi gereken kullanıcıları belirt.',
+      '🛠️ Guard veya otomodda geçici ayar varsa not et.',
+      '✅ Devralan yetkiliden onay mesajı iste.'
+    ]
   }
 ];
 
@@ -326,6 +447,45 @@ export const systemToolkit = [
       '🛑 Komutları kilitlemeden önce aktif ticketları kontrol et.',
       '🗃️ Kritik verilerin güncel yedeğini al.',
       '✅ Bakım bitince sistemi test edip kullanıcıları bilgilendir.'
+    ]
+  },
+  {
+    name: 'ticket-kontrol',
+    description: 'Ticket sistemini düzenli tutmak için bakım listesi sunar.',
+    title: '🎫 Ticket Kontrol Merkezi',
+    intro: 'Ticket panelini sağlıklı tutmak için şu kontrolleri yap:',
+    bullets: [
+      '📂 Kategori ve destek rolü ayarlarını doğrula.',
+      '🧾 Log ve transkript kanallarının erişilebilir olduğunu kontrol et.',
+      '🔘 Panel butonlarının güncel mesajda çalıştığını test et.',
+      '📊 Haftalık açık/kapanan ticket sayısını not al.',
+      '🧹 Eski transkriptleri arşiv klasörüne taşı.'
+    ]
+  },
+  {
+    name: 'guard-kurulum',
+    description: 'Guard sistemini kurarken izlenecek modern kontrol akışını verir.',
+    title: '🛡️ Guard Kurulum Akışı',
+    intro: 'Yeni sunucuda guard açmadan önce şu ayarları tamamla:',
+    bullets: [
+      '🧱 Anti-raid, anti-nuke ve webhook korumasını etkinleştir.',
+      '⚖️ Yaptırım türünü sunucu politikasına göre seç.',
+      '✅ Beyaz liste rollerini yalnızca güvenilir ekiple sınırla.',
+      '📜 Guard log kanalını ayrı ve okunabilir tut.',
+      '🧪 Test rolüyle örnek olay simülasyonu yap.'
+    ]
+  },
+  {
+    name: 'sunucu-checkup',
+    description: 'Sunucunun genel sistem sağlığını kontrol etmek için rehber verir.',
+    title: '🧰 Sunucu Check-up',
+    intro: 'Haftalık sistem kontrolünde bu başlıklara bak:',
+    bullets: [
+      '⚙️ Prefix, otorol, kayıt ve seviye ayarlarını doğrula.',
+      '📈 Ekonomi ve davet loglarının çalıştığını kontrol et.',
+      '🔐 Yetki hiyerarşisinde bot rolünün doğru yerde olduğundan emin ol.',
+      '🧾 Veri klasörünü düzenli yedekle.',
+      '🌐 Yardım menüsündeki kategori sayısını gözden geçir.'
     ]
   }
 ];
@@ -409,6 +569,45 @@ export const economyToolkit = [
       '📤 Hazine hesabının yedek kaydını dışa aktar.',
       '🛠️ Market fiyat dengelerini gözden geçir.',
       '🗂️ Liderlik tablosunu resetlemeden önce ekran görüntüsü al.'
+    ]
+  },
+  {
+    name: 'owo-rehberi',
+    description: 'OwO tarzı hızlı ekonomi döngüsü için modern rehber sunar.',
+    title: '🐾 Yeni Nesil Ekonomi Döngüsü',
+    intro: 'Kazancı eğlenceli hâle getirmek için bu sırayı dene:',
+    bullets: [
+      '🏹 `f!avlan` ile kısa ödül denemesi yap.',
+      '⛏️ `f!maden` ile daha yüksek ama beklemeli kazanç kovala.',
+      '🕵️ `f!soygun` ile riskli kasa operasyonunu dene.',
+      '🎁 Kazandığın eşyaları `f!ekonomi envanter` ile kontrol et.',
+      '📜 İşlem geçmişini `f!ekonomi kayit` ile incele.'
+    ]
+  },
+  {
+    name: 'ticaret-rotasi',
+    description: 'Market ve envanter odaklı ticaret planı üretir.',
+    title: '🛒 Ticaret Rotası',
+    intro: 'Market alışverişini daha verimli yapmak için şu planı uygula:',
+    bullets: [
+      '💰 Bakiye hedefini belirle ve gereksiz harcamayı ertele.',
+      '📦 Önce düşük fiyatlı tüketim ürünlerini değerlendir.',
+      '💎 Koleksiyon ürünlerini etkinlik ödülü olarak sakla.',
+      '🎟️ Premium ürünleri çekiliş veya özel etkinliklere bağla.',
+      '📊 Satın alma sonrası ekonomi logunu kontrol et.'
+    ]
+  },
+  {
+    name: 'kazanc-serisi',
+    description: 'Günlük kazanç serisi için eğlenceli rota önerir.',
+    title: '🔥 Kazanç Serisi Planı',
+    intro: 'Bugünkü FurCoin serini şu şekilde büyütebilirsin:',
+    bullets: [
+      '☀️ Günlük ödülünü alarak başlangıç bonusunu kaçırma.',
+      '💼 Çalışma ve görev komutlarını arka arkaya kullan.',
+      '🎲 Çark, arena ve tahmin oyunlarını bütçene göre dene.',
+      '🏹 Avlanma ve madencilik bekleme sürelerini dönüşümlü takip et.',
+      '🏆 Gün sonunda liderlik tablosundaki konumunu kontrol et.'
     ]
   }
 ];
